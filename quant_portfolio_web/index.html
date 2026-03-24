@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dnt.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+    <meta name="author" content="Doan Nguyen Tri">
+</head>
+<body>
+    <div class="scroll-progress"></div>
+
+    <div class="video-bg-container">
+        <video muted playsinline class="video-bg" id="scrollVideo">
+            <source src="assets/background.mp4" type="video/mp4">
+        </video>
+        <div class="video-overlay"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="logo">DNT<span class="accent">.</span></div>
+        <ul class="nav-links">
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#featured">Live App</a></li>
+            <li><a href="#projects">Research</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="CV_Doan_Nguyen_Tri_Quant_Analyst.pdf" download class="btn-cv-nav">Download CV</a></li>
+        </ul>
+    </nav>
+
+    <section id="hero" class="section reveal">
+        <p class="greeting">Hi, I'm <span class="accent">Doan Nguyen Tri</span> 👋</p>
+        <h1 class="hero-title">
+            Data Science student <br>
+            specializing in <span class="typed-text"></span><span class="cursor">&nbsp;</span>
+        </h1>
+        <p class="hero-desc">I specialize in the complete data lifecycle—from scraping and wrangling messy datasets to conducting rigorous exploratory data analysis (EDA). I build data-driven financial models and algorithmic tools that bridge the gap between complex quantitative research and actionable investment strategies.</p>
+        
+        <div class="hero-cta">
+            <a href="#featured" class="btn btn-primary">Try live dashboard</a>
+            <a href="CV_Doan_Nguyen_Tri_Quant_Analyst.pdf" download class="btn btn-outline">
+                <i class="ph ph-file-pdf"></i> Download CV
+            </a>
+        </div>
+
+        <a href="#about" class="scroll-indicator">
+            <div class="mouse">
+                <div class="wheel"></div>
+            </div>
+            <p>Scroll Down</p>
+        </a>
+    </section>
+
+    <section id="about" class="section reveal">
+        <h2 class="section-title">About Me</h2>
+        <div class="about-content card">
+            <p>I am a final-year Data Science student at the <strong>University of Economics and Finance (UEF)</strong>, where I've developed a deep-rooted passion for <strong>Financial Data Analysis</strong>. My journey is driven by an insatiable curiosity for how data intersects with global markets.
+            <br><br>
+            Beyond the numbers, I love exploring the 'creative' side of tech. I’ve taught myself <strong>Web Programming and Design</strong> to ensure my analytical models aren't just accurate, but also beautifully presented and user-friendly. I'm a firm believer in being a lifelong learner, always eager to pick up new tools—from complex algorithmic trading strategies to the latest web animations—bridging the gap between rigorous finance and modern technology.</p>
+            
+            <div class="skills-grid">
+                <div class="skill-tag">Python & SQL</div>
+                <div class="skill-tag">Web Dev (HTML/CSS/JS)</div>
+                <div class="skill-tag">Pandas / NumPy</div>
+                <div class="skill-tag">Financial Modeling</div>
+                <div class="skill-tag">Time Series Analysis</div>
+                <div class="skill-tag">CAPM & Optimization</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="featured" class="section reveal">
+        <h2 class="section-title">Featured: VN30 Stock Analyzer</h2>
+        <p class="section-subtitle">An interactive quantitative research tool comparing VN30 equities against the market benchmark.</p>
+        
+        <div class="iframe-container card">
+            <div class="iframe-header">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+                <span class="iframe-title">Live Trading Environment</span>
+            </div>
+            <iframe src="http://localhost:8501" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </section>
+
+    <section id="projects" class="section reveal">
+    <h2 class="section-title">Other Analytical Projects</h2>
+    
+    <div class="projects-grid">
+        <div class="project-card card">
+            <h3>QuantFolio Optimization</h3>
+            <div class="tech-stack">Python • SciPy • Plotly</div>
+            <p>A portfolio optimization tool using the Capital Asset Pricing Model (CAPM) and Monte Carlo simulation to identify the efficient frontier.</p>
+            <a href="https://github.com/carrot1301/QuantFolio-Optimization" class="btn btn-outline btn-sm" target="_blank">
+                <i class="ph ph-github-logo"></i> View Code
+            </a>
+        </div>
+
+        <div class="project-card card">
+            <h3>FX Macro Dynamics</h3>
+            <div class="tech-stack">Time Series • Statsmodels</div>
+            <p>An empirical analysis project examining the macro-economic relationship and exchange rate dynamics between the USD and VND.</p>
+            <a href="https://github.com/carrot1301/FX-Macro-Dynamics-USD-VND-Driver-Analysis" class="btn btn-outline btn-sm" target="_blank">
+                <i class="ph ph-github-logo"></i> View Code
+            </a>
+        </div>
+
+        <div class="project-card card">
+            <h3>Adaptive Credit Scoring</h3>
+            <div class="tech-stack">Scikit-learn • Classification</div>
+            <p>Developed a detailed credit scoring model involving synthetic data generation, rigorous feature engineering, and policy simulation.</p>
+            <a href="https://github.com/carrot1301/Latent-Default-Prediction-System" class="btn btn-outline btn-sm" target="_blank">
+                <i class="ph ph-github-logo"></i> View Code
+            </a>
+        </div>
+    </div> <div class="github-cta reveal">
+        <p>Hungry for more? Explore all my repositories and experimental scripts.</p>
+        <a href="https://github.com/carrot1301?tab=repositories" target="_blank" class="btn btn-github-more">
+            <i class="ph ph-github-logo"></i> View more on GitHub
+        </a>
+    </div>
+</section>
+
+    <section id="contact" class="section reveal">
+        <h2 class="section-title">Get In Touch</h2>
+        <p class="section-subtitle">Currently seeking Quantitative Analyst / Data Analyst internship opportunities.</p>
+        <div class="contact-links card">
+            <a href="mailto:doantri12343@gmail.com" class="contact-item">
+                <i class="ph ph-envelope-simple"></i> Doantri12343@gmail.com
+            </a>
+            <a href="https://github.com/carrot1301" target="_blank" class="contact-item">
+                <i class="ph ph-github-logo"></i> GitHub
+            </a>
+            <a href="https://www.linkedin.com/in/nguyen-tri-doan-629408251/" target="_blank" class="contact-item">
+                <i class="ph ph-linkedin-logo"></i> LinkedIn
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <p>© 2026 <strong>DOAN NGUYEN TRI</strong>. All Rights Reserved.</p>
+            <p class="footer-sub">Designed & Developed by Tri Doan | Built for Quantitative Finance</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
