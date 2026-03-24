@@ -51,7 +51,7 @@ def clean_vietnamese_stock_data(filepath):
         return None
 
 @st.cache_data
-def load_market(filepath="data/market/VNINDEX.csv"):
+def load_market(filepath="vn30_quant_app/data/market/VNINDEX.csv"):
     """Loads and caches VNINDEX benchmark data."""
     df = clean_vietnamese_stock_data(filepath)
     if df is not None:
@@ -60,7 +60,7 @@ def load_market(filepath="data/market/VNINDEX.csv"):
     return df
 
 @st.cache_data
-def load_stock(ticker, base_dir="data/stocks"):
+def load_stock(ticker, base_dir="vn30_quant_app/data/stocks"):
     """Loads and caches individual stock data based on ticker name."""
     filepath = f"{base_dir}/{ticker}.csv"
     df = clean_vietnamese_stock_data(filepath)
