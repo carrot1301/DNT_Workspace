@@ -25,7 +25,7 @@ st.sidebar.title("⚙️ VN30 Analyzer")
 st.sidebar.markdown("Quantitative Research Dashboard")
 
 try:
-    ticker_files = os.listdir("data/stocks")
+    ticker_files = os.listdir("vn30_quant_app/data/stocks")
     VN30_TICKERS = sorted([file.replace(".csv", "") for file in ticker_files if file.endswith(".csv")])
 except FileNotFoundError:
     VN30_TICKERS = []
