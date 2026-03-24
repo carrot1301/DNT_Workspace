@@ -9,7 +9,7 @@ from metrics import (
     compute_sharpe_ratio  # <--- Đã thêm import này
 )
 from utils import generate_insights
-
+st.set_page_config(page_title="VN30 Quant Analyzer", layout="wide")
 # --- Page Config & Styling ---
 st.set_page_config(page_title="VN30 Quant Analyzer", layout="wide", page_icon="📈")
 st.markdown("""
