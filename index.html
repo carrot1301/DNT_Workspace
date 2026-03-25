@@ -23,9 +23,14 @@
     <nav class="navbar">
         <div class="logo">DNT<span class="accent">.</span></div>
         
-        <button id="lang-toggle" class="btn-lang">
-            <i class="ph ph-translate"></i> <span id="lang-text">EN</span>
-        </button>
+        <div class="lang-switch-container">
+            <input type="checkbox" id="lang-toggle" class="lang-checkbox">
+            <label for="lang-toggle" class="lang-label">
+                <div class="lang-ball"></div>
+                <span class="lang-icon vi-icon">🇻🇳</span>
+                <span class="lang-icon en-icon">🇬🇧</span>
+            </label>
+        </div>
 
         <ul class="nav-links">
             <li><a href="#hero" data-i18n="nav_home">Home</a></li>
