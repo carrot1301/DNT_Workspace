@@ -27,8 +27,12 @@
             <input type="checkbox" id="lang-toggle" class="lang-checkbox">
             <label for="lang-toggle" class="lang-label">
                 <div class="lang-ball"></div>
-                <span class="lang-icon vi-icon">🇻🇳</span>
-                <span class="lang-icon en-icon">🇬🇧</span>
+                <span class="lang-icon vi-icon">
+                    <img src="https://flagcdn.com/w20/vn.png" width="20" alt="VN">
+                </span>
+                <span class="lang-icon en-icon">
+                    <img src="https://flagcdn.com/w20/gb.png" width="20" alt="EN">
+                </span>
             </label>
         </div>
 
@@ -187,10 +191,10 @@
                 <button id="close-chat-btn"><i class="ph ph-x"></i></button>
             </div>
             <div id="chat-messages" class="chat-messages">
-                <div class="message bot">Xin chào! Mình là trợ lý AI của Trí. Bạn có câu hỏi gì không?</div>
+                <div class="message bot" data-i18n="chat_welcome">Xin chào! Mình là trợ lý AI của Trí. Bạn có câu hỏi gì không?</div>
             </div>
             <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Đợi bạn hỏi..." />
+                <input type="text" id="chat-input" data-i18n-placeholder="chat_placeholder" placeholder="Đợi bạn hỏi..." />
                 <button id="send-chat-btn"><i class="ph ph-paper-plane-right"></i></button>
             </div>
         </div>

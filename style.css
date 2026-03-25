@@ -321,3 +321,20 @@ footer { text-align: center; padding: 80px 20px; background: rgba(11,15,25,0.9);
 /* Làm mờ icon không được chọn */
 .lang-checkbox:checked + .lang-label .vi-icon { opacity: 0.3; }
 .lang-checkbox:not(:checked) + .lang-label .en-icon { opacity: 0.3; }
+.lang-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.lang-icon img {
+    display: block;
+    border-radius: 2px; /* Bo góc nhẹ cho lá cờ nhìn hiện đại */
+    object-fit: contain;
+}
+
+/* Giữ nguyên các logic mờ icon cũ của bạn */
+.lang-checkbox:checked + .lang-label .vi-icon { opacity: 0.3; }
+.lang-checkbox:not(:checked) + .lang-label .en-icon { opacity: 0.3; }
