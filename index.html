@@ -158,6 +158,28 @@
         </div>
     </footer>
 
+    <div class="chatbot-container">
+        <button id="chat-toggle-btn" class="chat-toggle-btn">
+            <div id="siri-orb" class="siri-sphere hidden"></div>
+            <i class="ph ph-robot" id="robot-icon"></i>
+        </button>
+        
+        <div id="chat-window" class="chat-window hidden">
+            <div class="chat-header">
+                <span class="bot-name">DNT AI Assistant <span class="dot green"></span></span>
+                <button id="close-chat-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot">Xin chào! Mình là trợ lý Siri-style của Trí. Bạn có câu hỏi gì không?</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Hỏi Siri..." />
+                <button id="send-chat-btn"><i class="ph ph-paper-plane-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
