@@ -249,7 +249,7 @@ async function sendMessage() {
     const typingDiv = document.createElement('div');
     typingDiv.classList.add('message', 'bot');
     typingDiv.id = typingId;
-    typingDiv.textContent = "Siri đang suy nghĩ...";
+    typingDiv.textContent = "Just a sec, im thinking...";
     chatMessages.appendChild(typingDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -286,7 +286,7 @@ async function sendMessage() {
 
     } catch (error) {
         document.getElementById(typingId).remove();
-        addMessage("Server đang bảo trì, Trí ơi!", 'bot');
+        addMessage("Opss, có lỗi xảy ra! Vui lòng thử lại sau.", 'bot');
     }
 }
 
