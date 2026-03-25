@@ -1,6 +1,5 @@
 /**
  * 1. REVEAL EFFECT (FADE-IN & SLIDE-UP)
- * Hiệu ứng xuất hiện mượt mà khi cuộn đến các section
  */
 const initReveal = () => {
     const reveals = document.querySelectorAll('.reveal');
@@ -22,7 +21,6 @@ const initReveal = () => {
 
 /**
  * 2. TYPING EFFECT (HERO SECTION)
- * Hiệu ứng gõ chữ Neon Glow
  */
 const textArray = ["Financial Data.", "Quant Analysis.", "Algorithmic Tools.", "Risk Modeling."];
 const typingDelay = 100;
@@ -31,7 +29,6 @@ const newTextDelay = 2000;
 let textArrayIndex = 0;
 let charIndex = 0;
 
-// Lưu trữ các phần tử để tối ưu hiệu suất
 const typedTextSpan = document.querySelector(".typed-text");
 const cursorSpan = document.querySelector(".cursor");
 
@@ -78,20 +75,16 @@ const handleScrollEffects = () => {
     const scrollTop = window.scrollY;
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
     
-    // Tránh lỗi chia cho 0
     const scrollFraction = docHeight > 0 ? scrollTop / docHeight : 0;
 
-    // A. Cập nhật thanh tiến trình (Progress Bar)
     if (scrollProgress) {
         scrollProgress.style.width = `${scrollFraction * 100}%`;
     }
 
-    // B. Scrollspy (Làm sáng Menu tương ứng với vị trí cuộn)
     let currentSectionId = "";
     sections.forEach(section => {
         const sectionTop = section.offsetTop;
         const sectionHeight = section.clientHeight;
-        // Kích hoạt khi cuộn được 1/3 section
         if (scrollTop >= (sectionTop - sectionHeight / 3)) {
             currentSectionId = section.getAttribute('id');
         }
@@ -104,7 +97,6 @@ const handleScrollEffects = () => {
         }
     });
 
-    // C. Điều khiển Video theo hướng cuộn
     if (video && !isNaN(video.duration)) {
         requestAnimationFrame(() => {
             video.currentTime = video.duration * scrollFraction;
@@ -116,15 +108,12 @@ const handleScrollEffects = () => {
  * 4. KHỞI TẠO CHUNG (INITIALIZATION)
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // Chạy hiệu ứng Reveal
     initReveal();
 
-    // Chạy hiệu ứng Gõ chữ sau 1 giây
     if (typedTextSpan) {
         setTimeout(type, 1000);
     }
 
-    // Thiết lập Video Background
     if (video) {
         const setupVideo = () => {
             video.play().then(() => {
@@ -142,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Lắng nghe sự kiện cuộn chuột
     window.addEventListener('scroll', handleScrollEffects, { passive: true });
 });
 
@@ -156,6 +144,10 @@ const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const sendChatBtn = document.getElementById('send-chat-btn');
 const siriSphere = document.querySelector('.siri-sphere');
+
+// --- THÊM BIẾN LƯU TRỮ TRÍ NHỚ CHO AI ---
+let chatHistory = []; 
+
 let siriAnimation;
 
 // Khởi tạo các vòng sóng Siri ẩn
@@ -174,9 +166,8 @@ if (siriSphere) {
     }
 }
 
-// Hàm bắt đầu animation Siri
 function startSiriAnimation() {
-    if (typeof anime === 'undefined') return; // Đề phòng thư viện chưa tải xong
+    if (typeof anime === 'undefined') return;
     siriAnimation = anime.timeline({
         targets: '.siri-sphere',
         easing: 'easeInOutSine',
@@ -201,7 +192,6 @@ function startSiriAnimation() {
     });
 }
 
-// Hàm dừng animation Siri
 function stopSiriAnimation() {
     if (siriAnimation) {
         siriAnimation.pause();
@@ -220,7 +210,6 @@ function stopSiriAnimation() {
     }
 }
 
-// GỘP CHUNG: Xử lý sự kiện bật/tắt chatbox và Siri
 chatToggleBtn.addEventListener('click', () => {
     chatWindow.classList.toggle('hidden');
     siriSphere.classList.toggle('hidden');
@@ -233,7 +222,6 @@ chatToggleBtn.addEventListener('click', () => {
     }
 });
 
-// Nút tắt Chatbox
 closeChatBtn.addEventListener('click', () => {
     chatWindow.classList.add('hidden');
     siriSphere.classList.add('hidden');
@@ -241,25 +229,22 @@ closeChatBtn.addEventListener('click', () => {
     stopSiriAnimation();
 });
 
-// Hàm thêm tin nhắn vào màn hình
 function addMessage(text, sender) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender);
     msgDiv.textContent = text;
     chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight; // Cuộn xuống cuối
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Hàm xử lý gửi tin nhắn lên API
+// Xử lý gửi tin nhắn có kèm "Trí nhớ"
 async function sendMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
 
-    // Hiện tin nhắn của user
     addMessage(message, 'user');
     chatInput.value = '';
 
-    // Hiện "Siri đang suy nghĩ..."
     const typingId = "typing-" + Date.now();
     const typingDiv = document.createElement('div');
     typingDiv.classList.add('message', 'bot');
@@ -269,18 +254,35 @@ async function sendMessage() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
-        // Gọi lên trạm Backend Render
         const response = await fetch('https://dnt-portfolio-backend.onrender.com/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({ 
+                message: message,
+                history: chatHistory // GỬI KÈM LỊCH SỬ CHO BACKEND
+            })
         });
 
         const data = await response.json();
         
-        // Xóa chữ "Siri đang suy nghĩ..." và in câu trả lời
         document.getElementById(typingId).remove();
+
+        // Xử lý nếu Backend báo lỗi Validate (ví dụ nhập quá 500 ký tự)
+        if (!response.ok) {
+            addMessage(data.detail || "Có lỗi xảy ra, thử lại nhé!", 'bot');
+            return;
+        }
+
         addMessage(data.reply, 'bot');
+
+        // LƯU LẠI LỊCH SỬ SAU KHI CÓ PHẢN HỒI
+        chatHistory.push({ role: "user", text: message });
+        chatHistory.push({ role: "assistant", text: data.reply });
+        
+        // Giữ tối đa 6 tin nhắn gần nhất để không làm nặng payload
+        if (chatHistory.length > 6) {
+            chatHistory = chatHistory.slice(-6);
+        }
 
     } catch (error) {
         document.getElementById(typingId).remove();
@@ -288,30 +290,29 @@ async function sendMessage() {
     }
 }
 
-// Lắng nghe sự kiện gửi tin nhắn
 sendChatBtn.addEventListener('click', sendMessage);
 chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         sendMessage();
     }
 });
-// --- AI AGENT CTA LOGIC (ABOUT ME) ---
+
+/**
+ * 6. AI AGENT CTA LOGIC (ABOUT ME)
+ */
 const aboutAiCtaBtn = document.getElementById('about-ai-cta-btn');
-// chatWindow và chatInput đã được khai báo ở phần AI CHATBOT LOGIC phía trên
 
 if (aboutAiCtaBtn) {
     aboutAiCtaBtn.addEventListener('click', () => {
-        // 1. Mở cửa sổ chat nếu nó đang đóng
         if (chatWindow && chatWindow.classList.contains('hidden')) {
             chatWindow.classList.remove('hidden');
+            siriSphere.classList.remove('hidden');
+            chatToggleBtn.classList.add('active');
+            startSiriAnimation();
         }
         
-        // 2. Focus vào ô nhập liệu để người dùng gõ ngay
         if (chatInput) {
             chatInput.focus();
         }
-        
-        // (Tùy chọn) Gợi ý một câu hỏi sẵn trong ô input
-        // chatInput.value = "What are Tri's intermediate skills?";
     });
 }
