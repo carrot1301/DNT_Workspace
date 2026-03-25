@@ -158,7 +158,7 @@ body { background-color: var(--bg-color); color: var(--text-primary); line-heigh
     cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
     text-transform: uppercase; letter-spacing: 1px; transition: var(--transition);
 }
-.btn-ai-cta:hover { background: var(--accent); color: var(--bg-color); transform: translateY(-3px); box-shadow: 0 0 15px var(--accent); }
+.btn-ai-cta:hover { background: var(--accent); color: var(--bg-color) !important; transform: translateY(-3px); box-shadow: 0 0 15px var(--accent); }
 .btn-ai-cta i { font-size: 1.2rem; }
 
 /* --- 13. IFRAME (STREAMLIT) --- */
@@ -182,7 +182,7 @@ iframe { width: 100%; height: 100%; border: none; }
     text-transform: uppercase; letter-spacing: 1px;
     box-shadow: 0 0 15px rgba(0,255,170,0.1); transition: all 0.4s ease;
 }
-.btn-github-more:hover { background: var(--accent); color: var(--bg-color); transform: translateY(-5px) scale(1.05); box-shadow: 0 0 30px var(--accent); }
+.btn-github-more:hover { background: var(--accent); color: var(--bg-color) !important; transform: translateY(-5px) scale(1.05); box-shadow: 0 0 30px var(--accent); }
 .btn-github-more i { font-size: 1.4rem; }
 
 /* --- 16. CONTACT --- */
@@ -260,3 +260,64 @@ footer { text-align: center; padding: 80px 20px; background: rgba(11,15,25,0.9);
     .iframe-container { height: 500px; }
     .chat-window { width: 300px; }
 }
+
+/* --- 20. THÊM MỚI: LANGUAGE TOGGLE SWITCH --- */
+.lang-switch-container {
+    margin-left: 20px;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+}
+
+.lang-checkbox {
+    display: none;
+}
+
+.lang-label {
+    width: 65px;
+    height: 32px;
+    background-color: var(--card-border);
+    border-radius: 50px;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    border: 1px solid rgba(0, 255, 170, 0.1);
+    transition: var(--transition);
+}
+
+.lang-label:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
+}
+
+.lang-ball {
+    width: 24px;
+    height: 24px;
+    background-color: var(--accent);
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+    box-shadow: 0 0 8px var(--accent);
+}
+
+/* Khi checkbox được check (sang Tiếng Anh - icon bên phải) */
+.lang-checkbox:checked + .lang-label .lang-ball {
+    transform: translateX(31px);
+}
+
+.lang-icon {
+    font-size: 16px;
+    z-index: 1;
+    user-select: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Làm mờ icon không được chọn */
+.lang-checkbox:checked + .lang-label .vi-icon { opacity: 0.3; }
+.lang-checkbox:not(:checked) + .lang-label .en-icon { opacity: 0.3; }

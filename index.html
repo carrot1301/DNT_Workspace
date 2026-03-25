@@ -22,27 +22,37 @@
 
     <nav class="navbar">
         <div class="logo">DNT<span class="accent">.</span></div>
+
+        <div class="lang-switch-container">
+            <input type="checkbox" id="lang-toggle" class="lang-checkbox">
+            <label for="lang-toggle" class="lang-label">
+                <div class="lang-ball"></div>
+                <span class="lang-icon vi-icon">🇻🇳</span>
+                <span class="lang-icon en-icon">🇬🇧</span>
+            </label>
+        </div>
+
         <ul class="nav-links">
-            <li><a href="#hero">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#featured">Live App</a></li>
-            <li><a href="#projects">Research</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="CV_Doan_Nguyen_Tri_Quant_Analyst.pdf" download class="btn-cv-nav">Download CV</a></li>
+            <li><a href="#hero" data-i18n="nav_home">Home</a></li>
+            <li><a href="#about" data-i18n="nav_about">About</a></li>
+            <li><a href="#featured" data-i18n="nav_live">Live App</a></li>
+            <li><a href="#projects" data-i18n="nav_research">Research</a></li>
+            <li><a href="#contact" data-i18n="nav_contact">Contact</a></li>
+            <li><a href="CV_Doan_Nguyen_Tri_Quant_Analyst.pdf" download class="btn-cv-nav" data-i18n="nav_cv">Download CV</a></li>
         </ul>
     </nav>
 
     <section id="hero" class="section reveal">
-        <p class="greeting">Hi, I'm <span class="accent">Doan Nguyen Tri</span> 👋</p>
+        <p class="greeting" data-i18n="hero_greeting">Hi, I'm <span class="accent">Doan Nguyen Tri</span> 👋</p>
         <h1 class="hero-title">
             Data Science student <br>
             specializing in <span class="typed-text"></span><span class="cursor">&nbsp;</span>
         </h1>
-        <p class="hero-desc">I specialize in the complete data lifecycle—from scraping and wrangling messy datasets to conducting rigorous exploratory data analysis (EDA). I build data-driven financial models and algorithmic tools that bridge the gap between complex quantitative research and actionable investment strategies.</p>
+        <p class="hero-desc" data-i18n="hero_desc">I specialize in the complete data lifecycle—from scraping and wrangling messy datasets to conducting rigorous exploratory data analysis (EDA). I build data-driven financial models and algorithmic tools that bridge the gap between complex quantitative research and actionable investment strategies.</p>
         
         <div class="hero-cta">
-            <a href="#featured" class="btn btn-primary">Try live dashboard</a>
-            <a href="CV_Doan_Nguyen_Tri_Quant_Analyst.pdf" download class="btn btn-outline">
+            <a href="#featured" class="btn btn-primary" data-i18n="hero_btn_live">Try live dashboard</a>
+            <a href="CV_Doan_Nguyen_Tri_Quant_Analyst.pdf" download class="btn btn-outline" data-i18n="hero_btn_cv">
                 <i class="ph ph-file-pdf"></i> Download CV
             </a>
         </div>
@@ -51,15 +61,14 @@
             <div class="mouse">
                 <div class="wheel"></div>
             </div>
-            <p>Scroll Down</p>
+            <p data-i18n="scroll_down">Scroll Down</p>
         </a>
     </section>
 
     <section id="about" class="section reveal">
-        <h2 class="section-title">About Me</h2>
-        <!-- FIX: Added missing closing </div> for .about-content.card -->
+        <h2 class="section-title" data-i18n="about_title">About Me</h2>
         <div class="about-content card">
-            <p>I am a final-year Data Science student at the <strong>University of Economics and Finance (UEF)</strong>, where I've developed a deep-rooted passion for <strong>Financial Data Analysis</strong>. My journey is driven by an insatiable curiosity for how data intersects with global markets.
+            <p data-i18n="about_desc">I am a final-year Data Science student at the <strong>University of Economics and Finance (UEF)</strong>, where I've developed a deep-rooted passion for <strong>Financial Data Analysis</strong>. My journey is driven by an insatiable curiosity for how data intersects with global markets.
             <br><br>
             Beyond the numbers, I love exploring the 'creative' side of tech. I've taught myself <strong>Web Programming and Design</strong> to ensure my analytical models aren't just accurate, but also beautifully presented and user-friendly. I'm a firm believer in being a lifelong learner, always eager to pick up new tools—from complex algorithmic trading strategies to the latest web animations—bridging the gap between rigorous finance and modern technology.</p>
             
@@ -72,9 +81,9 @@
                 <div class="skill-tag">CAPM & Optimization</div>
             </div>
 
-            <!-- FIX: class renamed to match CSS (.ai-agent-cta-frame), added missing </div> -->
             <div class="ai-agent-cta-frame reveal fade-up">
-                <button id="about-ai-cta-btn" class="btn-ai-cta">
+                <p data-i18n="ai_cta_text">Curious about my other secret skills or want to chat with my virtual self?</p>
+                <button id="about-ai-cta-btn" class="btn-ai-cta" data-i18n="ai_cta_btn">
                     <i class="ph ph-robot"></i> More about me with my AI Agent
                 </button>
             </div>
@@ -82,15 +91,15 @@
     </section>
 
     <section id="featured" class="section reveal">
-        <h2 class="section-title">Featured: VN30 Stock Analyzer</h2>
-        <p class="section-subtitle">An interactive quantitative research tool comparing VN30 equities against the market benchmark.</p>
+        <h2 class="section-title" data-i18n="featured_title">Featured: VN30 Stock Analyzer</h2>
+        <p class="section-subtitle" data-i18n="featured_sub">An interactive quantitative research tool comparing VN30 equities against the market benchmark.</p>
         
         <div class="iframe-container card">
             <div class="iframe-header">
                 <span class="dot red"></span>
                 <span class="dot yellow"></span>
                 <span class="dot green"></span>
-                <span class="iframe-title">Live Trading Environment</span>
+                <span class="iframe-title" data-i18n="iframe_title">Live Trading Environment</span>
             </div>
             
             <div style="width: 100%; height: 700px; overflow: hidden; border-radius: 0 0 10px 10px;">
@@ -104,14 +113,14 @@
     </section>
 
     <section id="projects" class="section reveal">
-        <h2 class="section-title">Other Analytical Projects</h2>
+        <h2 class="section-title" data-i18n="projects_title">Other Analytical Projects</h2>
         
         <div class="projects-grid">
             <div class="project-card card">
                 <h3>QuantFolio Optimization</h3>
                 <div class="tech-stack">Python • SciPy • Plotly</div>
-                <p>A portfolio optimization tool using the Capital Asset Pricing Model (CAPM) and Monte Carlo simulation to identify the efficient frontier.</p>
-                <a href="https://github.com/carrot1301/QuantFolio-Optimization" class="btn btn-outline btn-sm" target="_blank">
+                <p data-i18n="proj_1_desc">A portfolio optimization tool using the Capital Asset Pricing Model (CAPM) and Monte Carlo simulation to identify the efficient frontier.</p>
+                <a href="https://github.com/carrot1301/QuantFolio-Optimization" class="btn btn-outline btn-sm" target="_blank" data-i18n="view_code">
                     <i class="ph ph-github-logo"></i> View Code
                 </a>
             </div>
@@ -119,8 +128,8 @@
             <div class="project-card card">
                 <h3>FX Macro Dynamics</h3>
                 <div class="tech-stack">Time Series • Statsmodels</div>
-                <p>An empirical analysis project examining the macro-economic relationship and exchange rate dynamics between the USD and VND.</p>
-                <a href="https://github.com/carrot1301/FX-Macro-Dynamics-USD-VND-Driver-Analysis" class="btn btn-outline btn-sm" target="_blank">
+                <p data-i18n="proj_2_desc">An empirical analysis project examining the macro-economic relationship and exchange rate dynamics between the USD and VND.</p>
+                <a href="https://github.com/carrot1301/FX-Macro-Dynamics-USD-VND-Driver-Analysis" class="btn btn-outline btn-sm" target="_blank" data-i18n="view_code">
                     <i class="ph ph-github-logo"></i> View Code
                 </a>
             </div>
@@ -128,24 +137,24 @@
             <div class="project-card card">
                 <h3>Adaptive Credit Scoring</h3>
                 <div class="tech-stack">Scikit-learn • Classification</div>
-                <p>Developed a detailed credit scoring model involving synthetic data generation, rigorous feature engineering, and policy simulation.</p>
-                <a href="https://github.com/carrot1301/Latent-Default-Prediction-System" class="btn btn-outline btn-sm" target="_blank">
+                <p data-i18n="proj_3_desc">Developed a detailed credit scoring model involving synthetic data generation, rigorous feature engineering, and policy simulation.</p>
+                <a href="https://github.com/carrot1301/Latent-Default-Prediction-System" class="btn btn-outline btn-sm" target="_blank" data-i18n="view_code">
                     <i class="ph ph-github-logo"></i> View Code
                 </a>
             </div>
         </div> 
         
         <div class="github-cta reveal">
-            <p>Hungry for more? Explore all my repositories and experimental scripts.</p>
-            <a href="https://github.com/carrot1301?tab=repositories" target="_blank" class="btn btn-github-more">
+            <p data-i18n="github_cta_text">Hungry for more? Explore all my repositories and experimental scripts.</p>
+            <a href="https://github.com/carrot1301?tab=repositories" target="_blank" class="btn btn-github-more" data-i18n="github_cta_btn">
                 <i class="ph ph-github-logo"></i> View more on GitHub
             </a>
         </div>
     </section>
 
     <section id="contact" class="section reveal">
-        <h2 class="section-title">Get In Touch</h2>
-        <p class="section-subtitle">Currently seeking Quantitative Analyst / Data Analyst internship opportunities.</p>
+        <h2 class="section-title" data-i18n="contact_title">Get In Touch</h2>
+        <p class="section-subtitle" data-i18n="contact_sub">Currently seeking Quantitative Analyst / Data Analyst internship opportunities.</p>
         <div class="contact-links card">
             <a href="mailto:doantri12343@gmail.com" class="contact-item">
                 <i class="ph ph-envelope-simple"></i> Doantri12343@gmail.com
@@ -161,8 +170,8 @@
 
     <footer>
         <div class="footer-content">
-            <p>© 2026 <strong>DOAN NGUYEN TRI</strong>. All Rights Reserved.</p>
-            <p class="footer-sub">Designed & Developed by Tri Doan | Built for Quantitative Finance</p>
+            <p data-i18n="footer_rights">© 2026 <strong>DOAN NGUYEN TRI</strong>. All Rights Reserved.</p>
+            <p class="footer-sub" data-i18n="footer_sub">Designed & Developed by Tri Doan | Built for Quantitative Finance</p>
         </div>
     </footer>
 
@@ -178,7 +187,7 @@
                 <button id="close-chat-btn"><i class="ph ph-x"></i></button>
             </div>
             <div id="chat-messages" class="chat-messages">
-                <div class="message bot">Xin chào! Mình là trợ lý Siri-style của Trí. Bạn có câu hỏi gì không?</div>
+                <div class="message bot">Xin chào! Mình là trợ lý AI của Trí. Bạn có câu hỏi gì không?</div>
             </div>
             <div class="chat-input-area">
                 <input type="text" id="chat-input" placeholder="Hỏi Siri..." />
