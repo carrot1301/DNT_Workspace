@@ -295,3 +295,23 @@ chatInput.addEventListener('keypress', (e) => {
         sendMessage();
     }
 });
+// --- AI AGENT CTA LOGIC (ABOUT ME) ---
+const aboutAiCtaBtn = document.getElementById('about-ai-cta-btn');
+// chatWindow và chatInput đã được khai báo ở phần AI CHATBOT LOGIC phía trên
+
+if (aboutAiCtaBtn) {
+    aboutAiCtaBtn.addEventListener('click', () => {
+        // 1. Mở cửa sổ chat nếu nó đang đóng
+        if (chatWindow && chatWindow.classList.contains('hidden')) {
+            chatWindow.classList.remove('hidden');
+        }
+        
+        // 2. Focus vào ô nhập liệu để người dùng gõ ngay
+        if (chatInput) {
+            chatInput.focus();
+        }
+        
+        // (Tùy chọn) Gợi ý một câu hỏi sẵn trong ô input
+        // chatInput.value = "What are Tri's intermediate skills?";
+    });
+}
