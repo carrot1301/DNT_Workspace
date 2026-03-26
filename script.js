@@ -97,6 +97,8 @@ const handleScrollEffects = () => {
  * 4. KHỞI TẠO CHUNG
  */
 document.addEventListener('DOMContentLoaded', () => {
+    window.scrollTo(0, 0); // Ép trình duyệt luôn ở trên cùng khi load
+
     initReveal();
 
     // Chạy dịch thuật ngay khi load để khớp UI
@@ -260,19 +262,23 @@ const translations = {
         about_title: "About Me",
         about_desc: "I am a final-year Data Science student at the <strong>University of Economics and Finance (UEF)</strong>, where I've developed a deep-rooted passion for <strong>Financial Data Analysis</strong>. My journey is driven by an insatiable curiosity for how data intersects with global markets.<br><br>Beyond the numbers, I love exploring the 'creative' side of tech. I've taught myself <strong>Web Programming and Design</strong> to ensure my analytical models aren't just accurate, but also beautifully presented and user-friendly. I'm a firm believer in being a lifelong learner, always eager to pick up new tools—from complex algorithmic trading strategies to the latest web animations—bridging the gap between rigorous finance and modern technology.",
         ai_cta_text: "Curious about my other secret skills or want to chat with my virtual self?",
-        ai_cta_btn: "<i class='ph ph-robot'></i> More about me with my AI Agent",
+        ai_cta_btn: "More about me with my AI Agent",
         featured_title: "Featured: VN30 Stock Analyzer", featured_sub: "An interactive quantitative research tool comparing VN30 equities against the market benchmark.",
         iframe_title: "Live Trading Environment",
         projects_title: "Other Analytical Projects",
         proj_1_desc: "A portfolio optimization tool using the Capital Asset Pricing Model (CAPM) and Monte Carlo simulation to identify the efficient frontier.",
         proj_2_desc: "An empirical analysis project examining the macro-economic relationship and exchange rate dynamics between the USD and VND.",
         proj_3_desc: "Developed a detailed credit scoring model involving synthetic data generation, rigorous feature engineering, and policy simulation.",
-        view_code: "<i class='ph ph-github-logo'></i> View Code",
+        view_code: "View Code",
         github_cta_text: "Hungry for more? Explore all my repositories and experimental scripts.",
-        github_cta_btn: "<i class='ph ph-github-logo'></i> View more on GitHub",
+        github_cta_btn: "View more on GitHub",
         contact_title: "Get In Touch", contact_sub: "Currently seeking Quantitative Analyst / Data Analyst internship opportunities.",
         footer_rights: "© 2026 <strong>DOAN NGUYEN TRI</strong>. All Rights Reserved.",
-        footer_sub: "Designed & Developed by Tri Doan | Built for Quantitative Finance"
+        footer_sub: "Designed & Developed by Tri Doan | Built for Quantitative Finance",
+        
+        // Dịch thuật cho Chatbot
+        chat_welcome: "Hello! I'm Tri's AI assistant. Do you have any questions?",
+        chat_placeholder: "Ask me anything...",
     },
     vi: {
         nav_home: "Trang chủ", nav_about: "Về tôi", nav_live: "Ứng dụng Live", nav_research: "Nghiên cứu", nav_contact: "Liên hệ", nav_cv: "Tải CV",
@@ -282,19 +288,23 @@ const translations = {
         about_title: "Về Bản Thân",
         about_desc: "Mình là sinh viên năm cuối chuyên ngành Khoa học Dữ liệu tại <strong>Đại học Kinh tế Tài chính TP.HCM (UEF)</strong>, nơi mình nuôi dưỡng niềm đam mê mãnh liệt với <strong>Phân tích Dữ liệu Tài chính</strong>. Hành trình của mình được dẫn dắt bởi sự tò mò không ngừng về cách dữ liệu vận hành và tác động đến thị trường toàn cầu.<br><br>Bên cạnh những con số, mình thích khám phá khía cạnh 'sáng tạo' của công nghệ. Mình đã tự học <strong>Lập trình và Thiết kế Web</strong> để đảm bảo các mô hình phân tích của mình không chỉ chính xác mà còn được trình bày đẹp mắt và thân thiện với người dùng. Mình luôn tin vào việc học tập suốt đời, luôn sẵn sàng tiếp thu các công cụ mới—từ các chiến lược giao dịch thuật toán phức tạp đến các hiệu ứng web hiện đại nhất—để kết nối giữa tài chính chuyên sâu và công nghệ.",
         ai_cta_text: "Tò mò về những kỹ năng bí mật khác của mình hay muốn trò chuyện với bản sao ảo của mình?",
-        ai_cta_btn: "<i class='ph ph-robot'></i> Trò chuyện với AI Trợ lý",
+        ai_cta_btn: "Trò chuyện với AI Trợ lý",
         featured_title: "Dự án nổi bật: VN30 Stock Analyzer", featured_sub: "Công cụ nghiên cứu định lượng tương tác, so sánh các cổ phiếu VN30 với chỉ số thị trường.",
         iframe_title: "Môi trường Giao dịch Trực tiếp",
         projects_title: "Các Dự án Phân tích Khác",
         proj_1_desc: "Công cụ tối ưu hóa danh mục đầu tư sử dụng Mô hình Định giá Tài sản Vốn (CAPM) và mô phỏng Monte Carlo để xác định đường biên hiệu quả.",
         proj_2_desc: "Dự án phân tích thực nghiệm đánh giá mối quan hệ kinh tế vĩ mô và động lực tỷ giá hối đoái giữa USD và VND.",
         proj_3_desc: "Phát triển mô hình chấm điểm tín dụng chi tiết bao gồm tạo dữ liệu tổng hợp, tinh chỉnh đặc trưng chuyên sâu và mô phỏng chính sách.",
-        view_code: "<i class='ph ph-github-logo'></i> Xem Mã Nguồn",
+        view_code: "Xem Mã Nguồn",
         github_cta_text: "Bạn muốn xem thêm? Khám phá toàn bộ kho lưu trữ và các kịch bản thử nghiệm của mình.",
-        github_cta_btn: "<i class='ph ph-github-logo'></i> Xem thêm trên GitHub",
+        github_cta_btn: "Xem thêm trên GitHub",
         contact_title: "Liên Hệ Với Mình", contact_sub: "Hiện mình đang tìm kiếm cơ hội thực tập vị trí Quantitative Analyst / Data Analyst.",
         footer_rights: "© 2026 <strong>ĐOÀN NGUYÊN TRÍ</strong>. Đã đăng ký Bản quyền.",
-        footer_sub: "Thiết kế & Phát triển bởi Trí Đoàn | Dành cho Tài chính Định lượng"
+        footer_sub: "Thiết kế & Phát triển bởi Trí Đoàn | Dành cho Tài chính Định lượng",
+        
+        // Dịch thuật cho Chatbot
+        chat_welcome: "Xin chào! Mình là trợ lý AI của Trí. Bạn có câu hỏi gì không?",
+        chat_placeholder: "Đợi bạn hỏi...",
     }
 };
 
@@ -314,7 +324,15 @@ function updateLanguage(lang) {
         }
     });
 
-    // 3. Reset hiệu ứng gõ chữ cho ngôn ngữ mới
+    // 3. Thay đổi nội dung placeholder của Chatbot
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        if (translations[lang][key]) {
+            element.placeholder = translations[lang][key]; 
+        }
+    });
+
+    // 4. Reset hiệu ứng gõ chữ cho ngôn ngữ mới
     textArray = typingTexts[lang];
     textArrayIndex = 0;
     charIndex = 0;
