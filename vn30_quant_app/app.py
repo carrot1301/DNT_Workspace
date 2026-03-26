@@ -19,7 +19,42 @@ st.markdown("""
     div[data-testid="stMetricValue"] { font-size: 1.8rem; } /* Chỉnh nhỏ lại một chút để vừa 6 cột */
     </style>
 """, unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    /* 1. Xóa phông nền mặc định của Streamlit để nhìn xuyên thấu xuống web của bạn */
+    [data-testid="stAppViewContainer"] {
+        background: transparent !important;
+    }
+    [data-testid="stHeader"] {
+        background: transparent !important;
+    }
+    
+    /* 2. Làm mờ và trong suốt thanh Sidebar (nếu có dùng) */
+    [data-testid="stSidebar"] {
+        background: rgba(11, 15, 25, 0.4) !important;
+        backdrop-filter: blur(15px) !important;
+        border-right: 1px solid rgba(0, 255, 170, 0.2) !important;
+    }
 
+    /* 3. Hiệu ứng Glassmorphism cho các khung/hộp (Metrics, Dataframes...) */
+    div[data-testid="metric-container"], .stDataFrame {
+        background: rgba(30, 41, 59, 0.3) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(0, 255, 170, 0.15) !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    /* Hiệu ứng hover cho các khối */
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 255, 170, 0.2) !important;
+        border-color: rgba(0, 255, 170, 0.4) !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 # --- Sidebar ---
 st.sidebar.title("⚙️ VN30 Analyzer")
 st.sidebar.markdown("Quantitative Research Dashboard")
