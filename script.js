@@ -200,14 +200,19 @@ async function sendMessage() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds timeout
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: message,
                 history: conversationHistory  // FIX: Gửi kèm lịch sử
-            })
+            }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
@@ -224,7 +229,10 @@ async function sendMessage() {
     } catch (error) {
         console.error("Chat error:", error);
         typingDiv.remove();
-        const errorMsg = currentLang === 'en' ? "Server under maintenance, please try again later!" : "Server đang bảo trì, vui lòng thử lại sau!";
+        let errorMsg = currentLang === 'en' ? "Server under maintenance, please try again later!" : "Server đang bảo trì, vui lòng thử lại sau!";
+        if (error.name === 'AbortError' || error.message.includes('fetch')) {
+            errorMsg = currentLang === 'en' ? "My AI brain is waking up from sleep. Please wait 30s and try again!" : "Cỗ máy AI của mình đang ngủ đông và cần 30 giây để thức giấc. Bạn thử lại xíu nữa nhé!";
+        }
         addMessage(errorMsg, 'bot');
     }
 }
@@ -257,6 +265,7 @@ const translations = {
     en: {
         nav_home: "Home", nav_about: "About", nav_live: "Live App", nav_research: "Research", nav_contact: "Contact", nav_cv: "Download CV",
         hero_greeting: "Hi, I'm <span class='accent'>Doan Nguyen Tri</span> 👋",
+        hero_role: "Data Science student <br> specializing in ",
         hero_desc: "I specialize in the complete data lifecycle—from scraping and wrangling messy datasets to conducting rigorous exploratory data analysis (EDA). I build data-driven financial models and algorithmic tools that bridge the gap between complex quantitative research and actionable investment strategies.",
         hero_btn_live: "Try live dashboard", hero_btn_cv: "Download CV", scroll_down: "Scroll Down",
         about_title: "About Me",
@@ -283,6 +292,7 @@ const translations = {
     vi: {
         nav_home: "Trang chủ", nav_about: "Về tôi", nav_live: "Ứng dụng Live", nav_research: "Nghiên cứu", nav_contact: "Liên hệ", nav_cv: "Tải CV",
         hero_greeting: "Xin chào, mình là <span class='accent'>Đoàn Nguyên Trí</span> 👋",
+        hero_role: "Sinh viên Khoa học Dữ liệu <br> chuyên về ",
         hero_desc: "Mình chuyên xử lý toàn bộ vòng đời của dữ liệu—từ thu thập, làm sạch các tập dữ liệu thô cho đến phân tích dữ liệu khám phá (EDA) chuyên sâu. Mình xây dựng các mô hình tài chính và công cụ thuật toán dựa trên dữ liệu, nhằm thu hẹp khoảng cách giữa nghiên cứu định lượng phức tạp và các chiến lược đầu tư thực tiễn.",
         hero_btn_live: "Trải nghiệm Dashboard", hero_btn_cv: "Tải CV", scroll_down: "Cuộn xuống",
         about_title: "Về Bản Thân",

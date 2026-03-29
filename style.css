@@ -112,11 +112,11 @@ body { background-color: var(--bg-color); color: var(--text-primary); line-heigh
 }
 
 /* --- 9. HERO --- */
-#hero { min-height: 100vh; align-items: flex-start; }
+#hero { min-height: 100vh; align-items: center; text-align: center; }
 .greeting { color: var(--accent); font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; }
 .hero-title { font-size: 3.8rem; line-height: 1.1; margin-bottom: 30px; }
-.hero-desc { font-size: 1.15rem; color: var(--text-secondary); max-width: 650px; margin-bottom: 45px; }
-.hero-cta { display: flex; gap: 20px; }
+.hero-desc { font-size: 1.15rem; color: var(--text-secondary); max-width: 650px; margin-bottom: 45px; text-align: center; }
+.hero-cta { display: flex; gap: 20px; justify-content: center; }
 
 /* --- 10. BUTTONS --- */
 .btn {
@@ -258,7 +258,8 @@ footer { text-align: center; padding: 80px 20px; background: rgba(11,15,25,0.9);
     .section { padding: 80px 5%; }
     .hero-cta { flex-direction: column; }
     .iframe-container { height: 500px; }
-    .chat-window { width: 300px; }
+    .chatbot-container { bottom: 15px; right: 15px; }
+    .chat-window { width: calc(100vw - 30px); height: 400px; right: 0; bottom: 75px; }
 }
 
 /* --- 20. THÊM MỚI: LANGUAGE TOGGLE SWITCH --- */
