@@ -32,7 +32,7 @@ TRANSLATIONS = {
         'tab_4': "Beta Regression",
         'raw_data_subheader': "🗄️ Raw Data Explorer",
         'raw_data_expander': "View historical OHLCV data",
-        'raw_data_caption': "ℹ️ All prices in VND.",
+        'raw_data_caption': "ℹ️ All prices in 1000 VND.",
         'insights_subheader': "🧠 Algorithmic Insights"
     },
     'VI': {
@@ -68,7 +68,7 @@ TRANSLATIONS = {
         'tab_4': "Hồi quy Beta",
         'raw_data_subheader': "🗄️ Truy xuất Dữ liệu",
         'raw_data_expander': "Xem lịch sử giá OHLCV",
-        'raw_data_caption': "ℹ️ Đơn vị tính: VNĐ.",
+        'raw_data_caption': "ℹ️ Đơn vị tính: 1000 VNĐ.",
         'insights_subheader': "🧠 AI Nhận Định Tự Động"
     }
 }
