@@ -6,37 +6,33 @@ from data_loader import get_aligned_data, load_stock
 from metrics import (
     compute_returns, compute_cumulative_returns, compute_beta,
     compute_volatility, compute_max_drawdown, compute_alpha,
-    compute_sharpe_ratio  # <--- Đã thêm import này
+    compute_sharpe_ratio
 )
 from utils import generate_insights
-st.set_page_config(page_title="VN30 Quant Analyzer", layout="wide")
+from i18n import TRANSLATIONS
+
+# --- Session State ---
+if 'lang_choice' not in st.session_state:
+    st.session_state['lang_choice'] = 'VI'
+
 # --- Page Config & Styling ---
 st.set_page_config(page_title="VN30 Quant Analyzer", layout="wide", page_icon="📈")
 st.markdown("""
     <style>
     .block-container { padding-top: 2rem; }
     h1, h2, h3 { color: #E0E0E0; }
-    div[data-testid="stMetricValue"] { font-size: 1.8rem; } /* Chỉnh nhỏ lại một chút để vừa 6 cột */
+    div[data-testid="stMetricValue"] { font-size: 1.8rem; }
     </style>
 """, unsafe_allow_html=True)
 st.markdown("""
     <style>
-    /* 1. Xóa phông nền mặc định của Streamlit để nhìn xuyên thấu xuống web của bạn */
-    [data-testid="stAppViewContainer"] {
-        background: transparent !important;
-    }
-    [data-testid="stHeader"] {
-        background: transparent !important;
-    }
-    
-    /* 2. Làm mờ và trong suốt thanh Sidebar (nếu có dùng) */
+    [data-testid="stAppViewContainer"] { background: transparent !important; }
+    [data-testid="stHeader"] { background: transparent !important; }
     [data-testid="stSidebar"] {
         background: rgba(11, 15, 25, 0.4) !important;
         backdrop-filter: blur(15px) !important;
         border-right: 1px solid rgba(0, 255, 170, 0.2) !important;
     }
-
-    /* 3. Hiệu ứng Glassmorphism cho các khung/hộp (Metrics, Dataframes...) */
     div[data-testid="metric-container"], .stDataFrame {
         background: rgba(30, 41, 59, 0.3) !important;
         backdrop-filter: blur(10px) !important;
@@ -46,8 +42,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    
-    /* Hiệu ứng hover cho các khối */
     div[data-testid="metric-container"]:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 25px rgba(0, 255, 170, 0.2) !important;
@@ -55,9 +49,16 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-# --- Sidebar ---
-st.sidebar.title("⚙️ VN30 Analyzer")
-st.sidebar.markdown("Quantitative Research Dashboard")
+
+# --- Sidebar UI & Language Toggle ---
+lang_selection = st.sidebar.radio("🌎 Ngôn ngữ / Language", ["Tiếng Việt (VI)", "English (EN)"], 
+                                  index=0 if st.session_state['lang_choice'] == 'VI' else 1, horizontal=True)
+st.session_state['lang_choice'] = 'VI' if "VI" in lang_selection else 'EN'
+lang = st.session_state['lang_choice']
+t = TRANSLATIONS[lang]
+
+st.sidebar.title(t['sidebar_title'])
+st.sidebar.markdown(t['sidebar_dashboard'])
 
 try:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,18 +68,18 @@ except FileNotFoundError:
     VN30_TICKERS = []
 
 if not VN30_TICKERS:
-    st.sidebar.error("No data available. Please check data/stocks/ directory.")
+    st.sidebar.error(t['sidebar_no_data'])
     ticker = None
 else:
-    ticker = st.sidebar.selectbox("Select Stock Ticker", VN30_TICKERS)
+    ticker = st.sidebar.selectbox(t['sidebar_select_ticker'], VN30_TICKERS)
 
 st.sidebar.markdown("---")
-with st.sidebar.expander("ℹ️ Cơ sở phân tích (Benchmark)"):
-    st.write("**VNINDEX** đóng vai trò là danh mục thị trường (Market Portfolio) để làm chuẩn đối chiếu tỉ suất sinh lời.")
-    st.write("Sử dụng **Mô hình Định giá Tài sản Vốn (CAPM)** nhằm định lượng rủi ro hệ thống.")
+with st.sidebar.expander(t['sidebar_expander_title']):
+    st.write(t['sidebar_benchmark_1'])
+    st.write(t['sidebar_benchmark_2'])
 
 st.sidebar.markdown("<br><br><br><br><br>", unsafe_allow_html=True)
-st.sidebar.caption("⚡ **Engineered by Doan Nguyen Tri**")
+st.sidebar.caption(t['sidebar_footer'])
 
 # --- Main Logic ---
 st.markdown(f"""
@@ -86,16 +87,16 @@ st.markdown(f"""
                 padding: 25px; border-radius: 12px; border-left: 5px solid #00FFAA; margin-bottom: 30px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
         <h1 style="color: #f8fafc; margin: 0; font-size: 2.2rem; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 2.5rem;">📊</span> Phân Tích Định Lượng: 
+            <span style="font-size: 2.5rem;">📊</span> {t['main_title_1']} 
             <span style="background: -webkit-linear-gradient(45deg, #00FFAA, #00B8FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{ticker}</span>
         </h1>
         <p style="color: #94A3B8; margin: 8px 0 0 0; font-size: 1.05rem;">
-            Trang tổng quan so sánh hiệu suất và rủi ro trực tiếp với biến động của thị trường (VNINDEX).
+            {t['main_title_2']}
         </p>
     </div>
 """, unsafe_allow_html=True)
 
-with st.spinner(f"Đang thu thập và giải mã dữ liệu cho {ticker}..."):
+with st.spinner(t['main_loading'].format(ticker=ticker)):
     df = get_aligned_data(ticker)
     stock_raw = load_stock(ticker) 
 
@@ -113,26 +114,26 @@ if df is not None and stock_raw is not None:
     
     beta = compute_beta(df['stock_ret'], df['market_ret'])
     alpha = compute_alpha(df['stock_ret'], df['market_ret'], beta)
-    sharpe = compute_sharpe_ratio(df['stock_ret']) # <--- Tính Sharpe
+    sharpe = compute_sharpe_ratio(df['stock_ret'])
     stock_vol = compute_volatility(df['stock_ret'])
     market_vol = compute_volatility(df['market_ret'])
     max_dd_stock, dd_series_stock = compute_max_drawdown(df['stock_ret'])
 
-    # --- Top Metric Dashboard (Updated to 6 Columns) ---
+    # --- Top Metric Dashboard ---
     m_col1, m_col2, m_col3, m_col4, m_col5, m_col6 = st.columns(6)
     
-    m_col1.metric("📈 Lợi nhuận gộp", f"{total_stock_ret:.2%}", f"{(total_stock_ret - total_market_ret):+.2%} so với VNINDEX")
-    m_col2.metric("⚖️ Sharpe Ratio", f"{sharpe:.2f}", "Risk-Adjusted Return")
-    m_col3.metric("🤝 Hệ số Beta", f"{beta:.2f}", "Rủi ro hệ thống", delta_color="off")
-    m_col4.metric("⭐ Jensen's Alpha", f"{alpha:.2%}", "Lợi suất vượt trội")
-    m_col5.metric("🔥 Mức Biến Động", f"{stock_vol:.2%}", f"Thị trường: {market_vol:.2%}", delta_color="inverse")
-    m_col6.metric("📉 Max Drawdown", f"{max_dd_stock:.2%}", "Sụt giảm tối đa", delta_color="inverse")
+    m_col1.metric(t['m_col1_title'], f"{total_stock_ret:.2%}", f"{(total_stock_ret - total_market_ret):+.2%} {t['m_col1_delta']}")
+    m_col2.metric(t['m_col2_title'], f"{sharpe:.2f}", t['m_col2_desc'])
+    m_col3.metric(t['m_col3_title'], f"{beta:.2f}", t['m_col3_desc'], delta_color="off")
+    m_col4.metric(t['m_col4_title'], f"{alpha:.2%}", t['m_col4_desc'])
+    m_col5.metric(t['m_col5_title'], f"{stock_vol:.2%}", t['m_col5_desc'].format(market_vol=f"{market_vol:.2%}"), delta_color="inverse")
+    m_col6.metric(t['m_col6_title'], f"{max_dd_stock:.2%}", t['m_col6_desc'], delta_color="inverse")
 
     st.markdown("---")
 
     # --- Visualizations ---
-    st.subheader("📈 Visual Analytics")
-    tab1, tab2, tab3, tab4 = st.tabs(["Price Action", "Cumulative Returns", "Drawdown Profile", "Beta Regression"])
+    st.subheader(t['visual_subheader'])
+    tab1, tab2, tab3, tab4 = st.tabs([t['tab_1'], t['tab_2'], t['tab_3'], t['tab_4']])
 
     with tab1:
         fig_candle = go.Figure(data=[go.Candlestick(
@@ -164,19 +165,18 @@ if df is not None and stock_raw is not None:
     st.markdown("---")
     
     # --- Raw Data Explorer ---
-    st.subheader("🗄️ Raw Data Explorer")
-    with st.expander("View historical OHLCV data"):
-        st.caption("ℹ️ All prices in VND.")
+    st.subheader(t['raw_data_subheader'])
+    with st.expander(t['raw_data_expander']):
+        st.caption(t['raw_data_caption'])
         display_df = stock_raw.sort_index(ascending=False).copy()
         st.dataframe(display_df.rename(columns={'stock_close': 'Close'}), use_container_width=True, height=250)
         
     # --- Automated Insights ---
-    st.subheader("🧠 Algorithmic Insights")
-    # Cập nhật thứ tự tham số khớp với utils.py mới
-    insights = generate_insights(ticker, beta, alpha, sharpe, stock_vol, max_dd_stock, total_stock_ret, total_market_ret)
+    st.subheader(t['insights_subheader'])
+    insights = generate_insights(ticker, beta, alpha, sharpe, stock_vol, max_dd_stock, total_stock_ret, total_market_ret, lang=lang)
     
     for insight in insights:
         st.markdown(f"- {insight}")
 
 else:
-    st.warning("Data alignment failed. Please verify CSV structures.")
+    st.warning("Data alignment failed. No data matched.")
