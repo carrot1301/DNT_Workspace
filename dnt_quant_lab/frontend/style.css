@@ -159,3 +159,173 @@ body {
 .metric-card h4 { color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem; }
 .neon-text { font-size: 2.5rem; color: var(--neon-green); text-shadow: 0 0 10px rgba(0, 255, 170, 0.4); }
 .neon-alert { font-size: 2.5rem; color: var(--neon-alert); text-shadow: 0 0 10px rgba(255, 85, 85, 0.4); }
+
+/* ═══════════════════════════════════════════════════
+   AI ADVICE PANEL
+═══════════════════════════════════════════════════ */
+
+.ai-advice-card {
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    background: linear-gradient(145deg, #0f0c1a, #130f22);
+    transition: all 0.4s ease;
+    animation: ai-card-appear 0.5s ease both;
+}
+
+@keyframes ai-card-appear {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.ai-advice-card:hover {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 8px 40px rgba(139, 92, 246, 0.2);
+    transform: translateY(-3px);
+}
+
+/* Header */
+.ai-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+}
+
+.ai-panel-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.ai-gem-icon {
+    color: #a78bfa;
+    font-size: 1.2rem;
+    animation: gem-pulse 2s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes gem-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* Status Badge */
+.ai-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    color: #a78bfa;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.ai-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #a78bfa;
+    animation: badge-blink 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes badge-blink {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px #a78bfa; }
+    50%       { opacity: 0.3; box-shadow: none; }
+}
+
+.ai-badge.done {
+    background: rgba(0, 255, 170, 0.1);
+    border-color: rgba(0, 255, 170, 0.3);
+    color: var(--neon-green);
+}
+.ai-badge.done .ai-badge-dot {
+    background: var(--neon-green);
+    animation: none;
+    box-shadow: 0 0 6px var(--neon-green);
+}
+
+/* Divider */
+.ai-divider {
+    height: 1px;
+    background: linear-gradient(to right, rgba(139, 92, 246, 0.5), transparent);
+    margin-bottom: 1.2rem;
+}
+
+/* Body / Loading */
+.ai-body { min-height: 80px; }
+
+.ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 1rem 0;
+}
+
+.ai-loading-dots {
+    display: flex;
+    gap: 5px;
+}
+
+.ai-loading-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #a78bfa;
+    animation: dot-bounce 1.4s ease-in-out infinite both;
+}
+.ai-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dot-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40%           { transform: scale(1.1); opacity: 1; }
+}
+
+/* AI Text Content */
+.ai-text {
+    color: #cbd5e1;
+    line-height: 1.85;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+}
+
+.ai-text strong { color: #e2e8f0; font-weight: 700; }
+.ai-text em     { color: #a78bfa; }
+.ai-text h2, .ai-text h3, .ai-text h4 { color: #f1f5f9; margin: 1rem 0 0.4rem; }
+.ai-text ul, .ai-text ol { margin: 0.3rem 0 0.3rem 1.2rem; }
+.ai-text li { margin-bottom: 0.2rem; }
+.ai-text hr  { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 1rem 0; }
+.ai-text blockquote {
+    border-left: 3px solid rgba(139, 92, 246, 0.5);
+    padding-left: 1rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0.5rem 0;
+}
+
+/* Blinking cursor while streaming */
+.ai-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: #a78bfa;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: cursor-blink 0.7s step-end infinite;
+}
+
+@keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+

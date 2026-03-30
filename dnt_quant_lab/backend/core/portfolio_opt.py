@@ -39,8 +39,8 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     lower_bound_return = ms_return - (1.96 * ms_volatil)
     upper_bound_return = ms_return + (1.96 * ms_volatil)
     
-    # 5% sụt giảm tồi tệ nhất (Value at Risk - VaR 95%) 
-    # = (Mean Return - 1.645 * Volatility)
+    # 5% sụt giảm tồi tệ nhất (Value at Risk - VaR 95%)
+    # = Mức return tệ nhất ở ngưỡng 95% tự tin
     var_95_percent = ms_return - (1.645 * ms_volatil)
     
     # Tính ra số tiền thực tế
@@ -48,9 +48,11 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     upper_bound_val = initial_capital * (1 + upper_bound_return)
     expected_val = initial_capital * (1 + ms_return)
     
-    # Tính giá trị rủi ro số tiền
-    # VaR số tiền là phần vốn bị âm nặng nhất ở ngưỡng 95% tự tin
-    var_95_value = initial_capital * var_95_percent if var_95_percent < 0 else 0
+    # Tính VaR: Phần tổn thất so với VỐN GỐC (luôn âm hoặc bằng 0)
+    # var_95_worst_value = giá trị danh mục ở kịch bản xấu nhất 5%
+    var_95_worst_value = initial_capital * (1 + var_95_percent)
+    # var_value_loss = mức lỗ/lãi so với ban đầu (< 0 là mất tiền, > 0 là vẫn lời dù ít)
+    var_95_value = var_95_worst_value - initial_capital
     
     return {
         'max_sharpe': {
@@ -146,7 +148,9 @@ def evaluate_custom_portfolio(returns_df: pd.DataFrame, weights_dict: dict, init
     expected_val = initial_capital * (1 + period_return)
     lower_bound_val = initial_capital * (1 + lower_bound_return)
     upper_bound_val = initial_capital * (1 + upper_bound_return)
-    var_95_value = initial_capital * var_95_percent if var_95_percent < 0 else 0
+    # Tính VaR: Phần tổn thất so với VỐN GỐC (luôn âm hoặc bằng 0)
+    var_95_worst_value = initial_capital * (1 + var_95_percent)
+    var_95_value = var_95_worst_value - initial_capital
     
     return {
         'timeframe_days': trading_days,
@@ -163,3 +167,42 @@ def evaluate_custom_portfolio(returns_df: pd.DataFrame, weights_dict: dict, init
             'var_value_loss': var_95_value
         }
     }
+
+def calculate_backtest(port_returns: pd.DataFrame, market_returns: pd.Series, weights_dict: dict) -> dict:
+    """
+    Tính toán Backtest Lịch sử (Khoảng thời gian trong tập dữ liệu).
+    Trọng số danh mục được cố định từ đầu kỳ.
+    Trả về Dict chứa Chuỗi ngày, Lợi nhuận tích lũy của Danh mục và Thị trường.
+    """
+    # Lấy các Tickers phù hợp
+    tickers = [t for t in weights_dict.keys() if t in port_returns.columns]
+    if len(tickers) == 0:
+        return {'dates': [], 'portfolio_cum_returns': [], 'market_cum_returns': []}
+
+    weights = np.array([weights_dict[t] for t in tickers])
+    
+    # Chuẩn hoá trọng số về 100% trong trường hợp thiếu mã
+    if np.sum(weights) == 0:
+        return {'dates': [], 'portfolio_cum_returns': [], 'market_cum_returns': []}
+    weights = weights / np.sum(weights)
+    
+    # Tính Lợi nhuận hằng ngày của Danh mục
+    port_ret_selected = port_returns[tickers]
+    daily_port_returns = port_ret_selected.dot(weights)
+    
+    # Tính Cumulative Returns
+    cum_port = (1 + daily_port_returns).cumprod() - 1
+    cum_market = (1 + market_returns).cumprod() - 1
+    
+    # Đồng bộ index
+    cum_market = cum_market.reindex(cum_port.index).ffill().fillna(0)
+    
+    # Format lại ngày tháng dạng string để JSON Parse dễ
+    dates = [d.strftime("%Y-%m-%d") for d in cum_port.index]
+    
+    return {
+        'dates': dates,
+        'portfolio_cum_returns': cum_port.fillna(0).tolist(),
+        'market_cum_returns': cum_market.tolist()
+    }
+

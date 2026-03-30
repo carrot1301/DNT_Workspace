@@ -21,7 +21,7 @@
             <div style="margin-bottom: 25px;">
                 <select id="lang-selector" class="glass-input" style="width: 100%; cursor: pointer;">
                     <option value="en">🇺🇸 English (EN)</option>
-                    <option value="vi">🇻🇳 Tiếng Việt (VI)</option>
+                    <option value="vi" selected>🇻🇳 Tiếng Việt (VI)</option>
                 </select>
             </div>
             
@@ -115,8 +115,52 @@
                     <h2 class="neon-alert" id="display-risk" style="margin-bottom: 5px;">-0%</h2>
                     <p class="caption" id="stress-text" style="font-size: 0.8rem; margin: 0; color: var(--neon-alert); display: none;">Sập -5% VNI: Bốc hơi 0₫</p>
                 </div>
-            </div>
-            
+
+                <!-- Backtest Card -->
+                <div class="card glass-panel span-2" id="backtest-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                    <h3 data-i18n="backtest_title">Historical Performance (Backtest)</h3>
+                    <p class="caption" id="backtest-desc" data-i18n="backtest_desc">Lợi nhuận tích lũy của danh mục so với VNINDEX trong quá khứ.</p>
+                    <div id="backtest-chart-container" style="width: 100%; height: 350px;"></div>
+                </div>
+
+                <!-- Asset Allocation Card -->
+                <div class="card glass-panel span-2" id="pie-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                    <h3 data-i18n="allocation_title">Optimal Asset Allocation</h3>
+                    <p class="caption" id="pie-desc" data-i18n="allocation_desc">Tỉ trọng phân bổ vốn chi tiết cho từng mã cổ phiếu.</p>
+                    <div id="pie-chart-container" style="width: 100%; height: 350px;"></div>
+                </div>
+
+                <!-- AI Advice Panel — full width, auto-triggered after simulation -->
+                <div class="card glass-panel span-2 ai-advice-card" id="ai-advice-card" style="display: none;">
+                    <div class="ai-panel-header">
+                        <div>
+                            <h3 class="ai-panel-title">
+                                <span class="ai-gem-icon">✦</span>
+                                <span data-i18n="ai_title">Gemini AI — Lời khuyên Đầu tư</span>
+                            </h3>
+                            <p class="caption" data-i18n="ai_subtitle">Phân tích chuyên sâu dựa trên 10.000 kịch bản Monte Carlo</p>
+                        </div>
+                        <div class="ai-badge" id="ai-badge">
+                            <span class="ai-badge-dot"></span>
+                            <span id="ai-badge-text" data-i18n="ai_analyzing">Đang phân tích...</span>
+                        </div>
+                    </div>
+                    <div class="ai-divider"></div>
+                    <div class="ai-body">
+                        <!-- Loading skeleton -->
+                        <div class="ai-loading" id="ai-loading">
+                            <div class="ai-loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span data-i18n="ai_thinking">Gemini đang phân tích dữ liệu...</span>
+                        </div>
+                        <!-- Actual AI text output -->
+                        <div class="ai-text" id="ai-text"></div>
+                    </div>
+                </div>
+
+            </div><!-- /.bento-grid -->
+
             <!-- AI Disclaimer -->
             <div class="disclaimer-note glass-panel" style="margin-top: 1rem; padding: 15px; border-radius: 8px; font-size: 0.8rem; color: var(--text-muted); text-align: justify; border-left: 3px solid var(--neon-alert);">
                 <strong style="color: var(--neon-alert);" data-i18n="disclaimer_title">⚠️ Disclaimer:</strong> <span data-i18n="ai_disclaimer">AI analysis is strictly based on historical data...</span>

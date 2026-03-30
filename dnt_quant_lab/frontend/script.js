@@ -25,6 +25,9 @@ const I18N = {
         'chart_desc': 'High-performance API: Calculated natively via Python arrays.',
         'metric_proj': 'Projected Expected Value',
         'metric_risk': 'Max Risk (VaR 95%)',
+        'var_profitable_label': 'Still Profitable',
+        'var_positive_tooltip': 'Even in the worst 5% scenario, portfolio is estimated to remain profitable – excellent portfolio quality!',
+        'var_negative_tooltip': 'Maximum estimated loss at 95% confidence level.',
         'err_conn': 'Server Connection Failed',
         'err_wait': 'Waiting for Python Backend (FastAPI).<br>Run: uvicorn main:app --reload',
         'err_input': 'Alert: Please double check your numerical inputs!',
@@ -32,42 +35,63 @@ const I18N = {
         'ai_disclaimer': 'AI analysis is strictly based on historical data and the latest financial reports. It cannot forecast sudden or unprecedented future events. Past performance is no guarantee of future results.',
         'ci_text': '95% Prob. Range:',
         'stress_drop': 'Crash -5% VN-Index: ',
-        'loading_api': 'Computing...'
+        'loading_api': 'Computing...',
+        'ai_title': 'Gemini AI — Investment Insights',
+        'ai_subtitle': 'Deep analysis based on 10,000 Monte Carlo scenarios',
+        'ai_analyzing': 'Analyzing...',
+        'ai_thinking': 'Gemini is processing data...',
+        'ai_done': 'Analysis Complete',
+        'backtest_title': 'Historical Performance (Backtest)',
+        'backtest_desc': 'Portfolio historical cumulative returns compared to VNINDEX.',
+        'allocation_title': 'Optimal Asset Allocation',
+        'allocation_desc': 'Optimized capital distribution across selected stocks.'
     },
     'vi': {
-        'subtitle': 'Cố vấn Đầu tư AI',
-        'nav_opt': 'Tối ưu Danh mục',
-        'nav_eval': 'Khám Bệnh Danh Mục',
-        'params_title': 'Tham số Cố định',
-        'eval_title': 'Danh mục Đang kẹp',
-        'label_tickers': 'Mã Cổ phiếu (Cách nhau dấu phẩy)',
-        'ph_tickers': 'Ví dụ: FPT, MWG',
-        'label_capital': 'Tiền vốn ban đầu (VNĐ)',
-        'ph_capital': 'Ví dụ: 1,000,000,000',
-        'label_return': 'Kỳ vọng Lợi nhuận (%)',
-        'btn_run': 'Chạy Mô phỏng 🚀',
-        'btn_eval': 'Khám Bệnh Danh Mục 🔍',
-        'btn_stress': '🔥 Tắt Mù',
-        'btn_add_stock': '+ Thêm Mã Phụ',
-        'label_timeframe': 'Kỳ hạn (Timeframe)',
-        'tf_1m': '1 Tháng (21 Ngày GD)',
-        'tf_3m': '3 Tháng (63 Ngày GD)',
-        'tf_6m': '6 Tháng (126 Kh GD)',
-        'tf_1y': '1 Năm (252 Ngày GD)',
+        'subtitle': 'Trợ lý Đầu tư AI',
+        'nav_opt': 'Tối ưu hóa Danh mục',
+        'nav_eval': 'Đánh giá Danh mục',
+        'params_title': 'Thông số đầu vào',
+        'eval_title': 'Danh mục hiện tại',
+        'label_tickers': 'Mã cổ phiếu (ngăn cách bằng dấu phẩy)',
+        'ph_tickers': 'Ví dụ: FPT, MWG, VCB',
+        'label_capital': 'Vốn ban đầu (VNĐ)',
+        'ph_capital': 'Ví dụ: 1.000.000.000',
+        'label_return': 'Lợi nhuận kỳ vọng (%)',
+        'btn_run': '🚀 Chạy mô phỏng',
+        'btn_eval': '🔍 Đánh giá Danh mục',
+        'btn_stress': '🔥 Stress Test',
+        'btn_add_stock': '+ Thêm mã',
+        'label_timeframe': 'Kỳ hạn',
+        'tf_1m': '1 tháng (21 ngày giao dịch)',
+        'tf_3m': '3 tháng (63 ngày giao dịch)',
+        'tf_6m': '6 tháng (126 ngày giao dịch)',
+        'tf_1y': '1 năm (252 ngày giao dịch)',
         'main_title': 'Tổng quan Danh mục',
-        'status_connected': 'Đã kết nối Máy chủ',
+        'status_connected': 'Đã kết nối máy chủ',
         'chart_title': 'Phân tích & Dự phóng',
-        'chart_desc': 'API Chuyên nghiệp: Điểm chạm máy chủ Python siêu tốc.',
-        'metric_proj': 'Vốn Kỳ Vọng',
-        'metric_risk': 'Rủi ro Tối đa (VaR 95%)',
-        'err_conn': 'Chưa kết nối Server',
-        'err_wait': 'Đang đợi đánh thức Backend Python.<br>Chạy lệnh: uvicorn main:app --reload',
-        'err_input': 'Lưu ý (F0): Hệ thống báo bạn Nhập số hoặc Mã chưa đúng định dạng!',
-        'disclaimer_title': '⚠️ Lưu ý:',
-        'ai_disclaimer': 'Phân tích của AI chỉ dựa trên dữ liệu lịch sử và báo cáo tài chính mới nhất. Hệ thống không thể dự báo các sự kiện biến thiên đột xuất. Hiệu suất trong quá khứ không đảm bảo cho kết quả trong tương lai.',
-        'ci_text': 'Xác suất 95% biên độ:',
-        'stress_drop': 'VNI Sập -5%: Bốc hơi ',
-        'loading_api': 'Đang tính toán...'
+        'chart_desc': 'Tính toán Monte Carlo qua Python API — 10.000 kịch bản ngẫu nhiên.',
+        'metric_proj': 'Giá trị kỳ vọng',
+        'metric_risk': 'Rủi ro tối đa (VaR 95%)',
+        'var_profitable_label': 'Vẫn sinh lời',
+        'var_positive_tooltip': 'Ở kịch bản xấu nhất 5% xác suất, danh mục ước tính vẫn có lãi – chất lượng danh mục tốt!',
+        'var_negative_tooltip': 'Mức lỗ tối đa ước tính ở ngưỡng tin cậy 95%.',
+        'err_conn': 'Mất kết nối với máy chủ',
+        'err_wait': 'Không thể kết nối Backend Python (FastAPI).<br>Chạy lệnh: uvicorn main:app --reload',
+        'err_input': 'Vui lòng kiểm tra lại dữ liệu nhập — cần ít nhất 2 mã cổ phiếu hợp lệ!',
+        'disclaimer_title': '⚠️ Lưu ý quan trọng:',
+        'ai_disclaimer': 'Kết quả phân tích chỉ dựa trên dữ liệu lịch sử và không phải là lời khuyên đầu tư. Hiệu suất trong quá khứ không đảm bảo cho kết quả tương lai. Nhà đầu tư tự chịu trách nhiệm về quyết định của mình.',
+        'ci_text': 'Khoảng tin cậy 95%:',
+        'stress_drop': 'VN-Index -5%: tổn thất ước tính ',
+        'loading_api': 'Đang tính toán...',
+        'ai_title': 'Gemini AI — Lời khuyên Đầu tư',
+        'ai_subtitle': 'Phân tích chuyên sâu dựa trên 10.000 kịch bản Monte Carlo',
+        'ai_analyzing': 'Đang phân tích...',
+        'ai_thinking': 'Gemini đang xử lý dữ liệu...',
+        'ai_done': 'Hoàn tất phân tích',
+        'backtest_title': 'Historical Performance (Backtest)',
+        'backtest_desc': 'Lợi nhuận tích lũy của danh mục so với VNINDEX trong quá khứ.',
+        'allocation_title': 'Optimal Asset Allocation',
+        'allocation_desc': 'Tỉ trọng phân bổ vốn chi tiết cho từng mã cổ phiếu.'
     }
 };
 
@@ -75,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // --- Ngôn ngữ (i18n) ---
     const langSelector = document.getElementById("lang-selector");
-    let currentLang = 'en';
+    let currentLang = 'vi';
 
     function updateLanguage() {
         currentLang = langSelector.value;
@@ -146,7 +170,24 @@ document.addEventListener("DOMContentLoaded", () => {
         
         latestSimulationData = data;
         
-        Plotly.newPlot('chart-container', data.chart.data, data.chart.layout, { responsive: true, displayModeBar: false });
+        if (data.chart) {
+            Plotly.react('chart-container', data.chart.data, data.chart.layout, { responsive: true, displayModeBar: false });
+            document.getElementById('main-chart-card').style.display = 'block';
+        } else {
+            // Hide main chart on Evaluator Mode
+            const mainCard = document.getElementById('main-chart-card');
+            if(mainCard) mainCard.style.display = 'none';
+        }
+        
+        if (data.backtest_chart) {
+            document.getElementById('backtest-card').style.display = 'block';
+            Plotly.react('backtest-chart-container', data.backtest_chart.data, data.backtest_chart.layout, { responsive: true, displayModeBar: false });
+        }
+        
+        if (data.pie_chart) {
+            document.getElementById('pie-card').style.display = 'block';
+            Plotly.react('pie-chart-container', data.pie_chart.data, data.pie_chart.layout, { responsive: true, displayModeBar: false });
+        }
         
         const mc = data.monte_carlo;
         const values = mc.monetary_values;
@@ -159,7 +200,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ciText.textContent = `${I18N[currentLang]['ci_text']} [${formatVND(values.ci_lower_value)} -> ${formatVND(values.ci_upper_value)}]`;
         
         const displayRisk = document.getElementById("display-risk");
-        displayRisk.textContent = "-" + formatVND(Math.abs(values.var_value_loss));
+        const varLoss = values.var_value_loss;
+        const varLossAbs = Math.abs(varLoss);
+        if (varLoss >= 0) {
+            // VaR dương: ở kịch bản xấu nhất 5%, danh mục vẫn có lãi
+            displayRisk.textContent = varLossAbs < 1 ? I18N[currentLang]['var_profitable_label'] : "+" + formatVND(varLoss);
+            displayRisk.style.color = "var(--neon-green)";
+            displayRisk.title = I18N[currentLang]['var_positive_tooltip'];
+        } else {
+            // VaR âm: ở kịch bản xấu nhất 5%, danh mục bị lỗ
+            const lossDisplay = varLossAbs < 1 ? "~0₫" : "-" + formatVND(varLossAbs);
+            displayRisk.textContent = lossDisplay;
+            displayRisk.style.color = "var(--neon-alert)";
+            displayRisk.title = I18N[currentLang]['var_negative_tooltip'];
+        }
 
         stressBtn.style.display = "inline-block";
         document.getElementById("stress-text").style.display = "none";
@@ -169,6 +223,81 @@ document.addEventListener("DOMContentLoaded", () => {
         statusDot.style.boxShadow = "0 0 8px var(--neon-green)";
 
         setTimeout(() => { displayCap.style.transform = "scale(1)"; }, 200);
+
+        // --- NEW: Trigger AI Advice Automatically ---
+        fetchAIAdvice(data);
+    }
+
+    async function fetchAIAdvice(data) {
+        const aiCard = document.getElementById("ai-advice-card");
+        const aiText = document.getElementById("ai-text");
+        const aiLoading = document.getElementById("ai-loading");
+        const aiBadge = document.getElementById("ai-badge");
+        const aiBadgeText = document.getElementById("ai-badge-text");
+
+        // Reset & Show Card
+        aiCard.style.display = "block";
+        aiText.innerHTML = "";
+        aiLoading.style.display = "flex";
+        aiBadge.classList.remove("done");
+        aiBadgeText.textContent = I18N[currentLang]['ai_analyzing'];
+
+        try {
+            const response = await fetch('/api/ai-advice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    monte_carlo: data.monte_carlo,
+                    stress_test: data.stress_test,
+                    lang: currentLang
+                })
+            });
+
+            if (!response.ok) throw new Error("AI API Error");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            aiLoading.style.display = "none";
+            
+            // Add typing cursor
+            const cursor = document.createElement("span");
+            cursor.className = "ai-cursor";
+            aiText.appendChild(cursor);
+
+            let fullText = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                fullText += chunk;
+                
+                // Simple Markdown-ish formatting as we stream
+                // Replacing **bold** and *italic* and newlines
+                let formatted = fullText
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br>');
+                
+                aiText.innerHTML = formatted;
+                aiText.appendChild(cursor);
+                
+                // Auto-scroll to bottom if needed
+                aiCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // Finish
+            cursor.remove();
+            aiBadge.classList.add("done");
+            aiBadgeText.textContent = I18N[currentLang]['ai_done'];
+
+        } catch (err) {
+            console.error("AI Advice Error:", err);
+            aiLoading.style.display = "none";
+            aiText.innerHTML = `<span style="color: var(--neon-alert)">⚠️ Error: Không thể kết nối Gemini AI. Kiểm tra .env hoặc API Key.</span>`;
+        }
     }
 
     function handleError(error) {
@@ -195,7 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch('/api/run-simulation', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray})
+            body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang})
         })
         .then(res => res.json()).then(handleApiResponse).catch(handleError)
         .finally(() => { runBtn.textContent = I18N[currentLang]['btn_run']; runBtn.disabled = false; });
@@ -222,7 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch('/api/evaluate-portfolio', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({holdings: holdings, days: tf})
+            body: JSON.stringify({holdings: holdings, days: tf, lang: currentLang})
         })
         .then(res => res.json()).then(handleApiResponse).catch(handleError)
         .finally(() => { evalBtn.textContent = I18N[currentLang]['btn_eval']; evalBtn.disabled = false; });

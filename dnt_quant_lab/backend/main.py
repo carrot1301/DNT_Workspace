@@ -1,14 +1,32 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import plotly.graph_objects as go
 import json
+import math
 import os
+import numpy as np
+
+
+def sanitize_floats(obj):
+    """Đệ quy làm sạch nan/inf trong dict/list/float trước khi trả về JSON."""
+    if isinstance(obj, dict):
+        return {k: sanitize_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_floats(v) for v in obj]
+    elif isinstance(obj, float) or isinstance(obj, np.floating):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return float(obj)
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    return obj
 
 from core.data_engine import prepare_portfolio_data, fetch_current_prices
-from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio
+from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio, calculate_backtest
+from core.ai_advisor import stream_ai_advice
 
 app = FastAPI(title="DNT Quant Lab API")
 
@@ -32,6 +50,7 @@ class SimulationRequest(BaseModel):
     capital: float
     target_return: float
     tickers: list[str]
+    lang: str = "vi"
 
 @app.post("/api/run-simulation")
 def get_simulation_data(req: SimulationRequest):
@@ -80,7 +99,7 @@ def get_simulation_data(req: SimulationRequest):
         text=['Optimal'],
         textposition='top center',
         marker=dict(color='#00FFAA', size=15, symbol='star', line=dict(color='white', width=2)),
-        hovertemplate="Return: %{y:.2%}<br>Vol: %{x:.2%}<br>Sharpe: " + f"{ms['sharpe']:.2f}"
+        hovertemplate="Lợi nhuận: %{y:.2%}<br>Rủi ro: %{x:.2%}<br>Sharpe: " + f"{ms['sharpe']:.2f}"
     ))
     
     fig.update_layout(
@@ -88,22 +107,79 @@ def get_simulation_data(req: SimulationRequest):
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=0, t=10, b=0),
-        xaxis=dict(title="Biến động (Rủi ro)", showgrid=False, zeroline=False),
-        yaxis=dict(title="Lợi nhuận Kì vọng", showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=False),
-        font=dict(color='#94A3B8')
+        xaxis=dict(title="Độ biến động (Rủi ro)", showgrid=False, zeroline=False),
+        yaxis=dict(title="Lợi nhuận kỳ vọng", showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=False),
+        font=dict(color='#94A3B8'),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
     chart_json = json.loads(fig.to_json())
     
-    return {
+    # Pie chart for Optimized Portfolio (Max Sharpe)
+    ms_weights = mc_results['max_sharpe']['weights']
+    pie_fig = go.Figure(data=[go.Pie(
+        labels=list(ms_weights.keys()), 
+        values=list(ms_weights.values()),
+        hole=.5,
+        marker=dict(colors=['#00FFAA', '#00B8FF', '#FF5555', '#F59E0B', '#8B5CF6'])
+    )])
+    pie_fig.update_layout(
+        template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8')
+    )
+    
+    # Backtest logic
+    bt_data = calculate_backtest(port_ret, mkt_ret, ms_weights)
+    bt_fig = go.Figure()
+    if bt_data['dates']:
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='Portfolio', line=dict(color='#00FFAA', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
+    bt_fig.update_layout(
+        template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8'),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    
+    return sanitize_floats({
         "chart": chart_json,
+        "pie_chart": json.loads(pie_fig.to_json()),
+        "backtest_chart": json.loads(bt_fig.to_json()),
         "monte_carlo": mc_results,
         "stress_test": stress_test_results
+    })
+
+# ── Gemini AI Advice ──────────────────────────────────────────
+class AIAdviceRequest(BaseModel):
+    monte_carlo: dict
+    stress_test: dict
+    lang: str = "vi"
+
+@app.post("/api/ai-advice")
+def get_ai_advice(req: AIAdviceRequest):
+    """
+    Stream lời khuyên đầu tư từ Gemini AI dựa trên kết quả Monte Carlo.
+    Sử dụng Server-Sent streaming để frontend nhận text từng chunk.
+    """
+    data = {
+        "monte_carlo": req.monte_carlo,
+        "stress_test": req.stress_test
     }
+
+    def generate():
+        for chunk in stream_ai_advice(data, req.lang):
+            yield chunk
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/plain; charset=utf-8",
+        headers={"X-Content-Type-Options": "nosniff"}
+    )
+
 
 class EvaluationRequest(BaseModel):
     holdings: dict[str, float]  # e.g., {"SHB": 100, "VIC": 50, "GAS": 20}
     days: int                   # e.g., 63 for 3 months
+    lang: str = "vi"
 
 @app.post("/api/evaluate-portfolio")
 def evaluate_custom(req: EvaluationRequest):
@@ -152,11 +228,25 @@ def evaluate_custom(req: EvaluationRequest):
         font=dict(color='#94A3B8')
     )
     
-    return {
-        "chart": json.loads(fig.to_json()),
+    # Backtest logic
+    bt_data = calculate_backtest(port_ret, mkt_ret, weights)
+    bt_fig = go.Figure()
+    if bt_data['dates']:
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='Custom Portfolio', line=dict(color='#00FFAA', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
+    bt_fig.update_layout(
+        template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8'),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    
+    return sanitize_floats({
+        "chart": None, # Disable the main scatter chart for evaluate since it's just pie + line
+        "pie_chart": json.loads(fig.to_json()),
+        "backtest_chart": json.loads(bt_fig.to_json()),
         "monte_carlo": eval_results,  # Ta mượn cấu trúc trả giống nhau để Frontend dễ xài
         "stress_test": stress_test_results
-    }
+    })
 
 # Mount toàn bộ folder frontend làm static files (đặt cuối cùng sau tất cả API routes)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")

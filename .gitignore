@@ -4,4 +4,5 @@
 .DS_Store
 Thumbs.db
 vn30_quant_app/env/
-vn30_quant_app/.env
+.env
+**/.env
