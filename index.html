@@ -101,21 +101,32 @@
     </section>
 
     <section id="featured" class="section reveal">
-        <h2 class="section-title" data-i18n="featured_title">Featured: VN30 Stock Analyzer</h2>
-        <p class="section-subtitle" data-i18n="featured_sub">An interactive quantitative research tool comparing VN30 equities against the market benchmark.</p>
+        <h2 id="featured-title" class="section-title" data-i18n="featured_title_quantlab">Featured: DNT Quant Lab API</h2>
+        <p id="featured-subtitle" class="section-subtitle" data-i18n="featured_sub_quantlab">AI-powered portfolio optimization & risk analysis with Monte Carlo simulation.</p>
         
+        <div class="project-switcher-container">
+            <div class="project-switcher">
+                <button class="switcher-btn active" data-proj="quantlab">
+                    <i class="ph ph-cpu"></i> DNT Quant Lab (FastAPI)
+                </button>
+                <button class="switcher-btn" data-proj="vn30">
+                    <i class="ph ph-chart-line-up"></i> VN30 Analyzer (Streamlit)
+                </button>
+            </div>
+        </div>
+
         <div class="iframe-container card">
             <div class="iframe-header">
                 <span class="dot red"></span>
                 <span class="dot yellow"></span>
                 <span class="dot green"></span>
-                <span class="iframe-title" data-i18n="iframe_title">Live Trading Environment</span>
+                <span class="iframe-title" id="iframe-browser-title" data-i18n="iframe_title_quantlab">DNT Quant Lab - Live Server</span>
             </div>
             
-            <div style="width: 100%; height: 700px; overflow: hidden; border-radius: 0 0 10px 10px;">
-                <iframe 
-                    src="https://dntworkspace-jpwpoc5xgunmexshdfwgqg.streamlit.app/?embed=true" 
-                    style="width: 100%; height: 750px; border: none; margin-bottom: -50px; display: block; background: transparent;"
+            <div class="iframe-wrapper">
+                <iframe id="featured-iframe"
+                    src="https://puzzled-oona-tri1301-cef6b3af.koyeb.app/" 
+                    style="width: 100%; height: 100%; border: none; display: block; background: transparent;"
                     allowtransparency="true"
                     allowfullscreen>
                 </iframe>

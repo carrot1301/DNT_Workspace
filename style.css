@@ -161,12 +161,20 @@ body { background-color: var(--bg-color); color: var(--text-primary); line-heigh
 .btn-ai-cta:hover { background: var(--accent); color: var(--bg-color) !important; transform: translateY(-3px); box-shadow: 0 0 15px var(--accent); }
 .btn-ai-cta i { font-size: 1.2rem; }
 
-/* --- 13. IFRAME (STREAMLIT) --- */
-.iframe-container { height: 800px; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+/* --- 13. IFRAME & PROJECT SWITCHER --- */
+.project-switcher-container { display: flex; justify-content: center; margin-bottom: 30px; width: 100%; }
+.project-switcher { display: flex; background: rgba(30,41,59,0.5); border: 1px solid var(--card-border); border-radius: 50px; padding: 6px; gap: 8px; backdrop-filter: blur(10px); }
+.switcher-btn { background: transparent; border: none; color: var(--text-secondary); padding: 12px 25px; border-radius: 40px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 8px; }
+.switcher-btn:hover { color: var(--text-primary); }
+.switcher-btn.active { background: var(--accent); color: var(--bg-color); box-shadow: 0 0 15px rgba(0,255,170,0.4); }
+.switcher-btn i { font-size: 1.2rem; }
+
+.iframe-container { height: auto; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .iframe-header { background: #1e293b; padding: 12px 20px; display: flex; align-items: center; gap: 8px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; }
 .dot.red { background: #ff5f56; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #27c93f; }
 .iframe-title { color: #94a3b8; font-size: 0.8rem; margin-left: 10px; font-family: monospace; }
+.iframe-wrapper { width: 100%; height: 80vh; min-height: 650px; border-radius: 0 0 10px 10px; overflow: hidden; position: relative; }
 iframe { width: 100%; height: 100%; border: none; }
 
 /* --- 14. PROJECTS --- */
@@ -257,7 +265,9 @@ footer { text-align: center; padding: 80px 20px; background: rgba(11,15,25,0.9);
     .nav-links { display: none; }
     .section { padding: 80px 5%; }
     .hero-cta { flex-direction: column; }
-    .iframe-container { height: 500px; }
+    .project-switcher { flex-direction: column; border-radius: 20px; width: 100%; }
+    .switcher-btn { width: 100%; justify-content: center; }
+    .iframe-wrapper { height: 75vh; min-height: 500px; }
     .chatbot-container { bottom: 15px; right: 15px; }
     .chat-window { width: calc(100vw - 30px); height: 400px; right: 0; bottom: 75px; }
 }

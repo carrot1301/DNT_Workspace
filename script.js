@@ -272,8 +272,12 @@ const translations = {
         about_desc: "I am a final-year Data Science student at the <strong>University of Economics and Finance (UEF)</strong>, where I've developed a deep-rooted passion for <strong>Financial Data Analysis</strong>. My journey is driven by an insatiable curiosity for how data intersects with global markets.<br><br>Beyond the numbers, I love exploring the 'creative' side of tech. I've taught myself <strong>Web Programming and Design</strong> to ensure my analytical models aren't just accurate, but also beautifully presented and user-friendly. I'm a firm believer in being a lifelong learner, always eager to pick up new tools—from complex algorithmic trading strategies to the latest web animations—bridging the gap between rigorous finance and modern technology.",
         ai_cta_text: "Curious about my other secret skills or want to chat with my virtual self?",
         ai_cta_btn: "More about me with my AI Agent",
-        featured_title: "Featured: VN30 Stock Analyzer", featured_sub: "An interactive quantitative research tool comparing VN30 equities against the market benchmark.",
-        iframe_title: "Live Trading Environment",
+        featured_title_quantlab: "Featured: DNT Quant Lab API", 
+        featured_sub_quantlab: "AI-powered portfolio optimization & risk analysis with Monte Carlo simulation.",
+        iframe_title_quantlab: "DNT Quant Lab - Live Server",
+        featured_title_vn30: "Featured: VN30 Stock Analyzer", 
+        featured_sub_vn30: "An interactive quantitative research tool comparing VN30 equities against the market benchmark.",
+        iframe_title_vn30: "Live Trading Environment",
         projects_title: "Other Analytical Projects",
         proj_1_desc: "A portfolio optimization tool using the Capital Asset Pricing Model (CAPM) and Monte Carlo simulation to identify the efficient frontier.",
         proj_2_desc: "An empirical analysis project examining the macro-economic relationship and exchange rate dynamics between the USD and VND.",
@@ -299,8 +303,12 @@ const translations = {
         about_desc: "Mình là sinh viên năm cuối chuyên ngành Khoa học Dữ liệu tại <strong>Đại học Kinh tế Tài chính TP.HCM (UEF)</strong>, nơi mình nuôi dưỡng niềm đam mê mãnh liệt với <strong>Phân tích Dữ liệu Tài chính</strong>. Hành trình của mình được dẫn dắt bởi sự tò mò không ngừng về cách dữ liệu vận hành và tác động đến thị trường toàn cầu.<br><br>Bên cạnh những con số, mình thích khám phá khía cạnh 'sáng tạo' của công nghệ. Mình đã tự học <strong>Lập trình và Thiết kế Web</strong> để đảm bảo các mô hình phân tích của mình không chỉ chính xác mà còn được trình bày đẹp mắt và thân thiện với người dùng. Mình luôn tin vào việc học tập suốt đời, luôn sẵn sàng tiếp thu các công cụ mới—từ các chiến lược giao dịch thuật toán phức tạp đến các hiệu ứng web hiện đại nhất—để kết nối giữa tài chính chuyên sâu và công nghệ.",
         ai_cta_text: "Tò mò về những kỹ năng bí mật khác của mình hay muốn trò chuyện với bản sao ảo của mình?",
         ai_cta_btn: "Trò chuyện với AI Trợ lý",
-        featured_title: "Dự án nổi bật: VN30 Stock Analyzer", featured_sub: "Công cụ nghiên cứu định lượng tương tác, so sánh các cổ phiếu VN30 với chỉ số thị trường.",
-        iframe_title: "Môi trường Giao dịch Trực tiếp",
+        featured_title_quantlab: "Dự án nổi bật: DNT Quant Lab", 
+        featured_sub_quantlab: "Tối ưu hóa danh mục đầu tư & phân tích rủi ro bằng AI và mô phỏng Monte Carlo.",
+        iframe_title_quantlab: "Máy chủ DNT Quant Lab",
+        featured_title_vn30: "Dự án Nổi bật: VN30 Stock Analyzer", 
+        featured_sub_vn30: "Công cụ nghiên cứu định lượng tương tác, so sánh các cổ phiếu VN30 với chỉ số thị trường.",
+        iframe_title_vn30: "Môi trường Giao dịch Trực tiếp",
         projects_title: "Các Dự án Phân tích Khác",
         proj_1_desc: "Công cụ tối ưu hóa danh mục đầu tư sử dụng Mô hình Định giá Tài sản Vốn (CAPM) và mô phỏng Monte Carlo để xác định đường biên hiệu quả.",
         proj_2_desc: "Dự án phân tích thực nghiệm đánh giá mối quan hệ kinh tế vĩ mô và động lực tỷ giá hối đoái giữa USD và VND.",
@@ -360,5 +368,53 @@ if (langCheckbox) {
     langCheckbox.addEventListener('change', () => {
         const newLang = langCheckbox.checked ? 'en' : 'vi';
         updateLanguage(newLang);
+    });
+}
+
+/**
+ * 8. PROJECT SWITCHER
+ */
+const switcherBtns = document.querySelectorAll('.switcher-btn');
+const featuredIframe = document.getElementById('featured-iframe');
+const featuredTitle = document.getElementById('featured-title');
+const featuredSubtitle = document.getElementById('featured-subtitle');
+const iframeTitle = document.getElementById('iframe-browser-title');
+
+const projectsData = {
+    quantlab: {
+        url: "https://puzzled-oona-tri1301-cef6b3af.koyeb.app/",
+        titleKey: "featured_title_quantlab",
+        subKey: "featured_sub_quantlab",
+        iframeKey: "iframe_title_quantlab"
+    },
+    vn30: {
+        url: "https://dntworkspace-jpwpoc5xgunmexshdfwgqg.streamlit.app/?embed=true",
+        titleKey: "featured_title_vn30",
+        subKey: "featured_sub_vn30",
+        iframeKey: "iframe_title_vn30"
+    }
+};
+
+if (switcherBtns) {
+    switcherBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Xóa active hiện tại
+            switcherBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active'); // active btn mới
+            
+            const proj = btn.getAttribute('data-proj');
+            const data = projectsData[proj];
+            
+            // Cập nhật iframe
+            if (featuredIframe) featuredIframe.src = data.url;
+            
+            // Gán lại data-i18n cho Tiêu đề và Phụ đề
+            if (featuredTitle) featuredTitle.setAttribute('data-i18n', data.titleKey);
+            if (featuredSubtitle) featuredSubtitle.setAttribute('data-i18n', data.subKey);
+            if (iframeTitle) iframeTitle.setAttribute('data-i18n', data.iframeKey);
+            
+            // Reset text dựa theo ngôn ngữ hiện tại
+            updateLanguage(currentLang);
+        });
     });
 }
