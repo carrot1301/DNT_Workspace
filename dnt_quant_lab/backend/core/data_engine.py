@@ -110,12 +110,12 @@ def prepare_portfolio_data(tickers: list, days_back: int = 1000):
 def fetch_current_prices(tickers: list) -> dict:
     """
     Truy vấn nhanh Giá Đóng cửa mới nhất của danh sách mã Cổ phiếu.
-    Trọng tâm dành cho Lõi Tính Toán Đánh Giá Vốn Đang Ngâm (Evaluator).
+    Nhân với 1000 để chuyển đổi hệ số của API Entrade về đơn vị VND thực tế (VD: 74.0 -> 74000).
     """
     prices = {}
     for t in tickers:
         df = fetch_stock_data(t, days_back=10) # 10 ngày để bù đắp nghỉ Lễ
         if not df.empty:
-            prices[t] = df['close'].iloc[-1]
+            prices[t] = float(df['close'].iloc[-1]) * 1000
     return prices
 
