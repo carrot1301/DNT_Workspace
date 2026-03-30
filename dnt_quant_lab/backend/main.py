@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import plotly.graph_objects as go
 import json
+import os
 
 from core.data_engine import prepare_portfolio_data, fetch_current_prices
 from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio
@@ -17,6 +20,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve frontend tĩnh tại /
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+
+@app.get("/")
+def serve_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
 class SimulationRequest(BaseModel):
     capital: float
@@ -147,3 +157,6 @@ def evaluate_custom(req: EvaluationRequest):
         "monte_carlo": eval_results,  # Ta mượn cấu trúc trả giống nhau để Frontend dễ xài
         "stress_test": stress_test_results
     }
+
+# Mount toàn bộ folder frontend làm static files (đặt cuối cùng sau tất cả API routes)
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")

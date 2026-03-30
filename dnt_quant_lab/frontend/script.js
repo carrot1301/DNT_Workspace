@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
 
-        fetch('http://127.0.0.1:8000/api/run-simulation', {
+        fetch('/api/run-simulation', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray})
@@ -219,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
 
-        fetch('http://127.0.0.1:8000/api/evaluate-portfolio', {
+        fetch('/api/evaluate-portfolio', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({holdings: holdings, days: tf})
