@@ -62,7 +62,9 @@ st.sidebar.title(t['sidebar_title'])
 st.sidebar.markdown(t['sidebar_dashboard'])
 
 import json
-with open('all_tickers.json', 'r', encoding='utf-8') as f:
+current_dir = os.path.dirname(os.path.abspath(__file__))
+ticker_path = os.path.join(current_dir, 'all_tickers.json')
+with open(ticker_path, 'r', encoding='utf-8') as f:
     ALL_TICKERS = json.load(f)
 
 if not ALL_TICKERS:
