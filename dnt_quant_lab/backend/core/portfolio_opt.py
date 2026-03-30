@@ -114,3 +114,52 @@ def calculate_stress_test(port_returns: pd.DataFrame, market_returns: pd.Series,
         'estimated_loss_vnd': estimated_loss_value,
         'capital_after_crash': final_capital
     }
+
+def evaluate_custom_portfolio(returns_df: pd.DataFrame, weights_dict: dict, initial_capital: float, trading_days: int = 63) -> dict:
+    """
+    Tính năng Đánh Giá Danh Mục Cá Nhân (Evaluator).
+    Tính dải mức lợi nhuận và Rủi ro cho một mốc thời gian cố định ở tương lai.
+    (Ví dụ 3 tháng = ~63 ngày giao dịch).
+    """
+    tickers = list(weights_dict.keys())
+    port_ret_selected = returns_df[tickers]
+    weights = np.array([weights_dict[t] for t in tickers])
+    
+    # Tính lợi nhuận và Biến động theo NGÀY
+    daily_mean_returns = port_ret_selected.mean()
+    daily_cov_matrix = port_ret_selected.cov()
+    
+    port_daily_return = np.sum(daily_mean_returns * weights)
+    port_daily_variance = np.dot(weights.T, np.dot(daily_cov_matrix, weights))
+    
+    # Scale mốc thời gian NGÀY lên THỜI HẠN (trading_days)
+    period_return = port_daily_return * trading_days
+    period_variance = port_daily_variance * trading_days
+    period_volatility = np.sqrt(period_variance)
+    
+    # Tính Khoảng Xác Suất 95% (Distribution Boundaries)
+    lower_bound_return = period_return - (1.96 * period_volatility)
+    upper_bound_return = period_return + (1.96 * period_volatility)
+    var_95_percent = period_return - (1.645 * period_volatility)
+    
+    # Tính mốc Suy ra Số Tiền VNĐ
+    expected_val = initial_capital * (1 + period_return)
+    lower_bound_val = initial_capital * (1 + lower_bound_return)
+    upper_bound_val = initial_capital * (1 + upper_bound_return)
+    var_95_value = initial_capital * var_95_percent if var_95_percent < 0 else 0
+    
+    return {
+        'timeframe_days': trading_days,
+        'expected_return': period_return,
+        'volatility': period_volatility,
+        'ci_95_lower': lower_bound_return,
+        'ci_95_upper': upper_bound_return,
+        'var_95_percent': var_95_percent,
+        'monetary_values': {
+            'initial_capital': initial_capital,
+            'expected_value': expected_val,
+            'ci_lower_value': lower_bound_val,
+            'ci_upper_value': upper_bound_val,
+            'var_value_loss': var_95_value
+        }
+    }

@@ -27,12 +27,13 @@
             
             <nav class="nav-menu">
                 <a href="#" class="nav-item active" data-i18n="nav_opt">Portfolio Optimizer</a>
-                <a href="#" class="nav-item" data-i18n="nav_backtest">Backtesting</a>
-                <a href="#" class="nav-item" data-i18n="nav_ai">AI Advisor</a>
+                <a href="#" class="nav-item" data-i18n="nav_eval">Portfolio Evaluator</a>
             </nav>
             
             <div class="user-inputs">
-                <h3 data-i18n="params_title">Investment Parameters</h3>
+                <!-- Mode 1: Optimizer -->
+                <div id="mode-optimizer">
+                    <h3 data-i18n="params_title">Investment Parameters</h3>
                 <div class="input-group">
                     <label data-i18n="label_tickers">Mã Cổ phiếu (Cách nhau bởi dấu phẩy)</label>
                     <input type="text" id="tickers-input" placeholder="e.g. FPT, MWG, VCB" class="glass-input" data-i18n-ph="ph_tickers" value="FPT, MWG, VCB">
@@ -48,6 +49,35 @@
                 <div style="display: flex; gap: 10px; margin-top: 1rem;">
                     <button class="action-btn" id="run-btn" data-i18n="btn_run" style="flex: 1; margin-top: 0;">Run Simulation</button>
                     <button class="action-btn" id="stress-btn" data-i18n="btn_stress" style="background-color: var(--neon-alert); margin-top: 0; display: none;" title="VNI -50 điểm rớt">🔥 Stress Test</button>
+                </div>
+                </div>
+
+                <!-- Mode 2: Evaluator -->
+                <div id="mode-evaluator" style="display: none;">
+                    <h3 data-i18n="eval_title">My Custom Portfolio</h3>
+                    
+                    <div id="holdings-list" style="margin-bottom: 10px;">
+                        <!-- Dynamic rows will go here -->
+                        <div class="holding-row" style="display: flex; gap: 5px; margin-bottom: 5px;">
+                            <input type="text" class="glass-input t-input" placeholder="Ticker (VD: SHB)" style="width: 50%;">
+                            <input type="number" class="glass-input v-input" placeholder="Qty (Khối lượng)" style="width: 50%;">
+                        </div>
+                    </div>
+                    
+                    <button id="add-holding-btn" style="background: transparent; border: 1px dashed var(--text-muted); color: var(--text-muted); width: 100%; border-radius: 6px; padding: 5px; cursor: pointer; margin-bottom: 15px;" data-i18n="btn_add_stock">+ Thêm mã</button>
+                    
+                    <div class="input-group">
+                        <label data-i18n="label_timeframe">Timeframe (Kỳ hạn)</label>
+                        <select id="timeframe-select" class="glass-input">
+                            <option value="21" data-i18n="tf_1m">1 Tháng (21 Ngày GD)</option>
+                            <option value="63" data-i18n="tf_3m" selected>3 Tháng (63 Ngày GD)</option>
+                            <option value="126" data-i18n="tf_6m">6 Tháng (126 Kh GD)</option>
+                            <option value="252" data-i18n="tf_1y">1 Năm (252 Ngày GD)</option>
+                        </select>
+                    </div>
+                    
+                    <button class="action-btn" id="eval-btn" data-i18n="btn_eval" style="width: 100%;">Evaluate Portfolio 🔍</button>
+                    
                 </div>
             </div>
             

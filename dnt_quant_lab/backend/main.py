@@ -4,8 +4,8 @@ from pydantic import BaseModel
 import plotly.graph_objects as go
 import json
 
-from core.data_engine import prepare_portfolio_data
-from core.portfolio_opt import run_monte_carlo, calculate_stress_test
+from core.data_engine import prepare_portfolio_data, fetch_current_prices
+from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio
 
 app = FastAPI(title="DNT Quant Lab API")
 
@@ -88,5 +88,62 @@ def get_simulation_data(req: SimulationRequest):
     return {
         "chart": chart_json,
         "monte_carlo": mc_results,
+        "stress_test": stress_test_results
+    }
+
+class EvaluationRequest(BaseModel):
+    holdings: dict[str, float]  # e.g., {"SHB": 100, "VIC": 50, "GAS": 20}
+    days: int                   # e.g., 63 for 3 months
+
+@app.post("/api/evaluate-portfolio")
+def evaluate_custom(req: EvaluationRequest):
+    tickers = list(req.holdings.keys())
+    if len(tickers) == 0:
+        return {"error": "Cần ít nhất 1 mã để định giá."}
+
+    # 1. Truy vấn mốc giá hiện tại để qui ra Tiền
+    current_prices = fetch_current_prices(tickers)
+    
+    # 2. Định giá Vốn & Tỉ trọng hiện tại
+    total_capital = 0.0
+    values = {}
+    for t in tickers:
+        p = current_prices.get(t, 0)
+        v = p * req.holdings[t]
+        values[t] = v
+        total_capital += v
+        
+    if total_capital == 0:
+        return {"error": "Không thể định giá danh mục (Dữ liệu rỗng)."}
+        
+    weights = {t: values[t]/total_capital for t in tickers}
+    
+    # 3. Kéo dữ liệu quá khứ cho tập tickers để trích Covariance Matrix
+    port_ret, mkt_ret = prepare_portfolio_data(tickers, days_back=1000)
+    
+    # 4. Giả lập Dải xác suất tương lai
+    eval_results = evaluate_custom_portfolio(port_ret, weights, total_capital, req.days)
+    
+    # 5. Stress test nếu ngày mai mất điện rơi 5%
+    stress_test_results = calculate_stress_test(port_ret, mkt_ret, weights, total_capital, crash_percent=-0.05)
+    
+    # Vẽ Biểu đồ Asset Allocation (Trực quan hóa Phân bổ Tỉ trọng)
+    fig = go.Figure(data=[go.Pie(
+        labels=tickers, 
+        values=[weights[t] for t in tickers],
+        hole=.5,
+        marker=dict(colors=['#00FFAA', '#00B8FF', '#FF5555', '#F59E0B', '#8B5CF6'])
+    )])
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=0, t=10, b=0),
+        font=dict(color='#94A3B8')
+    )
+    
+    return {
+        "chart": json.loads(fig.to_json()),
+        "monte_carlo": eval_results,  # Ta mượn cấu trúc trả giống nhau để Frontend dễ xài
         "stress_test": stress_test_results
     }
