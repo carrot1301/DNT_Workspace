@@ -1,13 +1,13 @@
 /* Base Styles */
 :root {
-    --bg-color: #0B0F19; /* Dark Navy Muted */
-    --surface-glass: rgba(15, 23, 42, 0.4);
-    --surface-border: rgba(0, 255, 170, 0.15);
-    --text-main: #F8FAFC;
-    --text-muted: #94A3B8;
-    --neon-green: #00FFAA;
-    --neon-alert: #FF5555;
-    --font-family: 'Outfit', sans-serif;
+    --bg-color: #0b0f19;
+    --card-bg: linear-gradient(145deg, #111827, #0f172a);
+    --card-border: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --neon-green: #00ffaa;
+    --neon-alert: #ff5f56;
+    --font-family: 'Inter', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,10 +43,8 @@ body {
 
 /* Glassmorphism Panel */
 .glass-panel {
-    background: var(--surface-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--surface-border);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     transition: all 0.3s ease;
 }
 
@@ -78,7 +76,7 @@ body {
     color: var(--neon-green);
 }
 
-.user-inputs h3 { font-size: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem; }
+.user-inputs h3 { font-size: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem; }
 .input-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.3rem;}
 .input-group label { font-size: 0.85rem; color: var(--text-muted); }
 
@@ -100,15 +98,15 @@ body {
 
 .action-btn {
     margin-top: 1rem;
-    background: linear-gradient(45deg, #00FFAA, #00B8FF);
-    color: #000;
-    font-weight: 800;
+    background-color: var(--neon-green);
+    color: var(--bg-color);
+    font-weight: 600;
     font-family: inherit;
     border: none;
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 255, 170, 0.3);
+    box-shadow: 0 5px 20px rgba(0, 255, 170, 0.2);
     transition: transform 0.2s, box-shadow 0.2s;
 }
 .action-btn:hover {

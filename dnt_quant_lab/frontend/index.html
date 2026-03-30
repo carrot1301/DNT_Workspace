@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <!-- Import Plotly.js for frontend chart rendering -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="background-effect"></div>
@@ -15,13 +15,13 @@
     <div class="dashboard-container">
         <!-- Sidebar -->
         <aside class="sidebar glass-panel">
-            <h1 class="logo">🧪 DNT LAB</h1>
+            <h1 class="logo">DNT LAB</h1>
             <p class="subtitle">AI Investment Advisor</p>
             
             <nav class="nav-menu">
-                <a href="#" class="nav-item active">📊 Portfolio Optimizer</a>
-                <a href="#" class="nav-item">⏳ Backtesting</a>
-                <a href="#" class="nav-item">🤖 Gen-Z AI Advisor</a>
+                <a href="#" class="nav-item active">Portfolio Optimizer</a>
+                <a href="#" class="nav-item">Backtesting</a>
+                <a href="#" class="nav-item">AI Advisor</a>
             </nav>
             
             <div class="user-inputs">
@@ -34,7 +34,7 @@
                     <label>Kỳ vọng Lợi nhuận (%)</label>
                     <input type="number" id="target-return" placeholder="20%" class="glass-input">
                 </div>
-                <button class="action-btn" id="run-btn">Chạy Mô phỏng 🚀</button>
+                <button class="action-btn" id="run-btn">Run Simulation</button>
             </div>
             
             <p class="footer-text">Engineered by Doan Nguyen Tri</p>
@@ -43,7 +43,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-nav glass-panel">
-                <h2>📈 Tổng quan Danh mục</h2>
+                <h2>Portfolio Status</h2>
                 <div class="status-indicator">
                     <span class="status-dot green"></span>
                     <span id="api-status">Server Connected</span>
