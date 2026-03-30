@@ -10,8 +10,11 @@ requests_cache.install_cache(os.path.join(cache_dir, 'dnt_market_cache'), backen
 
 def fetch_index_data(symbol: str = 'VNINDEX', days_back: int = 1000) -> pd.DataFrame:
     """Tải dữ liệu lịch sử Index (VNINDEX, VN30) qua endpoint /index."""
-    to_ts = int(datetime.datetime.now().timestamp())
-    from_ts = int((datetime.datetime.now() - datetime.timedelta(days=days_back)).timestamp())
+    now = datetime.datetime.now()
+    # Làm tròn timestamp đến giờ (hoặc ngày) để requests_cache hoạt động, tránh tạo URL mới liên tục mỗi giây
+    now_rounded = now.replace(minute=0, second=0, microsecond=0)
+    to_ts = int(now_rounded.timestamp())
+    from_ts = int((now_rounded - datetime.timedelta(days=days_back)).timestamp())
     url = f"https://services.entrade.com.vn/chart-api/v2/ohlcs/index?symbol={symbol}&resolution=1D&from={from_ts}&to={to_ts}"
     headers = {'User-Agent': 'Mozilla/5.0'}
     try:
@@ -33,8 +36,11 @@ def fetch_index_data(symbol: str = 'VNINDEX', days_back: int = 1000) -> pd.DataF
 
 def fetch_stock_data(ticker: str, days_back: int = 1000) -> pd.DataFrame:
     """Tải dữ liệu OHLCV lịch sử từ API (không cần Key)."""
-    to_ts = int(datetime.datetime.now().timestamp())
-    from_ts = int((datetime.datetime.now() - datetime.timedelta(days=days_back)).timestamp())
+    now = datetime.datetime.now()
+    # Làm tròn timestamp đến giờ để cache hoạt động
+    now_rounded = now.replace(minute=0, second=0, microsecond=0)
+    to_ts = int(now_rounded.timestamp())
+    from_ts = int((now_rounded - datetime.timedelta(days=days_back)).timestamp())
     
     # VN-Index uses 'VNINDEX' in entrade symbols
     symbol = ticker

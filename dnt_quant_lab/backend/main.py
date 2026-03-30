@@ -249,7 +249,8 @@ def evaluate_custom(req: EvaluationRequest):
     )
     
     # Lấy Advanced Metrics
-    daily_port_returns = port_ret_selected.dot(weights)
+    port_ret_selected = port_ret[tickers]
+    daily_port_returns = port_ret_selected.dot(np.array([weights[t] for t in tickers]))
     adv_metrics = calculate_advanced_metrics(daily_port_returns, mkt_ret)
     
     return sanitize_floats({
