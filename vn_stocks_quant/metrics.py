@@ -68,3 +68,32 @@ def compute_alpha(stock_returns: pd.Series, market_returns: pd.Series, beta: flo
     # Alpha = Actual Performance - Benchmark-adjusted Performance
     alpha = ann_stock_ret - expected_return
     return alpha
+
+def compute_sortino_ratio(returns: pd.Series) -> float:
+    """Calculate the Sortino Ratio (Risk-Adjusted Return focusing on downside risk)."""
+    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
+    negative_returns = returns[returns < 0]
+    downside_deviation = np.sqrt(np.mean(negative_returns**2)) * np.sqrt(TRADING_DAYS)
+    
+    return (ann_return - RISK_FREE_RATE) / downside_deviation if downside_deviation != 0 else 0.0
+
+def compute_treynor_ratio(returns: pd.Series, beta: float) -> float:
+    """Calculate the Treynor Ratio (Excess return per unit of systematic risk)."""
+    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
+    return (ann_return - RISK_FREE_RATE) / beta if beta != 0 else 0.0
+
+def compute_r_squared(stock_returns: pd.Series, market_returns: pd.Series) -> float:
+    """Calculate R-Squared (Percentage of variance explained by the market)."""
+    correlation_matrix = np.corrcoef(stock_returns, market_returns)
+    correlation_xy = correlation_matrix[0,1]
+    return correlation_xy**2
+
+def compute_var(returns: pd.Series, conf_level: float = 95.0) -> float:
+    """Calculate Value at Risk (VaR) using Historical Simulation method."""
+    return np.percentile(returns, 100 - conf_level)
+
+def compute_calmar_ratio(returns: pd.Series, max_drawdown: float) -> float:
+    """Calculate the Calmar Ratio (Annualized Return over Maximum Drawdown)."""
+    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
+    abs_mdd = abs(max_drawdown)
+    return ann_return / abs_mdd if abs_mdd != 0 else 0.0
