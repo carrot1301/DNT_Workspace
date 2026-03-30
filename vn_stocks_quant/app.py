@@ -14,7 +14,7 @@ from i18n import TRANSLATIONS
 
 # --- Session State ---
 if 'lang_choice' not in st.session_state:
-    st.session_state['lang_choice'] = 'VI'
+    st.session_state['lang_choice'] = 'EN'
 
 # --- Page Config & Styling ---
 st.set_page_config(page_title="VN Stock Quant Analyzer", layout="wide", page_icon="📈")
@@ -52,9 +52,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Sidebar UI & Language Toggle ---
-lang_selection = st.sidebar.radio("🌎 Ngôn ngữ / Language", ["Tiếng Việt (VI)", "English (EN)"], 
-                                  index=0 if st.session_state['lang_choice'] == 'VI' else 1, horizontal=True)
-st.session_state['lang_choice'] = 'VI' if "VI" in lang_selection else 'EN'
+lang_selection = st.sidebar.radio("🌎 Language / Ngôn ngữ", ["English (EN)", "Tiếng Việt (VI)"], 
+                                  index=0 if st.session_state['lang_choice'] == 'EN' else 1, horizontal=True)
+st.session_state['lang_choice'] = 'EN' if "EN" in lang_selection else 'VI'
 lang = st.session_state['lang_choice']
 t = TRANSLATIONS[lang]
 
