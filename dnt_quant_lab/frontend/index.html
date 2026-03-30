@@ -16,25 +16,32 @@
         <!-- Sidebar -->
         <aside class="sidebar glass-panel">
             <h1 class="logo">DNT LAB</h1>
-            <p class="subtitle">AI Investment Advisor</p>
+            <p class="subtitle" data-i18n="subtitle">AI Investment Advisor</p>
+            
+            <div style="margin-bottom: 25px;">
+                <select id="lang-selector" class="glass-input" style="width: 100%; cursor: pointer;">
+                    <option value="en">🇺🇸 English (EN)</option>
+                    <option value="vi">🇻🇳 Tiếng Việt (VI)</option>
+                </select>
+            </div>
             
             <nav class="nav-menu">
-                <a href="#" class="nav-item active">Portfolio Optimizer</a>
-                <a href="#" class="nav-item">Backtesting</a>
-                <a href="#" class="nav-item">AI Advisor</a>
+                <a href="#" class="nav-item active" data-i18n="nav_opt">Portfolio Optimizer</a>
+                <a href="#" class="nav-item" data-i18n="nav_backtest">Backtesting</a>
+                <a href="#" class="nav-item" data-i18n="nav_ai">AI Advisor</a>
             </nav>
             
             <div class="user-inputs">
-                <h3>Tham số Đầu tư</h3>
+                <h3 data-i18n="params_title">Investment Parameters</h3>
                 <div class="input-group">
-                    <label>Tiền vốn ban đầu (VNĐ)</label>
-                    <input type="number" id="capital-input" placeholder="Ví dụ: 1,000,000,000" class="glass-input">
+                    <label data-i18n="label_capital">Initial Capital (VND)</label>
+                    <input type="number" id="capital-input" placeholder="e.g. 1,000,000,000" class="glass-input" data-i18n-ph="ph_capital">
                 </div>
                 <div class="input-group">
-                    <label>Kỳ vọng Lợi nhuận (%)</label>
+                    <label data-i18n="label_return">Target Return (%)</label>
                     <input type="number" id="target-return" placeholder="20%" class="glass-input">
                 </div>
-                <button class="action-btn" id="run-btn">Run Simulation</button>
+                <button class="action-btn" id="run-btn" data-i18n="btn_run">Run Simulation</button>
             </div>
             
             <p class="footer-text">Engineered by Doan Nguyen Tri</p>
@@ -43,18 +50,18 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="top-nav glass-panel">
-                <h2>Portfolio Status</h2>
+                <h2 data-i18n="main_title">Portfolio Status</h2>
                 <div class="status-indicator">
                     <span class="status-dot green"></span>
-                    <span id="api-status">Server Connected</span>
+                    <span id="api-status" data-i18n="status_connected">Server Connected</span>
                 </div>
             </header>
             
             <div class="bento-grid">
                 <!-- Data Card -->
                 <div class="card glass-panel span-2">
-                    <h3>Efficient Frontier (Bản Demo)</h3>
-                    <p class="caption">Hệ thống biểu đồ được kết xuất (Render) tốc độ cao từ Python thông qua API.</p>
+                    <h3 data-i18n="chart_title">Efficient Frontier (Demo)</h3>
+                    <p class="caption" data-i18n="chart_desc">High-performance charts rendered natively via Python API.</p>
                     <div id="chart-container" style="width: 100%; height: 350px;">
                         <!-- Plotly chart will be injected here -->
                     </div>
@@ -62,11 +69,11 @@
                 
                 <!-- Metric Cards -->
                 <div class="card glass-panel metric-card">
-                    <h4>Vốn Dụ phóng</h4>
+                    <h4 data-i18n="metric_proj">Projected Value</h4>
                     <h2 class="neon-text" id="display-capital">0₫</h2>
                 </div>
                 <div class="card glass-panel metric-card">
-                    <h4>Rủi ro Tối đa (VaR)</h4>
+                    <h4 data-i18n="metric_risk">Max Risk (VaR)</h4>
                     <h2 class="neon-alert" id="display-risk">-5.2%</h2>
                 </div>
             </div>
