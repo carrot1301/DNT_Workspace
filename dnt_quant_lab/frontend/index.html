@@ -34,14 +34,21 @@
             <div class="user-inputs">
                 <h3 data-i18n="params_title">Investment Parameters</h3>
                 <div class="input-group">
+                    <label data-i18n="label_tickers">Mã Cổ phiếu (Cách nhau bởi dấu phẩy)</label>
+                    <input type="text" id="tickers-input" placeholder="e.g. FPT, MWG, VCB" class="glass-input" data-i18n-ph="ph_tickers" value="FPT, MWG, VCB">
+                </div>
+                <div class="input-group">
                     <label data-i18n="label_capital">Initial Capital (VND)</label>
-                    <input type="number" id="capital-input" placeholder="e.g. 1,000,000,000" class="glass-input" data-i18n-ph="ph_capital">
+                    <input type="number" id="capital-input" placeholder="e.g. 1,000,000,000" class="glass-input" data-i18n-ph="ph_capital" value="1000000000">
                 </div>
                 <div class="input-group">
                     <label data-i18n="label_return">Target Return (%)</label>
-                    <input type="number" id="target-return" placeholder="20%" class="glass-input">
+                    <input type="number" id="target-return" placeholder="20%" class="glass-input" value="20">
                 </div>
-                <button class="action-btn" id="run-btn" data-i18n="btn_run">Run Simulation</button>
+                <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                    <button class="action-btn" id="run-btn" data-i18n="btn_run" style="flex: 1; margin-top: 0;">Run Simulation</button>
+                    <button class="action-btn" id="stress-btn" data-i18n="btn_stress" style="background-color: var(--neon-alert); margin-top: 0; display: none;" title="VNI -50 điểm rớt">🔥 Stress Test</button>
+                </div>
             </div>
             
             <p class="footer-text">Engineered by Doan Nguyen Tri</p>
@@ -70,11 +77,13 @@
                 <!-- Metric Cards -->
                 <div class="card glass-panel metric-card">
                     <h4 data-i18n="metric_proj">Projected Value</h4>
-                    <h2 class="neon-text" id="display-capital">0₫</h2>
+                    <h2 class="neon-text" id="display-capital" style="margin-bottom: 5px;">0₫</h2>
+                    <p class="caption" id="ci-text" style="font-size: 0.8rem; margin: 0; color: #00ffaa;">Xác suất 95%: [Đang tính...]</p>
                 </div>
                 <div class="card glass-panel metric-card">
                     <h4 data-i18n="metric_risk">Max Risk (VaR)</h4>
-                    <h2 class="neon-alert" id="display-risk">-5.2%</h2>
+                    <h2 class="neon-alert" id="display-risk" style="margin-bottom: 5px;">-0%</h2>
+                    <p class="caption" id="stress-text" style="font-size: 0.8rem; margin: 0; color: var(--neon-alert); display: none;">Sập -5% VNI: Bốc hơi 0₫</p>
                 </div>
             </div>
             
