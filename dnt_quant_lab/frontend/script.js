@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // --- Ngôn ngữ (i18n) ---
     const langSelector = document.getElementById("lang-selector");
-    let currentLang = 'vi';
+    let currentLang = 'en';
 
     function updateLanguage() {
         currentLang = langSelector.value;
