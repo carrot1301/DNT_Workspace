@@ -16,7 +16,9 @@ const I18N = {
         'metric_risk': 'Max Risk (VaR)',
         'err_conn': 'Server Connection Failed',
         'err_wait': 'Waiting for Python Backend (FastAPI).<br>Run: uvicorn main:app --reload',
-        'err_input': 'Alert: Please input both numbers correctly!'
+        'err_input': 'Alert: Please input both numbers correctly!',
+        'disclaimer_title': '⚠️ Disclaimer:',
+        'ai_disclaimer': 'AI analysis is strictly based on historical data and the latest financial reports. It cannot forecast sudden or unprecedented future events. Past performance is no guarantee of future results.'
     },
     'vi': {
         'subtitle': 'Cố vấn Đầu tư AI',
@@ -35,7 +37,9 @@ const I18N = {
         'metric_risk': 'Rủi ro Tối đa (VaR)',
         'err_conn': 'Chưa kết nối Server',
         'err_wait': 'Đang đợi đánh thức Backend Python.<br>Chạy lệnh: uvicorn main:app --reload',
-        'err_input': 'Lưu ý (F0): Hệ thống báo bạn Nhập số chưa đúng định dạng!'
+        'err_input': 'Lưu ý (F0): Hệ thống báo bạn Nhập số chưa đúng định dạng!',
+        'disclaimer_title': '⚠️ Lưu ý:',
+        'ai_disclaimer': 'Phân tích của AI chỉ dựa trên dữ liệu lịch sử và báo cáo tài chính mới nhất. Hệ thống không thể dự báo các sự kiện biến thiên đột xuất. Hiệu suất trong quá khứ không đảm bảo cho kết quả trong tương lai.'
     }
 };
 
