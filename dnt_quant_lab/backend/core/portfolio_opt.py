@@ -206,3 +206,60 @@ def calculate_backtest(port_returns: pd.DataFrame, market_returns: pd.Series, we
         'market_cum_returns': cum_market.tolist()
     }
 
+# --- ADVANCED QUANT METRICS ---
+TRADING_DAYS = 252
+RISK_FREE_RATE = 0.03
+
+def compute_max_drawdown(cum_returns: pd.Series):
+    running_max = cum_returns.cummax()
+    drawdown = (cum_returns - running_max) / running_max
+    return drawdown.min(), drawdown
+
+def calculate_advanced_metrics(daily_port_returns: pd.Series, market_returns: pd.Series) -> dict:
+    """
+    Tính Toán Các Chỉ Số Quant Nâng Cao.
+    Đầu vào: Series lợi nhuận hàng ngày của MỘT danh mục (đã gộp tỉ trọng).
+    """
+    if len(daily_port_returns) == 0:
+        return {}
+        
+    ann_return = (1 + daily_port_returns.mean()) ** TRADING_DAYS - 1
+    ann_vol = daily_port_returns.std() * np.sqrt(TRADING_DAYS)
+    
+    # 1. Sortino Ratio
+    negative_returns = daily_port_returns[daily_port_returns < 0]
+    downside_dev = np.sqrt(np.mean(negative_returns**2)) * np.sqrt(TRADING_DAYS)
+    sortino = (ann_return - RISK_FREE_RATE) / downside_dev if downside_dev > 0 else 0.0
+    
+    # 2. Beta & Treynor Ratio
+    beta = 1.0
+    r_squared = 0.0
+    if len(market_returns) > 0 and market_returns.var() > 0:
+        cov_matrix = np.cov(daily_port_returns, market_returns)
+        beta = cov_matrix[0, 1] / cov_matrix[1, 1]
+        
+        corr_matrix = np.corrcoef(daily_port_returns, market_returns)
+        if not np.isnan(corr_matrix[0, 1]):
+            r_squared = corr_matrix[0, 1] ** 2
+            
+    treynor = (ann_return - RISK_FREE_RATE) / beta if beta != 0 else 0.0
+    
+    # 3. Maximum Drawdown & Calmar
+    cum_returns = (1 + daily_port_returns).cumprod()
+    max_dd, _ = compute_max_drawdown(cum_returns)
+    calmar = ann_return / abs(max_dd) if abs(max_dd) > 0 else 0.0
+    
+    # 4. VaR 95% (Historical Daily)
+    var_95_daily = np.percentile(daily_port_returns, 5)
+    
+    return {
+        "annualized_return": ann_return,
+        "annualized_volatility": ann_vol,
+        "sortino": sortino,
+        "treynor": treynor,
+        "r_squared": r_squared,
+        "max_drawdown": max_dd,
+        "calmar": calmar,
+        "var_95_daily": var_95_daily,
+        "beta": beta
+    }

@@ -145,9 +145,69 @@ document.addEventListener("DOMContentLoaded", () => {
             <input type="number" class="glass-input v-input" placeholder="Qty" style="width: 40%;">
             <button class="remove-btn" style="background:var(--neon-alert); color:white; border:none; border-radius:4px; width: 10%; font-weight:bold; cursor:pointer;">X</button>
         `;
-        div.querySelector('.remove-btn').onclick = () => div.remove();
+        div.querySelector('.remove-btn').onclick = () => { div.remove(); onInputChanged(); };
         holdingsList.appendChild(div);
+        attachInputListeners();
     });
+
+    // --- Live Capital (Debounce Live Pricing) ---
+    let typingTimer;
+    let cachedPrices = {};
+    
+    function attachInputListeners() {
+        const inputs = document.querySelectorAll(".holding-row input");
+        inputs.forEach(input => {
+            input.removeEventListener('input', onInputChanged); // prevent duplicate bindings
+            input.addEventListener('input', onInputChanged);
+        });
+    }
+
+    function onInputChanged() {
+        clearTimeout(typingTimer);
+        document.getElementById("live-capital-display").textContent = "...";
+        typingTimer = setTimeout(calculateLiveCapital, 600);
+    }
+
+    async function calculateLiveCapital() {
+        const rows = document.querySelectorAll(".holding-row");
+        let queryTickers = [];
+        let holdings = [];
+        
+        for(let row of rows) {
+            let t = row.querySelector('.t-input').value.trim().toUpperCase();
+            let v = parseFloat(row.querySelector('.v-input').value);
+            if (t) {
+                queryTickers.push(t);
+                if (!isNaN(v)) holdings.push({t, v});
+            }
+        }
+        
+        if (queryTickers.length === 0) {
+            document.getElementById("live-capital-display").textContent = "0₫";
+            return;
+        }
+        
+        let tickersQueryStr = queryTickers.join(",");
+        try {
+            let res = await fetch('/api/current-prices?tickers=' + tickersQueryStr);
+            let prices = await res.json();
+            
+            Object.assign(cachedPrices, prices);
+            
+            let total = 0;
+            for (let h of holdings) {
+                if (cachedPrices[h.t]) {
+                    total += cachedPrices[h.t] * h.v;
+                }
+            }
+            document.getElementById("live-capital-display").textContent = formatVND(total);
+        } catch (e) {
+            console.error("Lỗi cập nhật giá realtime:", e);
+        }
+    }
+    
+    // Call initial listener
+    attachInputListeners();
 
     // --- Common API Handlers ---
     const apiStatus = document.getElementById("api-status");
@@ -187,6 +247,25 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.pie_chart) {
             document.getElementById('pie-card').style.display = 'block';
             Plotly.react('pie-chart-container', data.pie_chart.data, data.pie_chart.layout, { responsive: true, displayModeBar: false });
+        }
+        
+        if (data.raw_prices) {
+            document.getElementById('raw-prices-card').style.display = 'block';
+            const tbody = document.getElementById('raw-prices-tbody');
+            tbody.innerHTML = '';
+            for (const [ticker, price] of Object.entries(data.raw_prices)) {
+                tbody.innerHTML += `<tr><td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">${ticker}</td><td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--neon);">${formatVND(price)}</td></tr>`;
+            }
+        }
+
+        if (data.advanced_metrics) {
+            document.getElementById('advanced-metrics-card').style.display = 'block';
+            document.getElementById('metric-beta').textContent = data.advanced_metrics.beta != null ? data.advanced_metrics.beta.toFixed(2) : '--';
+            document.getElementById('metric-sortino').textContent = data.advanced_metrics.sortino != null ? data.advanced_metrics.sortino.toFixed(2) : '--';
+            document.getElementById('metric-treynor').textContent = data.advanced_metrics.treynor != null ? data.advanced_metrics.treynor.toFixed(4) : '--';
+            document.getElementById('metric-rsq').textContent = data.advanced_metrics.r_squared != null ? data.advanced_metrics.r_squared.toFixed(2) : '--';
+            document.getElementById('metric-calmar').textContent = data.advanced_metrics.calmar != null ? data.advanced_metrics.calmar.toFixed(2) : '--';
+            document.getElementById('metric-mdd').textContent = data.advanced_metrics.max_drawdown != null ? (data.advanced_metrics.max_drawdown * 100).toFixed(2) + '%' : '--';
         }
         
         const mc = data.monte_carlo;

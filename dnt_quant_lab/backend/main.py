@@ -25,7 +25,7 @@ def sanitize_floats(obj):
     return obj
 
 from core.data_engine import prepare_portfolio_data, fetch_current_prices
-from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio, calculate_backtest
+from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio, calculate_backtest, calculate_advanced_metrics
 from core.ai_advisor import stream_ai_advice
 
 app = FastAPI(title="DNT Quant Lab API")
@@ -140,12 +140,20 @@ def get_simulation_data(req: SimulationRequest):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
+    # Advanced Metrics & Raw Prices
+    port_ret_selected = port_ret[list(ms_weights.keys())]
+    daily_port_returns = port_ret_selected.dot(np.array(list(ms_weights.values())))
+    adv_metrics = calculate_advanced_metrics(daily_port_returns, mkt_ret)
+    raw_prices = fetch_current_prices(req.tickers)
+    
     return sanitize_floats({
         "chart": chart_json,
         "pie_chart": json.loads(pie_fig.to_json()),
         "backtest_chart": json.loads(bt_fig.to_json()),
         "monte_carlo": mc_results,
-        "stress_test": stress_test_results
+        "stress_test": stress_test_results,
+        "advanced_metrics": adv_metrics,
+        "raw_prices": raw_prices
     })
 
 # ── Gemini AI Advice ──────────────────────────────────────────
@@ -240,13 +248,30 @@ def evaluate_custom(req: EvaluationRequest):
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
+    # Lấy Advanced Metrics
+    daily_port_returns = port_ret_selected.dot(weights)
+    adv_metrics = calculate_advanced_metrics(daily_port_returns, mkt_ret)
+    
     return sanitize_floats({
         "chart": None, # Disable the main scatter chart for evaluate since it's just pie + line
         "pie_chart": json.loads(fig.to_json()),
         "backtest_chart": json.loads(bt_fig.to_json()),
         "monte_carlo": eval_results,  # Ta mượn cấu trúc trả giống nhau để Frontend dễ xài
-        "stress_test": stress_test_results
+        "stress_test": stress_test_results,
+        "advanced_metrics": adv_metrics,
+        "raw_prices": current_prices
     })
+
+@app.get("/api/current-prices")
+def get_current_prices(tickers: str):
+    """
+    Trả về giá cổ phiếu hiện thời theo list. Định dạng: FPT,MWG,VIC
+    """
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {}
+    prices = fetch_current_prices(ticker_list)
+    return sanitize_floats(prices)
 
 # Mount toàn bộ folder frontend làm static files (đặt cuối cùng sau tất cả API routes)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")

@@ -66,6 +66,11 @@
                     
                     <button id="add-holding-btn" style="background: transparent; border: 1px dashed var(--text-muted); color: var(--text-muted); width: 100%; border-radius: 6px; padding: 5px; cursor: pointer; margin-bottom: 15px;" data-i18n="btn_add_stock">+ Thêm mã</button>
                     
+                    <div id="live-capital-container" style="text-align: right; margin-bottom: 15px; padding: 10px; background: rgba(0,255,170,0.05); border-radius: 6px; border-right: 3px solid var(--neon);">
+                        <span style="color: var(--text-muted); font-size: 0.8rem;" data-i18n="live_capital_label">Tổng Vốn Ước Tính</span><br>
+                        <strong id="live-capital-display" style="color: var(--neon); font-size: 1.2rem;">0₫</strong>
+                    </div>
+
                     <div class="input-group">
                         <label data-i18n="label_timeframe">Timeframe (Kỳ hạn)</label>
                         <select id="timeframe-select" class="glass-input">
@@ -128,6 +133,55 @@
                     <h3 data-i18n="allocation_title">Optimal Asset Allocation</h3>
                     <p class="caption" id="pie-desc" data-i18n="allocation_desc">Tỉ trọng phân bổ vốn chi tiết cho từng mã cổ phiếu.</p>
                     <div id="pie-chart-container" style="width: 100%; height: 350px;"></div>
+                </div>
+
+                <!-- Raw Prices Card -->
+                <div class="card glass-panel" id="raw-prices-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                    <h3 data-i18n="raw_price_title">Bảng Giá Đóng cửa</h3>
+                    <div class="table-responsive" style="margin-top: 15px; max-height: 250px; overflow-y: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.9rem;">
+                                    <th style="padding: 8px;">Mã CP</th>
+                                    <th style="padding: 8px;">Giá Hiện Hành</th>
+                                </tr>
+                            </thead>
+                            <tbody id="raw-prices-tbody" style="font-size: 0.95rem;">
+                                <!-- JS Injected -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Advanced Metrics Card -->
+                <div class="card glass-panel" id="advanced-metrics-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                    <h3 data-i18n="adv_metrics_title">Chỉ số Quant Nâng cao</h3>
+                    <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                        <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                            <span class="caption" style="font-size: 0.75rem;">Beta (vs VNINDEX)</span><br>
+                            <strong id="metric-beta" class="neon-text">--</strong>
+                        </div>
+                        <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                            <span class="caption" style="font-size: 0.75rem;">Sortino Ratio</span><br>
+                            <strong id="metric-sortino" style="color: #00B8FF;">--</strong>
+                        </div>
+                        <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                            <span class="caption" style="font-size: 0.75rem;">Treynor Ratio</span><br>
+                            <strong id="metric-treynor" style="color: #F59E0B;">--</strong>
+                        </div>
+                        <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                            <span class="caption" style="font-size: 0.75rem;">R-Squared</span><br>
+                            <strong id="metric-rsq" style="color: #8B5CF6;">--</strong>
+                        </div>
+                        <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                            <span class="caption" style="font-size: 0.75rem;">Calmar Ratio</span><br>
+                            <strong id="metric-calmar" style="color: white;">--</strong>
+                        </div>
+                        <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
+                            <span class="caption" style="font-size: 0.75rem;">Max Drawdown</span><br>
+                            <strong id="metric-mdd" class="neon-alert">--</strong>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- AI Advice Panel — full width, auto-triggered after simulation -->
