@@ -44,7 +44,11 @@ const I18N = {
         'backtest_title': 'Historical Performance (Backtest)',
         'backtest_desc': 'Portfolio historical cumulative returns compared to VNINDEX.',
         'allocation_title': 'Optimal Asset Allocation',
-        'allocation_desc': 'Optimized capital distribution across selected stocks.'
+        'allocation_desc': 'Optimized capital distribution across selected stocks.',
+        'raw_price_title': 'Closing Prices Table',
+        'adv_metrics_title': 'Advanced Quant Metrics',
+        'live_capital_label': 'Estimated Total Capital',
+        'last_updated': 'Last updated: '
     },
     'vi': {
         'subtitle': 'Trợ lý Đầu tư AI',
@@ -91,7 +95,11 @@ const I18N = {
         'backtest_title': 'Historical Performance (Backtest)',
         'backtest_desc': 'Lợi nhuận tích lũy của danh mục so với VNINDEX trong quá khứ.',
         'allocation_title': 'Optimal Asset Allocation',
-        'allocation_desc': 'Tỉ trọng phân bổ vốn chi tiết cho từng mã cổ phiếu.'
+        'allocation_desc': 'Tỉ trọng phân bổ vốn chi tiết cho từng mã cổ phiếu.',
+        'raw_price_title': 'Bảng Giá Đóng cửa',
+        'adv_metrics_title': 'Chỉ số Quant Nâng cao',
+        'live_capital_label': 'Tổng Vốn Ước Tính',
+        'last_updated': 'Cập nhật lần cuối: '
     }
 };
 
@@ -251,6 +259,9 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (data.raw_prices) {
             document.getElementById('raw-prices-card').style.display = 'block';
+            if (data.last_updated_date) {
+                document.getElementById('timestamp-date').textContent = data.last_updated_date;
+            }
             const tbody = document.getElementById('raw-prices-tbody');
             tbody.innerHTML = '';
             for (const [ticker, price] of Object.entries(data.raw_prices)) {
@@ -328,6 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({
                     monte_carlo: data.monte_carlo,
                     stress_test: data.stress_test,
+                    advanced_metrics: data.advanced_metrics,
                     lang: currentLang
                 })
             });

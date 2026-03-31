@@ -8,3 +8,5 @@ google-generativeai
 python-dotenv
 vnstock3
 requests-cache
+scikit-learn
+scipy

@@ -60,6 +60,17 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     beta = stress.get("portfolio_beta", 1.0)
     stress_loss = stress.get("estimated_loss_vnd", 0)
     crash_pct = abs(stress.get("simulated_market_crash", -0.05)) * 100
+    
+    # Advanced Metrics (Max Drawdown)
+    advanced = data.get("advanced_metrics", {})
+    max_drawdown = advanced.get("max_drawdown", 0)
+    mdd_pct = abs(max_drawdown) * 100
+    
+    mdd_warning_en = ""
+    mdd_warning_vi = ""
+    if mdd_pct > 20:
+        mdd_warning_en = f"\n⚠️ CRITICAL RISK WARNING: The Max Drawdown is over 20% ({mdd_pct:.2f}%). As a strict Quantitative Risk Director, you MUST explicitly evaluate this Max Drawdown directly vs the Expected Return. Warn the user about the psychological risk of holding this portfolio. Analyze the trade-off: Is the expected return worth the risk of devastating losses from the peak?"
+        mdd_warning_vi = f"\n⚠️ CẢNH BÁO RỦI RO TỚI HẠN: Trong vai trò là một Giám đốc Quản trị Rủi ro Định lượng khắt khe, bạn BẮT BUỘC phải đánh giá trực tiếp chỉ số 'Max Drawdown' (Mức sụt giảm tối đa hiện tại là {mdd_pct:.2f}%, > 20%). Hãy so sánh trực tiếp Max Drawdown này với Kỳ vọng lợi nhuận. Phải cảnh báo người dùng về rủi ro tâm lý khi nắm giữ. Phân tích bài toán Đánh đổi: Liệu lợi nhuận kỳ vọng có xứng đáng với nguy cơ chia tài khoản từ đỉnh hay không?"
 
     # --- Format phân bổ tỉ trọng ---
     weights_section = ""
@@ -97,6 +108,7 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     # --- Build the prompt string based on language ---
     if lang == "en":
         prompt = f"""You are a professional Vietnamese stock market analyst and investment advisor with over 10 years of real-world trading experience on the HOSE and HNX. Your tone is professional, direct, data-driven, and you never promise guaranteed returns.
+{mdd_warning_en}
 
 Below are the full results of a Monte Carlo quantitative analysis (10,000 random scenarios) for the client's investment portfolio:
 
@@ -142,6 +154,7 @@ Based on the simulation results, provide investment advice to the user following
 """
     else:
         prompt = f"""Bạn là một chuyên gia phân tích và tư vấn đầu tư chứng khoán Việt Nam với hơn 10 năm kinh nghiệm thực chiến tại thị trường HOSE và HNX. Phong cách của bạn: chuyên nghiệp, thẳng thắn, dùng số liệu cụ thể để lập luận, và không hứa hẹn lợi nhuận chắc chắn.
+{mdd_warning_vi}
 
 Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carlo (10.000 kịch bản ngẫu nhiên) cho danh mục đầu tư của khách hàng:
 

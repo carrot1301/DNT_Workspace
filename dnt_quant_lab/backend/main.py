@@ -145,6 +145,7 @@ def get_simulation_data(req: SimulationRequest):
     daily_port_returns = port_ret_selected.dot(np.array(list(ms_weights.values())))
     adv_metrics = calculate_advanced_metrics(daily_port_returns, mkt_ret)
     raw_prices = fetch_current_prices(req.tickers)
+    last_updated_date = port_ret.index.max().strftime('%d-%m-%Y') if not port_ret.index.empty else ""
     
     return sanitize_floats({
         "chart": chart_json,
@@ -153,13 +154,15 @@ def get_simulation_data(req: SimulationRequest):
         "monte_carlo": mc_results,
         "stress_test": stress_test_results,
         "advanced_metrics": adv_metrics,
-        "raw_prices": raw_prices
+        "raw_prices": raw_prices,
+        "last_updated_date": last_updated_date
     })
 
 # ── Gemini AI Advice ──────────────────────────────────────────
 class AIAdviceRequest(BaseModel):
     monte_carlo: dict
     stress_test: dict
+    advanced_metrics: dict = {}
     lang: str = "vi"
 
 @app.post("/api/ai-advice")
@@ -170,7 +173,8 @@ def get_ai_advice(req: AIAdviceRequest):
     """
     data = {
         "monte_carlo": req.monte_carlo,
-        "stress_test": req.stress_test
+        "stress_test": req.stress_test,
+        "advanced_metrics": req.advanced_metrics
     }
 
     def generate():
@@ -252,6 +256,7 @@ def evaluate_custom(req: EvaluationRequest):
     port_ret_selected = port_ret[tickers]
     daily_port_returns = port_ret_selected.dot(np.array([weights[t] for t in tickers]))
     adv_metrics = calculate_advanced_metrics(daily_port_returns, mkt_ret)
+    last_updated_date = port_ret.index.max().strftime('%d-%m-%Y') if not port_ret.index.empty else ""
     
     return sanitize_floats({
         "chart": None, # Disable the main scatter chart for evaluate since it's just pie + line
@@ -260,7 +265,8 @@ def evaluate_custom(req: EvaluationRequest):
         "monte_carlo": eval_results,  # Ta mượn cấu trúc trả giống nhau để Frontend dễ xài
         "stress_test": stress_test_results,
         "advanced_metrics": adv_metrics,
-        "raw_prices": current_prices
+        "raw_prices": current_prices,
+        "last_updated_date": last_updated_date
     })
 
 @app.get("/api/current-prices")

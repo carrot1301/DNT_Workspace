@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
+from sklearn.covariance import LedoitWolf
 
 def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000) -> dict:
     """
@@ -11,14 +13,24 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     weights_record = np.zeros((num_portfolios, num_assets))
     
     mean_returns = returns_df.mean() * 252
-    cov_matrix = returns_df.cov() * 252
+    
+    # [Tác Vụ 2.4] Black-Litterman Placeholder
+    # Hiện tại sử dụng Historical Mean Returns cho danh mục cơ sở.
+    # Trong giai đoạn tiếp theo (Black-Litterman), chúng ta sẽ thay thế mảng expected_returns này 
+    # bằng Implied Returns từ CAPM (Risk Free Rate + Beta * Market Premium)
+    # sau đó kết hợp với Views của nhà đầu tư.
+    expected_returns = mean_returns 
+    
+    # [Tác Vụ 2.2] Covariance Shrinkage với Ledoit-Wolf
+    cov_matrix_daily = LedoitWolf().fit(returns_df).covariance_
+    cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * 252
     
     # Sinh trọng số ngẫu nhiên
     for i in range(num_portfolios):
         weights = np.random.random(num_assets)
         weights /= np.sum(weights)
         
-        port_return = np.sum(mean_returns * weights)
+        port_return = np.sum(expected_returns * weights)
         port_variance = np.dot(weights.T, np.dot(cov_matrix, weights))
         port_volatility = np.sqrt(port_variance)
         
@@ -27,11 +39,27 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
         points[i, :] = [port_return, port_volatility, sharpe]
         weights_record[i, :] = weights
         
-    # Lấy danh mục có Max Sharpe
-    max_sharpe_idx = np.argmax(points[:, 2])
-    ms_return = points[max_sharpe_idx, 0]
-    ms_volatil = points[max_sharpe_idx, 1]
-    ms_weights = weights_record[max_sharpe_idx, :]
+    # [Tác Vụ 2.1] Sử dụng scipy.optimize.minimize để tìm Max Sharpe với Ràng buộc (Bounds)
+    def negative_sharpe(weights):
+        port_return = np.sum(expected_returns * weights)
+        port_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+        sharpe_ratio = (port_return - 0.03) / port_volatility
+        return -sharpe_ratio
+
+    # Ràng buộc: Tổng tỉ trọng = 1
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    
+    # Ràng buộc: Tối thiểu 5%, Tối đa 40% cho mỗi mã cổ phiếu
+    bounds = tuple((0.05, 0.40) for _ in range(num_assets))
+    
+    # Khởi tạo điểm bắt đầu (equal weights)
+    init_guess = np.array(num_assets * [1. / num_assets])
+    
+    optimized_result = minimize(negative_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+    ms_weights = optimized_result.x
+    ms_return = np.sum(expected_returns * ms_weights)
+    ms_volatil = np.sqrt(np.dot(ms_weights.T, np.dot(cov_matrix, ms_weights)))
+    ms_sharpe = (ms_return - 0.03) / ms_volatil
     
     # -- TÍNH KHOẢNG XÁC SUẤT 95% (CONFIDENCE INTERVAL) --
     # Khảo sát Return theo danh mục Max Sharpe với phân phối chuẩn
@@ -58,7 +86,7 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
         'max_sharpe': {
             'expected_return': ms_return,
             'volatility': ms_volatil,
-            'sharpe': points[max_sharpe_idx, 2],
+            'sharpe': ms_sharpe,
             'weights': dict(zip(returns_df.columns, ms_weights)),
             'ci_95_lower': lower_bound_return,
             'ci_95_upper': upper_bound_return,
@@ -129,7 +157,9 @@ def evaluate_custom_portfolio(returns_df: pd.DataFrame, weights_dict: dict, init
     
     # Tính lợi nhuận và Biến động theo NGÀY
     daily_mean_returns = port_ret_selected.mean()
-    daily_cov_matrix = port_ret_selected.cov()
+    # Sử dụng LedoitWolf Shrinkage cho Evaluator (Tác vụ 2.2)
+    daily_cov_matrix_np = LedoitWolf().fit(port_ret_selected).covariance_
+    daily_cov_matrix = pd.DataFrame(daily_cov_matrix_np, index=port_ret_selected.columns, columns=port_ret_selected.columns)
     
     port_daily_return = np.sum(daily_mean_returns * weights)
     port_daily_variance = np.dot(weights.T, np.dot(daily_cov_matrix, weights))
