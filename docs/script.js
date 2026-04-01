@@ -388,7 +388,7 @@ const projectsData = {
         iframeKey: "iframe_title_quantlab"
     },
     vn30: {
-        url: "https://dntworkspace-jpwpoc5xgunmexshdfwgqg.streamlit.app/?embed=true",
+        url: "https://dntworkspace-dryffmvylswb5tx5nrtzex.streamlit.app/?embed=true",
         titleKey: "featured_title_vn30",
         subKey: "featured_sub_vn30",
         iframeKey: "iframe_title_vn30"
