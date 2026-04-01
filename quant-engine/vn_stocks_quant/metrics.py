@@ -11,20 +11,14 @@ def compute_returns(prices: pd.Series) -> pd.Series:
     return prices.pct_change().dropna()
 
 def compute_cumulative_returns(returns: pd.Series) -> pd.Series:
-    """Calculate the growth of an initial 1 VND investment."""
+    """Calculate the growth of an initial investment."""
     return (1 + returns).cumprod() - 1
 
 def compute_beta(stock_returns: pd.Series, market_returns: pd.Series) -> float:
-    """
-    Calculate Beta: Measures systematic risk relative to VNINDEX.
-    Beta > 1: Aggressive (More volatile)
-    Beta < 1: Defensive (Less volatile)
-    """
+    """Calculate Beta: Measures systematic risk relative to VNINDEX."""
     cov_matrix = np.cov(stock_returns, market_returns)
     covariance = cov_matrix[0, 1]
     market_variance = cov_matrix[1, 1]
-    
-    # Avoid division by zero for extremely stable markets
     return covariance / market_variance if market_variance != 0 else 0.0
 
 def compute_volatility(returns: pd.Series) -> float:
@@ -32,20 +26,15 @@ def compute_volatility(returns: pd.Series) -> float:
     return returns.std() * np.sqrt(TRADING_DAYS)
 
 def compute_sharpe_ratio(returns: pd.Series) -> float:
-    """
-    Calculate the Sharpe Ratio (Risk-Adjusted Return).
-    Measures excess return per unit of total risk.
-    """
-    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
+    """Calculate the Sharpe Ratio (Risk-Adjusted Return)."""
+    # SỬA LỖI: Dùng phép nhân thay vì phép mũ cho Arithmetic Mean
+    ann_return = returns.mean() * TRADING_DAYS 
     ann_vol = compute_volatility(returns)
     
     return (ann_return - RISK_FREE_RATE) / ann_vol if ann_vol != 0 else 0.0
 
 def compute_max_drawdown(returns: pd.Series):
-    """
-    Calculate the Maximum Drawdown (MDD) and the full Drawdown Series.
-    Essential for understanding worst-case loss scenarios.
-    """
+    """Calculate the Maximum Drawdown (MDD) and the full Drawdown Series."""
     cum_returns = (1 + returns).cumprod()
     running_max = cum_returns.cummax()
     drawdown = (cum_returns - running_max) / running_max
@@ -54,46 +43,44 @@ def compute_max_drawdown(returns: pd.Series):
     return max_drawdown, drawdown
 
 def compute_alpha(stock_returns: pd.Series, market_returns: pd.Series, beta: float) -> float:
-    """
-    Calculate Jensen's Alpha using the Capital Asset Pricing Model (CAPM).
-    Alpha represents the performance 'edge' added by the manager/strategy.
-    """
-    # Calculate Geometric Annualized Returns for more accuracy
-    ann_stock_ret = (1 + stock_returns.mean()) ** TRADING_DAYS - 1
-    ann_market_ret = (1 + market_returns.mean()) ** TRADING_DAYS - 1
+    """Calculate Jensen's Alpha using the Capital Asset Pricing Model (CAPM)."""
+    # SỬA LỖI: Dùng phép nhân
+    ann_stock_ret = stock_returns.mean() * TRADING_DAYS
+    ann_market_ret = market_returns.mean() * TRADING_DAYS
     
-    # CAPM Formula: E(R) = Rf + Beta * [E(Rm) - Rf]
     expected_return = RISK_FREE_RATE + beta * (ann_market_ret - RISK_FREE_RATE)
-    
-    # Alpha = Actual Performance - Benchmark-adjusted Performance
     alpha = ann_stock_ret - expected_return
     return alpha
 
 def compute_sortino_ratio(returns: pd.Series) -> float:
-    """Calculate the Sortino Ratio (Risk-Adjusted Return focusing on downside risk)."""
-    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
-    negative_returns = returns[returns < 0]
-    downside_deviation = np.sqrt(np.mean(negative_returns**2)) * np.sqrt(TRADING_DAYS)
+    """Calculate the Sortino Ratio."""
+    ann_return = returns.mean() * TRADING_DAYS
+    
+    # SỬA LỖI DOWNSIDE DEVIATION: Đảm bảo chia cho tổng số mẫu (len(returns)), không chỉ số ngày lỗ
+    negative_returns = np.minimum(returns, 0) # Các ngày lãi biến thành 0
+    downside_variance = np.sum(negative_returns**2) / len(returns)
+    downside_deviation = np.sqrt(downside_variance) * np.sqrt(TRADING_DAYS)
     
     return (ann_return - RISK_FREE_RATE) / downside_deviation if downside_deviation != 0 else 0.0
 
 def compute_treynor_ratio(returns: pd.Series, beta: float) -> float:
-    """Calculate the Treynor Ratio (Excess return per unit of systematic risk)."""
-    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
+    """Calculate the Treynor Ratio."""
+    ann_return = returns.mean() * TRADING_DAYS
     return (ann_return - RISK_FREE_RATE) / beta if beta != 0 else 0.0
 
 def compute_r_squared(stock_returns: pd.Series, market_returns: pd.Series) -> float:
-    """Calculate R-Squared (Percentage of variance explained by the market)."""
+    """Calculate R-Squared."""
     correlation_matrix = np.corrcoef(stock_returns, market_returns)
     correlation_xy = correlation_matrix[0,1]
     return correlation_xy**2
 
 def compute_var(returns: pd.Series, conf_level: float = 95.0) -> float:
-    """Calculate Value at Risk (VaR) using Historical Simulation method."""
+    """Calculate 1-Day Value at Risk (VaR) using Historical Simulation."""
+    # Lưu ý: Hàm này tính VaR 1 ngày. Nếu Streamlit hiển thị VaR 1 năm thì cần nhân thêm căn bậc 2 của 252
     return np.percentile(returns, 100 - conf_level)
 
 def compute_calmar_ratio(returns: pd.Series, max_drawdown: float) -> float:
-    """Calculate the Calmar Ratio (Annualized Return over Maximum Drawdown)."""
-    ann_return = (1 + returns.mean()) ** TRADING_DAYS - 1
+    """Calculate the Calmar Ratio."""
+    ann_return = returns.mean() * TRADING_DAYS
     abs_mdd = abs(max_drawdown)
     return ann_return / abs_mdd if abs_mdd != 0 else 0.0
