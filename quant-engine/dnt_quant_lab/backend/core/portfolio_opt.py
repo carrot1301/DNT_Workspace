@@ -223,9 +223,9 @@ def calculate_backtest(port_returns: pd.DataFrame, market_returns: pd.Series, we
     port_ret_selected = port_returns[tickers]
     daily_port_returns = port_ret_selected.dot(weights)
     
-    # Tính Cumulative Returns
-    cum_port = (1 + daily_port_returns).cumprod() - 1
-    cum_market = (1 + market_returns).cumprod() - 1
+    # Tính Cumulative Returns (Log Returns → exp(cumsum))
+    cum_port = np.exp(daily_port_returns.cumsum()) - 1
+    cum_market = np.exp(market_returns.cumsum()) - 1
     
     # Đồng bộ index
     cum_market = cum_market.reindex(cum_port.index).ffill().fillna(0)
@@ -279,8 +279,8 @@ def calculate_advanced_metrics(daily_port_returns: pd.Series, market_returns: pd
             
     treynor = (ann_return - RISK_FREE_RATE) / beta if beta != 0 else 0.0
     
-    # 3. Maximum Drawdown & Calmar
-    cum_returns = (1 + daily_port_returns).cumprod()
+    # 3. Maximum Drawdown & Calmar (Log Returns → exp(cumsum))
+    cum_returns = np.exp(daily_port_returns.cumsum())
     max_dd, _ = compute_max_drawdown(cum_returns)
     calmar = ann_return / abs(max_dd) if abs(max_dd) > 0 else 0.0
     
