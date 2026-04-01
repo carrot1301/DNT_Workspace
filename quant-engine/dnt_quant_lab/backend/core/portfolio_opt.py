@@ -63,12 +63,14 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     
     # -- TÍNH KHOẢNG XÁC SUẤT 95% (CONFIDENCE INTERVAL) --
     # Khảo sát Return theo danh mục Max Sharpe với phân phối chuẩn
-    # 95% CI (1.96 standard deviations từ mean)
+    # [BẢN SỬA LỖI] Sử dụng Arithmetic Standard Deviation cho CI
     lower_bound_return = ms_return - (1.96 * ms_volatil)
     upper_bound_return = ms_return + (1.96 * ms_volatil)
     
-    # 5% sụt giảm tồi tệ nhất (Value at Risk - VaR 95%)
-    # = Mức return tệ nhất ở ngưỡng 95% tự tin
+    # 5% sụt giảm tồi tệ nhất (Value at Risk - VaR 95%) 
+    # [BẢN SỬA LỖI] VaR nên được tính là mức sụt giảm tệ nhất theo độ lệch chuẩn
+    # (Nếu Expected Return dương lớn, VaR có thể vẫn dương, nhưng chúng ta 
+    # muốn thể hiện phần rủi ro thực sự mất mát)
     var_95_percent = ms_return - (1.645 * ms_volatil)
     
     # Tính ra số tiền thực tế
@@ -76,11 +78,11 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     upper_bound_val = initial_capital * (1 + upper_bound_return)
     expected_val = initial_capital * (1 + ms_return)
     
-    # Tính VaR: Phần tổn thất so với VỐN GỐC (luôn âm hoặc bằng 0)
-    # var_95_worst_value = giá trị danh mục ở kịch bản xấu nhất 5%
+    # [BẢN SỬA LỖI] VaR: Thể hiện số tiền rủi ro có thể mất (Relative Loss)
+    # Chúng ta lấy mức tổn thất so với giá trị kỳ vọng HOẶC vốn gốc. 
+    # Ở Việt Nam thường so với Vốn gốc. Nếu tệ nhất vẫn lời thì VaR VND = 0 (Rủi ro mất tiền là 0)
     var_95_worst_value = initial_capital * (1 + var_95_percent)
-    # var_value_loss = mức lỗ/lãi so với ban đầu (< 0 là mất tiền, > 0 là vẫn lời dù ít)
-    var_95_value = var_95_worst_value - initial_capital
+    var_95_value = min(0, var_95_worst_value - initial_capital)
     
     return {
         'max_sharpe': {
@@ -178,9 +180,10 @@ def evaluate_custom_portfolio(returns_df: pd.DataFrame, weights_dict: dict, init
     expected_val = initial_capital * (1 + period_return)
     lower_bound_val = initial_capital * (1 + lower_bound_return)
     upper_bound_val = initial_capital * (1 + upper_bound_return)
-    # Tính VaR: Phần tổn thất so với VỐN GỐC (luôn âm hoặc bằng 0)
+    # [BẢN SỬA LỖI] VaR: Thể hiện số tiền rủi ro có thể mất (Relative Loss)
+    # Lấy phân vị thứ 5 của phân phối. Nếu kết quả dương (vẫn có lời ở 5%), VaR = 0 (Không mất vốn).
     var_95_worst_value = initial_capital * (1 + var_95_percent)
-    var_95_value = var_95_worst_value - initial_capital
+    var_95_value = min(0, var_95_worst_value - initial_capital)
     
     return {
         'timeframe_days': trading_days,
@@ -253,7 +256,9 @@ def calculate_advanced_metrics(daily_port_returns: pd.Series, market_returns: pd
     if len(daily_port_returns) == 0:
         return {}
         
-    ann_return = (1 + daily_port_returns.mean()) ** TRADING_DAYS - 1
+    # [BẢN SỬA LỖI] Arithmetic Annualization là chuẩn cho MPT
+    # Đã chuyển sang Log Returns trong Data Engine nên sum(mean) * 252 là chuẩn
+    ann_return = daily_port_returns.mean() * TRADING_DAYS
     ann_vol = daily_port_returns.std() * np.sqrt(TRADING_DAYS)
     
     # 1. Sortino Ratio

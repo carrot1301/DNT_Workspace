@@ -89,13 +89,22 @@ def prepare_portfolio_data(tickers: list, days_back: int = 1000):
     vnindex_df = fetch_index_data('VN30', days_back)
     market_returns = pd.Series(dtype=float)
     if not vnindex_df.empty and 'close' in vnindex_df.columns:
-        market_returns = vnindex_df['close'].pct_change().dropna()
+        # [BẢN SỬA LỖI] Đồng nhất với Log Returns
+        import numpy as np
+        market_returns = np.log(vnindex_df['close'] / vnindex_df['close'].shift(1)).dropna()
         
     if not price_data:
         return pd.DataFrame(), pd.Series(dtype=float)
 
     portfolio_prices = pd.DataFrame(price_data)
-    portfolio_returns = portfolio_prices.pct_change().dropna()
+    # [BẢN SỬA LỖI] Chuyển đổi sang Log Returns để ổn định ma trận hiệp phương sai
+    import numpy as np
+    portfolio_returns = np.log(portfolio_prices / portfolio_prices.shift(1))
+    
+    # [BẢN SỬA LỖI] Lọc nhiễu: Loại bỏ các biến động > 15% (Biên độ tối đa UPCOM là 15%)
+    # Dữ liệu Entrade hay bị spike do chia tách hoặc lỗi API
+    portfolio_returns = portfolio_returns[(portfolio_returns < 0.15) & (portfolio_returns > -0.15)]
+    portfolio_returns = portfolio_returns.dropna()
     
     # Align dates between portfolio and market
     if market_returns.empty:
