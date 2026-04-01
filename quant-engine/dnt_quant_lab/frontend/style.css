@@ -329,3 +329,33 @@ body {
     50%       { opacity: 0; }
 }
 
+
+/* Welcome screen inside chart container */
+.welcome-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+.welcome-icon {
+    font-size: 3rem;
+    color: var(--neon-green);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    animation: gem-pulse 3s infinite;
+}
+.welcome-container h4 {
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+}
+.welcome-container p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    max-width: 400px;
+}

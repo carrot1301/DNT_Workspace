@@ -36,15 +36,15 @@
                     <h3 data-i18n="params_title">Investment Parameters</h3>
                 <div class="input-group">
                     <label data-i18n="label_tickers">Mã Cổ phiếu (Cách nhau bởi dấu phẩy)</label>
-                    <input type="text" id="tickers-input" placeholder="e.g. FPT, MWG, VCB" class="glass-input" data-i18n-ph="ph_tickers" value="FPT, MWG, VCB">
+                    <input type="text" id="tickers-input" placeholder="e.g. FPT, MWG, VCB" class="glass-input" data-i18n-ph="ph_tickers">
                 </div>
                 <div class="input-group">
                     <label data-i18n="label_capital">Initial Capital (VND)</label>
-                    <input type="number" id="capital-input" placeholder="e.g. 1,000,000,000" class="glass-input" data-i18n-ph="ph_capital" value="1000000000">
+                    <input type="text" id="capital-input" placeholder="e.g. 1.000.000.000" class="glass-input" data-i18n-ph="ph_capital">
                 </div>
                 <div class="input-group">
                     <label data-i18n="label_return">Target Return (%)</label>
-                    <input type="number" id="target-return" placeholder="20%" class="glass-input" value="20">
+                    <input type="number" id="target-return" placeholder="20%" class="glass-input">
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 1rem;">
                     <button class="action-btn" id="run-btn" data-i18n="btn_run" style="flex: 1; margin-top: 0;">Run Simulation</button>
@@ -105,6 +105,12 @@
                     <h3 data-i18n="chart_title">Efficient Frontier (Demo)</h3>
                     <p class="caption" data-i18n="chart_desc">High-performance charts rendered natively via Python API.</p>
                     <div id="chart-container" style="width: 100%; height: 350px;">
+                        <!-- Initial Welcome State -->
+                        <div id="welcome-message" class="welcome-container">
+                            <div class="welcome-icon">✦</div>
+                            <h4 data-i18n="welcome_title">Welcome to DNT Quant Lab</h4>
+                            <p data-i18n="welcome_desc">Enter your investment parameters and run the simulation to generate an AI-optimized portfolio.</p>
+                        </div>
                         <!-- Plotly chart will be injected here -->
                     </div>
                 </div>

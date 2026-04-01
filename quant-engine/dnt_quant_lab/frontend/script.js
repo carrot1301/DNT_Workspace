@@ -48,7 +48,9 @@ const I18N = {
         'raw_price_title': 'Closing Prices Table',
         'adv_metrics_title': 'Advanced Quant Metrics',
         'live_capital_label': 'Estimated Total Capital',
-        'last_updated': 'Last updated: '
+        'last_updated': 'Last updated: ',
+        'welcome_title': 'Welcome to DNT Quant Lab',
+        'welcome_desc': 'Enter your investment parameters and run the simulation to generate an AI-optimized portfolio.'
     },
     'vi': {
         'subtitle': 'Trợ lý Đầu tư AI',
@@ -99,7 +101,9 @@ const I18N = {
         'raw_price_title': 'Bảng Giá Đóng cửa',
         'adv_metrics_title': 'Chỉ số Quant Nâng cao',
         'live_capital_label': 'Tổng Vốn Ước Tính',
-        'last_updated': 'Cập nhật lần cuối: '
+        'last_updated': 'Cập nhật lần cuối: ',
+        'welcome_title': 'Chào mừng đến với DNT Quant Lab',
+        'welcome_desc': 'Nhập các thông số đầu tư và chạy mô phỏng để tạo danh mục được tối ưu hóa bởi AI.'
     }
 };
 
@@ -213,6 +217,19 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Lỗi cập nhật giá realtime:", e);
         }
     }
+
+    // --- Currency Formatting for Capital Input ---
+    const capitalInput = document.getElementById("capital-input");
+    if (capitalInput) {
+        capitalInput.addEventListener("input", (e) => {
+            let value = e.target.value.replace(/[^0-9]/g, "");
+            if (value) {
+                e.target.value = parseInt(value).toLocaleString("vi-VN");
+            } else {
+                e.target.value = "";
+            }
+        });
+    }
     
     // Call initial listener
     attachInputListeners();
@@ -238,6 +255,10 @@ document.addEventListener("DOMContentLoaded", () => {
         
         latestSimulationData = data;
         
+        // Hide welcome message on first result
+        const welcome = document.getElementById("welcome-message");
+        if (welcome) welcome.style.display = "none";
+
         if (data.chart) {
             Plotly.react('chart-container', data.chart.data, data.chart.layout, { responsive: true, displayModeBar: false });
             document.getElementById('main-chart-card').style.display = 'block';
@@ -401,7 +422,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Execution Mode: Optimizer
     runBtn.addEventListener("click", () => {
-        const capInput = parseFloat(document.getElementById("capital-input").value);
+        const rawCap = document.getElementById("capital-input").value.replace(/\./g, "");
+        const capInput = parseFloat(rawCap);
         const retInput = parseFloat(document.getElementById("target-return").value) / 100;
         const tickersStr = document.getElementById("tickers-input").value;
         let tickersArray = tickersStr.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
