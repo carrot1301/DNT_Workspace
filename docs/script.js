@@ -382,7 +382,7 @@ const iframeTitle = document.getElementById('iframe-browser-title');
 
 const projectsData = {
     quantlab: {
-        url: "https://puzzled-oona-tri1301-cef6b3af.koyeb.app/",
+        url: "https://interested-kathryn-tri1301-71097f9c.koyeb.app/",
         titleKey: "featured_title_quantlab",
         subKey: "featured_sub_quantlab",
         iframeKey: "iframe_title_quantlab"

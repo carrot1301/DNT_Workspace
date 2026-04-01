@@ -69,8 +69,8 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     mdd_warning_en = ""
     mdd_warning_vi = ""
     if mdd_pct > 20:
-        mdd_warning_en = f"\n⚠️ CRITICAL RISK WARNING: The Max Drawdown is over 20% ({mdd_pct:.2f}%). As a strict Quantitative Risk Director, you MUST explicitly evaluate this Max Drawdown directly vs the Expected Return. Warn the user about the psychological risk of holding this portfolio. Analyze the trade-off: Is the expected return worth the risk of devastating losses from the peak?"
-        mdd_warning_vi = f"\n⚠️ CẢNH BÁO RỦI RO TỚI HẠN: Trong vai trò là một Giám đốc Quản trị Rủi ro Định lượng khắt khe, bạn BẮT BUỘC phải đánh giá trực tiếp chỉ số 'Max Drawdown' (Mức sụt giảm tối đa hiện tại là {mdd_pct:.2f}%, > 20%). Hãy so sánh trực tiếp Max Drawdown này với Kỳ vọng lợi nhuận. Phải cảnh báo người dùng về rủi ro tâm lý khi nắm giữ. Phân tích bài toán Đánh đổi: Liệu lợi nhuận kỳ vọng có xứng đáng với nguy cơ chia tài khoản từ đỉnh hay không?"
+        mdd_warning_en = f"\n⚠️ CRITICAL RISK WARNING: As a strict Quantitative Risk Director, you MUST explicitly evaluate the 'Max Drawdown' which is currently {mdd_pct:.2f}% (> 20%). Compare this directly with the Expected Return ({expected_return_pct:.2f}%). Warn the user about the psychological risk of holding this portfolio. Analyze the trade-off: Is the expected return worth the risk of devastating losses from the peak? Be firm and professional."
+        mdd_warning_vi = f"\n⚠️ CẢNH BÁO RỦI RO TỚI HẠN: Trong vai trò là một Giám đốc Quản trị Rủi ro Định lượng khắt khe, bạn BẮT BUỘC phải đánh giá trực tiếp chỉ số 'Max Drawdown' (Mức sụt giảm tối đa hiện tại là {mdd_pct:.2f}%, > 20%). Hãy so sánh trực tiếp Max Drawdown này với Kỳ vọng lợi nhuận ({expected_return_pct:.2f}%). Phải cảnh báo người dùng về rủi ro tâm lý khi nắm giữ. Phân tích bài toán Đánh đổi: Liệu lợi nhuận kỳ vọng có xứng đáng với nguy cơ chia tài khoản từ đỉnh hay không? Hãy đưa ra nhận định thẳng thắn và chuyên nghiệp."
 
     # --- Format phân bổ tỉ trọng ---
     weights_section = ""
