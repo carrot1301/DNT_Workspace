@@ -8,6 +8,8 @@ import json
 import math
 import os
 import numpy as np
+import requests
+from datetime import datetime
 
 
 def sanitize_floats(obj):
@@ -138,7 +140,7 @@ def get_simulation_data(req: SimulationRequest):
     bt_fig = go.Figure()
     if bt_data['dates']:
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO (OOS)', line=dict(color='#00FFAA', width=2)))
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['equal_weight_returns'], mode='lines', name='Equal Weight', line=dict(color='#F59E0B', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['equal_weight_cum_returns'], mode='lines', name='Equal Weight', line=dict(color='#F59E0B', width=2)))
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
         bt_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#94A3B8'))
     
@@ -159,7 +161,7 @@ def get_simulation_data(req: SimulationRequest):
 
     res = {
         "monte_carlo": mc_results,
-        "stress_test": st_results,
+        "stress_test": stress_test_results,
         "advanced_metrics": adv_metrics,
         "raw_prices": cur_prices,
         "fundamentals": fundamentals_data,
