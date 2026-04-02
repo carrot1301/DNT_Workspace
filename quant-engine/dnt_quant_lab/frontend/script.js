@@ -50,7 +50,28 @@ const I18N = {
         'live_capital_label': 'Estimated Total Capital',
         'last_updated': 'Last updated: ',
         'welcome_title': 'Welcome to DNT Quant Lab',
-        'welcome_desc': 'Enter your investment parameters and run the simulation to generate an AI-optimized portfolio.'
+        'welcome_desc': 'Enter your investment parameters and run the simulation to generate an AI-optimized portfolio.',
+        'nav_fin': 'Financial Reports 📄',
+        'fin_title': 'Search Financials',
+        'fin_ticker_label': 'Ticker Symbol',
+        'fin_ticker_ph': 'e.g. FPT',
+        'btn_fetch_fin': 'Fetch Data',
+        'fin_card_title': 'Financial Report: ',
+        'fin_desc': 'Fundamental data from TCBS. Unlock for valuation & performance metrics.',
+        'fin_ind': 'Industry',
+        'fin_mc': 'Market Cap (Billion VND)',
+        'fin_pepb': 'P/E | P/B',
+        'fin_roeroa': 'ROE | ROA Margin',
+        'fin_debt': 'Debt / Equity',
+        'fin_profit': 'Profit Growth',
+        'btn_unlock': 'Unlock',
+        'payment_title': 'Unlock Deep Financials',
+        'payment_desc1': 'Pay 5,000 VND via SePay',
+        'payment_desc2': 'The system will automatically scan your balance and unlock the report instantly.',
+        'btn_close_qr': 'Cancel / Close',
+        'polling_text': 'Waiting for payment (Polling)',
+        'btn_export_pdf': '⬇️ Download PDF',
+        'pdf_title': 'VIP INVESTMENT ADVISORY REPORT'
     },
     'vi': {
         'subtitle': 'Trợ lý Đầu tư AI',
@@ -103,7 +124,28 @@ const I18N = {
         'live_capital_label': 'Tổng Vốn Ước Tính',
         'last_updated': 'Cập nhật lần cuối: ',
         'welcome_title': 'Chào mừng đến với DNT Quant Lab',
-        'welcome_desc': 'Nhập các thông số đầu tư và chạy mô phỏng để tạo danh mục được tối ưu hóa bởi AI.'
+        'welcome_desc': 'Nhập các thông số đầu tư và chạy mô phỏng để tạo danh mục được tối ưu hóa bởi AI.',
+        'nav_fin': 'Báo cáo Tài chính 📄',
+        'fin_title': 'Tra Cứu BCTC',
+        'fin_ticker_label': 'Mã Cổ phiếu',
+        'fin_ticker_ph': 'VD: FPT',
+        'btn_fetch_fin': 'Lấy Dữ Liệu',
+        'fin_card_title': 'Báo Cáo Tài Chính: ',
+        'fin_desc': 'Dữ liệu cơ bản từ TCBS. Mở khóa để xem các chỉ số định giá & hiệu quả HĐKD.',
+        'fin_ind': 'Ngành nghề',
+        'fin_mc': 'Vốn hóa (Tỷ VND)',
+        'fin_pepb': 'P/E | P/B',
+        'fin_roeroa': 'Biên ROE | ROA',
+        'fin_debt': 'Nợ / Vốn CSH',
+        'fin_profit': 'Tăng trưởng LN',
+        'btn_unlock': 'Mở khóa',
+        'payment_title': 'Mở Khóa BCTC Chuyên Sâu',
+        'payment_desc1': 'Thanh toán 5.000 VNĐ qua SePay',
+        'payment_desc2': 'Hệ thống sẽ tự động quét biến động số dư và mở khóa BCTC ngay lập tức.',
+        'btn_close_qr': 'Hủy / Đóng',
+        'polling_text': 'Đang chờ nhận thanh toán (Polling)',
+        'btn_export_pdf': '⬇️ Tải PDF',
+        'pdf_title': 'BÁO CÁO TƯ VẤN ĐẦU TƯ VIP'
     }
 };
 
@@ -141,20 +183,25 @@ document.addEventListener("DOMContentLoaded", () => {
         modeEval.style.display = 'none';
         if(modeFin) modeFin.style.display = 'none';
         navItems.forEach(el => el.classList.remove('active'));
+        document.getElementById("view-quant").style.display = 'none';
+        document.getElementById("view-financial").style.display = 'none';
     }
 
     navItems[0].addEventListener("click", () => {
         hideAllModes(); navItems[0].classList.add('active');
         modeOpts.style.display = 'block'; currentMode = 'optimizer';
+        document.getElementById("view-quant").style.display = 'block';
     });
     navItems[1].addEventListener("click", () => {
         hideAllModes(); navItems[1].classList.add('active');
         modeEval.style.display = 'block'; currentMode = 'evaluator';
+        document.getElementById("view-quant").style.display = 'block';
     });
     if(navItems[2]) {
         navItems[2].addEventListener("click", () => {
             hideAllModes(); navItems[2].classList.add('active');
             modeFin.style.display = 'block'; currentMode = 'financial';
+            document.getElementById("view-financial").style.display = 'block';
         });
     }
 
@@ -441,21 +488,45 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Tùy chỉnh Options cho HTML2PDF
             const opt = {
-              margin:       10,
+              margin:       [15, 15, 15, 15],
               filename:     `DNT_Quant_VIP_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-              image:        { type: 'jpeg', quality: 0.98 },
-              html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' }, // Khớp với theme tối
+              image:        { type: 'jpeg', quality: 1 },
+              html2canvas:  { 
+                  scale: 2, 
+                  useCORS: true, 
+                  backgroundColor: '#0f172a',
+                  windowWidth: 1024 // Đảm bảo html2canvas lấy được width hợp lý để ko bị bóp méo
+              }, 
               jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
+
+            // Ép màu chữ trắng và background ciem để HTML2Canvas ko tự convert thành màu trắng xoá
+            const originalColor = element.style.color;
+            const originalBg = element.style.backgroundColor;
+            const originalPadding = element.style.padding;
+            
+            element.style.color = '#cbd5e1';
+            element.style.backgroundColor = '#0f172a';
+            element.style.padding = '20px';
 
             // Trạng thái nút tải
             btnExportPdf.textContent = 'Đang render...';
             btnExportPdf.disabled = true;
 
             html2pdf().set(opt).from(element).save().then(() => {
+                // Phục hồi lại state cũ
                 title.style.display = 'none';
+                element.style.color = originalColor;
+                element.style.backgroundColor = originalBg;
+                element.style.padding = originalPadding;
+                
                 btnExportPdf.textContent = '⬇️ Tải PDF';
                 btnExportPdf.disabled = false;
+            }).catch(err => {
+                console.error("Lỗi xuất PDF: ", err);
+                btnExportPdf.textContent = 'Lỗi Render! Thử lại';
+                btnExportPdf.disabled = false;
+                title.style.display = 'none';
             });
         });
     }

@@ -92,10 +92,10 @@
                 <div id="mode-financial" style="display: none;">
                     <h3 data-i18n="fin_title">Tra Cứu BCTC</h3>
                     <div class="input-group">
-                        <label>Mã Cổ phiếu</label>
-                        <input type="text" id="fin-ticker-input" placeholder="VD: FPT" class="glass-input">
+                        <label data-i18n="fin_ticker_label">Mã Cổ phiếu</label>
+                        <input type="text" id="fin-ticker-input" placeholder="VD: FPT" class="glass-input" data-i18n-ph="fin_ticker_ph">
                     </div>
-                    <button class="action-btn" id="fin-view-btn" style="width: 100%;">Fetch Data</button>
+                    <button class="action-btn" id="fin-view-btn" data-i18n="btn_fetch_fin" style="width: 100%;">Fetch Data</button>
                 </div>
             </div>
             
@@ -112,7 +112,8 @@
                 </div>
             </header>
             
-            <div class="bento-grid">
+            <div id="view-quant">
+                <div class="bento-grid">
                 <!-- Data Card -->
                 <div class="card glass-panel span-2" id="main-chart-card">
                     <h3 data-i18n="chart_title">Efficient Frontier (Demo)</h3>
@@ -208,11 +209,54 @@
                     </div>
                 </div>
 
-                <!-- Financial Report Card -->
-                <div class="card glass-panel" id="fin-report-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
-                    <h3 id="fin-card-title">Báo Cáo Tài Chính: <span id="fin-ticker" class="neon-text">--</span></h3>
-                    <p class="caption">Dữ liệu cơ bản từ TCBS. Mở khóa để xem các chỉ số định giá & hiệu quả HĐKD.</p>
-                    <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <!-- AI Advice Panel — full width, auto-triggered after simulation -->
+                <div class="card glass-panel span-2 ai-advice-card" id="ai-advice-card" style="display: none; position: relative;">
+                    <div class="ai-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 class="ai-panel-title">
+                                <span class="ai-gem-icon">✦</span>
+                                <span data-i18n="ai_title">Gemini AI — Cố Vấn Tích Hợp (Quant + BCTC)</span>
+                            </h3>
+                            <p class="caption" data-i18n="ai_subtitle">Phân tích chuyên sâu dựa trên kịch bản Quant & Báo cáo Sức khỏe Tài chính</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="btn-export-pdf" class="action-btn" data-i18n="btn_export_pdf" style="background:var(--neon-green); padding: 5px 15px; font-size: 0.85rem; display: none;">⬇️ Tải PDF</button>
+                            <div class="ai-badge" id="ai-badge">
+                                <span class="ai-badge-dot"></span>
+                                <span id="ai-badge-text" data-i18n="ai_analyzing">Đang phân tích...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ai-divider"></div>
+                    
+                    <!-- Khối nội dung sẽ được in PDF -->
+                    <div id="pdf-content-wrapper" style="border-radius: 8px;">
+                        <h2 style="display: none; text-align: center; color: #00FFAA; margin-bottom: 20px;" id="pdf-report-title" data-i18n="pdf_title">BÁO CÁO TƯ VẤN ĐẦU TƯ VIP</h2>
+                        <div class="ai-body">
+                            <!-- Loading skeleton -->
+                            <div class="ai-loading" id="ai-loading">
+                                <div class="ai-loading-dots">
+                                    <span></span><span></span><span></span>
+                                </div>
+                                <span data-i18n="ai_thinking">Gemini đang phân tích lượng hóa và BCTC...</span>
+                            </div>
+                            <!-- Actual AI text output -->
+                            <div class="ai-text" id="ai-text" style="font-size: 0.95rem; line-height: 1.6;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                </div><!-- /.bento-grid -->
+            </div><!-- /#view-quant -->
+
+            <!-- View cho Financial (BCTC) -->
+            <div id="view-financial" style="display: none;">
+                <div class="bento-grid">
+                    <!-- Financial Report Card -->
+                    <div class="card glass-panel" id="fin-report-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                        <h3 id="fin-card-title"><span data-i18n="fin_card_title">Báo Cáo Tài Chính: </span><span id="fin-ticker" class="neon-text">--</span></h3>
+                        <p class="caption" data-i18n="fin_desc">Dữ liệu cơ bản từ TCBS. Mở khóa để xem các chỉ số định giá & hiệu quả HĐKD.</p>
+                        <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
                         
                         <div class="metric-box" style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px;">
                             <span class="caption" style="font-size: 0.75rem;">Ngành nghề</span><br>
@@ -231,65 +275,29 @@
                             <span class="caption" style="font-size: 0.75rem;">Biên ROE | ROA</span><br>
                             <strong id="fin-roe" style="color: #F59E0B;">--</strong>
                             <div class="pay-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border-radius: 8px;">
-                                <button class="unlock-btn" style="background: #F59E0B; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.8rem;">Unlock</button>
+                                <button class="unlock-btn" data-i18n="btn_unlock" style="background: #F59E0B; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.8rem;">Unlock</button>
                             </div>
                         </div>
                         <div class="metric-box blur-box" style="background: rgba(255,100,100,0.05); padding: 10px; border-radius: 8px; position: relative;">
                             <span class="caption" style="font-size: 0.75rem;">Nợ / Vốn CSH</span><br>
                             <strong id="fin-debt" style="color: #8B5CF6;">--</strong>
                             <div class="pay-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border-radius: 8px;">
-                                <button class="unlock-btn" style="background: #F59E0B; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.8rem;">Unlock</button>
+                                <button class="unlock-btn" data-i18n="btn_unlock" style="background: #F59E0B; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.8rem;">Unlock</button>
                             </div>
                         </div>
                         <div class="metric-box blur-box" style="background: rgba(255,100,100,0.05); padding: 10px; border-radius: 8px; position: relative;">
                             <span class="caption" style="font-size: 0.75rem;">Tăng trưởng LN</span><br>
                             <strong id="fin-profit" style="color: #00ffaa;">--</strong>
                             <div class="pay-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border-radius: 8px;">
-                                <button class="unlock-btn" style="background: #F59E0B; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.8rem;">Unlock</button>
+                                <button class="unlock-btn" data-i18n="btn_unlock" style="background: #F59E0B; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; color: black; font-size: 0.8rem;">Unlock</button>
                             </div>
                         </div>
 
                     </div>
                 </div>
+            </div><!-- /#view-financial -->
+            
 
-                <!-- AI Advice Panel — full width, auto-triggered after simulation -->
-                <div class="card glass-panel span-2 ai-advice-card" id="ai-advice-card" style="display: none; position: relative;">
-                    <div class="ai-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 class="ai-panel-title">
-                                <span class="ai-gem-icon">✦</span>
-                                <span data-i18n="ai_title">Gemini AI — Cố Vấn Tích Hợp (Quant + BCTC)</span>
-                            </h3>
-                            <p class="caption" data-i18n="ai_subtitle">Phân tích chuyên sâu dựa trên kịch bản Quant & Báo cáo Sức khỏe Tài chính</p>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <button id="btn-export-pdf" class="action-btn" style="background:var(--neon-green); padding: 5px 15px; font-size: 0.85rem; display: none;">⬇️ Tải PDF</button>
-                            <div class="ai-badge" id="ai-badge">
-                                <span class="ai-badge-dot"></span>
-                                <span id="ai-badge-text" data-i18n="ai_analyzing">Đang phân tích...</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="ai-divider"></div>
-                    
-                    <!-- Khối nội dung sẽ được in PDF -->
-                    <div id="pdf-content-wrapper" style="border-radius: 8px;">
-                        <h2 style="display: none; text-align: center; color: #00FFAA; margin-bottom: 20px;" id="pdf-report-title">BÁO CÁO TƯ VẤN ĐẦU TƯ VIP</h2>
-                        <div class="ai-body">
-                            <!-- Loading skeleton -->
-                            <div class="ai-loading" id="ai-loading">
-                                <div class="ai-loading-dots">
-                                    <span></span><span></span><span></span>
-                                </div>
-                                <span data-i18n="ai_thinking">Gemini đang phân tích lượng hóa và BCTC...</span>
-                            </div>
-                            <!-- Actual AI text output -->
-                            <div class="ai-text" id="ai-text" style="font-size: 0.95rem; line-height: 1.6;"></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div><!-- /.bento-grid -->
 
             <!-- AI Disclaimer -->
             <div class="disclaimer-note glass-panel" style="margin-top: 1rem; padding: 15px; border-radius: 8px; font-size: 0.8rem; color: var(--text-muted); text-align: justify; border-left: 3px solid var(--neon-alert);">
@@ -301,15 +309,15 @@
     <!-- QR Payment Modal (Paywall SePay) -->
     <div id="qr-modal" style="display: none; position: fixed; z-index: 9999; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
         <div class="glass-panel" style="background: #111827; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; border: 1px solid rgba(255,255,255,0.1);">
-            <h3 style="margin-top: 0; color: #F59E0B;">Mở Khóa BCTC Chuyên Sâu</h3>
-            <p class="caption" style="margin-bottom: 5px;">Thanh toán 5.000 VNĐ qua SePay</p>
-            <p style="font-size: 0.75rem; color: #9CA3AF; margin-top: 0;">Hệ thống sẽ tự động quét biến động số dư và mở khóa BCTC ngay lập tức.</p>
+            <h3 style="margin-top: 0; color: #F59E0B;" data-i18n="payment_title">Mở Khóa BCTC Chuyên Sâu</h3>
+            <p class="caption" style="margin-bottom: 5px;" data-i18n="payment_desc1">Thanh toán 5.000 VNĐ qua SePay</p>
+            <p style="font-size: 0.75rem; color: #9CA3AF; margin-top: 0;" data-i18n="payment_desc2">Hệ thống sẽ tự động quét biến động số dư và mở khóa BCTC ngay lập tức.</p>
             
             <img id="vietqr-img" src="" alt="VietQR" style="width: 250px; height: 250px; border-radius: 8px; margin: 15px 0; border: 2px solid #F59E0B;">
             
-            <p style="font-size: 0.85rem; color: var(--neon);"><span class="loading-dots">Đang chờ nhận thanh toán (Polling)</span></p>
+            <p style="font-size: 0.85rem; color: var(--neon);"><span class="loading-dots" data-i18n="polling_text">Đang chờ nhận thanh toán (Polling)</span></p>
             
-            <button id="close-qr-btn" style="width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--text-muted); color: white; border-radius: 6px; cursor: pointer;">Hủy / Đóng</button>
+            <button id="close-qr-btn" data-i18n="btn_close_qr" style="width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--text-muted); color: white; border-radius: 6px; cursor: pointer;">Hủy / Đóng</button>
         </div>
     </div>
 
