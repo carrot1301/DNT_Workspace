@@ -31,6 +31,10 @@ from core.backtester import walk_forward_backtest
 
 app = FastAPI(title="DNT Quant Lab API")
 
+# Database (RAM) để lưu trạng thái thanh toán
+# Format: {"SESSION_ID": True}
+payments_db = {}
+
 # Setup CORS for frontend to communicate without policy errors
 app.add_middleware(
     CORSMiddleware,
@@ -281,6 +285,91 @@ def get_current_prices(tickers: str):
         return {}
     prices = fetch_current_prices(ticker_list)
     return sanitize_floats(prices)
+
+
+# ── SePay & Báo Cáo Tài Chính (TCBS Integration) ──────────────────
+from fastapi import Request
+import requests
+
+@app.post("/hooks/sepay-payment")
+async def sepay_webhook(req: Request):
+    """
+    Webhook nhận thông báo khi có giao dịch mới (SePay -> VPBank).
+    - Lấy nội dung chuyển khoản (Ví dụ: DNTLAB 123456)
+    - So khớp với hóa đơn ảo tạm thời trên hệ thống
+    """
+    try:
+        data = await req.json()
+        content = str(data.get("content", "")).upper()
+        amount = int(data.get("transferAmount", 0))
+        
+        # Nếu nhận >= 5000đ và có chữ DNTLAB trong nội dung CK
+        if amount >= 5000 and "DNTLAB" in content:
+            parts = content.split("DNTLAB")
+            if len(parts) > 1:
+                session_id = parts[1].strip().split()[0]
+                payments_db[session_id] = True
+                
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/payment-status")
+def get_payment_status(session_id: str):
+    """Client polling API này để xem trạng thái hóa đơn"""
+    is_paid = payments_db.get(session_id, False)
+    return {"paid": is_paid}
+
+
+@app.get("/api/financials/{ticker}")
+def get_financial_reports(ticker: str, session_id: str = None):
+    """
+    Kéo API miễn phí từ TCBS v1/ticker/overview
+    Có cơ chế Paywall ẩn dữ liệu nâng cao nếu khách chưa chuyển khoản.
+    """
+    ticker = ticker.upper()
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    
+    # Kiểm tra hóa đơn
+    is_paid = False
+    if session_id and payments_db.get(session_id, False):
+        is_paid = True
+        
+    try:
+        url = f"https://apipubaws.tcbs.com.vn/tcanalysis/v1/ticker/{ticker}/overview"
+        res = requests.get(url, headers=headers, timeout=5)
+        res.raise_for_status()
+        data = res.json()
+        
+        # Format metrics
+        financials = {
+            "ticker": ticker,
+            "industry": data.get("industry", ""),
+            "marketCap": data.get("marketcap", 0),
+            "pe": data.get("pe", 0),
+            "pb": data.get("pb", 0),
+            "roe": data.get("roe", 0) * 100 if data.get("roe") else 0,
+            "roa": data.get("roa", 0) * 100 if data.get("roa") else 0,
+            "debt_on_equity": data.get("debtOnEquity", 0),
+            "revenue_growth": data.get("revenueGrowth", 0) * 100 if data.get("revenueGrowth") else 0,
+            "profit_growth": data.get("profitGrowth", 0) * 100 if data.get("profitGrowth") else 0,
+        }
+        
+    except Exception as e:
+        return {"error": f"Lỗi lấy dữ liệu TCBS: {str(e)}"}
+        
+    # Cơ chế Blur dữ liệu (Paywall)
+    if not is_paid:
+        financials["roe"] = "locked"
+        financials["roa"] = "locked"
+        financials["debt_on_equity"] = "locked"
+        financials["revenue_growth"] = "locked"
+        financials["profit_growth"] = "locked"
+        
+    financials["is_paid"] = is_paid
+    return sanitize_floats(financials)
+
 
 # Mount toàn bộ folder frontend làm static files (đặt cuối cùng sau tất cả API routes)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")

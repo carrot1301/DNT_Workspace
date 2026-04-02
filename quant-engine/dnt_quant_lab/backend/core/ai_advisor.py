@@ -72,6 +72,13 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
         mdd_warning_en = f"\n⚠️ CRITICAL RISK WARNING: As a strict Quantitative Risk Director, you MUST explicitly evaluate the 'Max Drawdown' which is currently {mdd_pct:.2f}% (> 20%). Compare this directly with the Expected Return ({expected_return_pct:.2f}%). Warn the user about the psychological risk of holding this portfolio. Analyze the trade-off: Is the expected return worth the risk of devastating losses from the peak? Be firm and professional."
         mdd_warning_vi = f"\n⚠️ CẢNH BÁO RỦI RO TỚI HẠN: Trong vai trò là một Giám đốc Quản trị Rủi ro Định lượng khắt khe, bạn BẮT BUỘC phải đánh giá trực tiếp chỉ số 'Max Drawdown' (Mức sụt giảm tối đa hiện tại là {mdd_pct:.2f}%, > 20%). Hãy so sánh trực tiếp Max Drawdown này với Kỳ vọng lợi nhuận ({expected_return_pct:.2f}%). Phải cảnh báo người dùng về rủi ro tâm lý khi nắm giữ. Phân tích bài toán Đánh đổi: Liệu lợi nhuận kỳ vọng có xứng đáng với nguy cơ chia tài khoản từ đỉnh hay không? Hãy đưa ra nhận định thẳng thắn và chuyên nghiệp."
 
+    # Lời nhắc về Overfitting (Yêu cầu của người dùng)
+    overfit_warning_en = ""
+    overfit_warning_vi = ""
+    if any(w >= 0.30 for w in weights.values()) or 'VIC' in weights:
+        overfit_warning_en = "\n⚠️ OVERFITTING WARNING: The model heavily leverages historical volatility/Alpha (especially checking for VIC or >=30% allocations). Inform the user that this might be 'Severe Overfitting'. They should strongly research financial statements or consult experts rather than purely trusting the mathematical weights."
+        overfit_warning_vi = "\n⚠️ LƯU Ý QUAN TRỌNG: Mô hình có dấu hiệu bị 'Overfitting nặng' (quá khớp) do dồn tỉ trọng vào các mã có độ biến động/Alpha cao trong quá khứ (như VIC). Hãy khuyên người dùng tìm hiểu kỹ Báo cáo tài chính và ý kiến chuyên gia, không nên nhắm mắt tin vào tỷ trọng này."
+
     # --- Format phân bổ tỉ trọng ---
     weights_section = ""
     if weights:
@@ -109,6 +116,7 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     if lang == "en":
         prompt = f"""You are a professional Vietnamese stock market analyst and investment advisor with over 10 years of real-world trading experience on the HOSE and HNX. Your tone is professional, direct, data-driven, and you never promise guaranteed returns.
 {mdd_warning_en}
+{overfit_warning_en}
 
 Below are the full results of a Monte Carlo quantitative analysis (10,000 random scenarios) for the client's investment portfolio:
 
@@ -155,6 +163,7 @@ Based on the simulation results, provide investment advice to the user following
     else:
         prompt = f"""Bạn là một chuyên gia phân tích và tư vấn đầu tư chứng khoán Việt Nam với hơn 10 năm kinh nghiệm thực chiến tại thị trường HOSE và HNX. Phong cách của bạn: chuyên nghiệp, thẳng thắn, dùng số liệu cụ thể để lập luận, và không hứa hẹn lợi nhuận chắc chắn.
 {mdd_warning_vi}
+{overfit_warning_vi}
 
 Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carlo (10.000 kịch bản ngẫu nhiên) cho danh mục đầu tư của khách hàng:
 
