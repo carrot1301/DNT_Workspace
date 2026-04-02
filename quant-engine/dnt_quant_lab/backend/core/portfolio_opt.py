@@ -14,16 +14,14 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     
     mean_returns = returns_df.mean() * 252
     
-    # [Tác Vụ 2.4] Black-Litterman Placeholder
-    # Hiện tại sử dụng Historical Mean Returns cho danh mục cơ sở.
-    # Trong giai đoạn tiếp theo (Black-Litterman), chúng ta sẽ thay thế mảng expected_returns này 
-    # bằng Implied Returns từ CAPM (Risk Free Rate + Beta * Market Premium)
-    # sau đó kết hợp với Views của nhà đầu tư.
-    expected_returns = mean_returns 
-    
     # [Tác Vụ 2.2] Covariance Shrinkage với Ledoit-Wolf
     cov_matrix_daily = LedoitWolf().fit(returns_df).covariance_
     cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * 252
+    
+    # [Tác Vụ 2.1] Điều chỉnh lực cản biến động (Variance Drag)
+    # Expected Return = mu - (sigma^2 / 2)
+    variances = np.diag(cov_matrix)
+    expected_returns = mean_returns - (variances / 2)
     
     # Sinh trọng số ngẫu nhiên
     for i in range(num_portfolios):
@@ -163,7 +161,11 @@ def evaluate_custom_portfolio(returns_df: pd.DataFrame, weights_dict: dict, init
     daily_cov_matrix_np = LedoitWolf().fit(port_ret_selected).covariance_
     daily_cov_matrix = pd.DataFrame(daily_cov_matrix_np, index=port_ret_selected.columns, columns=port_ret_selected.columns)
     
-    port_daily_return = np.sum(daily_mean_returns * weights)
+    # [Tác Vụ 2.1] Điều chỉnh lực cản biến động (Variance Drag)
+    daily_variances = np.diag(daily_cov_matrix)
+    daily_expected_returns = daily_mean_returns - (daily_variances / 2)
+    
+    port_daily_return = np.sum(daily_expected_returns * weights)
     port_daily_variance = np.dot(weights.T, np.dot(daily_cov_matrix, weights))
     
     # Scale mốc thời gian NGÀY lên THỜI HẠN (trading_days)
@@ -298,3 +300,31 @@ def calculate_advanced_metrics(daily_port_returns: pd.Series, market_returns: pd
         "var_95_daily": var_95_daily,
         "beta": beta
     }
+
+class BlackLittermanOptimizer:
+    """
+    [Tác Vụ Mô Hình Hóa] Black-Litterman Model Placeholder.
+    Mô hình tích hợp kỳ vọng chủ quan (Views) vào Implied Equilibrium Returns.
+    """
+    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.05):
+        self.risk_aversion = risk_aversion
+        self.tau = tau
+        
+    def implied_returns(self, cov_matrix: pd.DataFrame, weights: np.ndarray) -> np.ndarray:
+        """Tính Prior: Implied Equilibrium Returns (Market Cap hoặc Equal Weight)"""
+        return self.risk_aversion * np.dot(cov_matrix.values, weights)
+        
+    def optimize(self, cov_matrix: pd.DataFrame, implied_returns: np.ndarray, 
+                 P: np.ndarray = None, Q: np.ndarray = None, omega: np.ndarray = None):
+        """
+        Kết hợp góc nhìn vĩ mô:
+        P (Pick matrix): Tham chiếu tài sản trong góc nhìn.
+        Q (Views vector): Kỳ vọng lợi nhuận.
+        Nếu P và Q = None, hệ thống trả về nguyên Implied Returns.
+        """
+        if P is None or Q is None:
+            return implied_returns
+            
+        # BL Math Formula placeholder for future version:
+        # Returns = (...) * Prior + (...) * Views
+        pass

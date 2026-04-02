@@ -27,6 +27,7 @@ def sanitize_floats(obj):
 from core.data_engine import prepare_portfolio_data, fetch_current_prices
 from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio, calculate_backtest, calculate_advanced_metrics
 from core.ai_advisor import stream_ai_advice
+from core.backtester import walk_forward_backtest
 
 app = FastAPI(title="DNT Quant Lab API")
 
@@ -128,11 +129,12 @@ def get_simulation_data(req: SimulationRequest):
         margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8')
     )
     
-    # Backtest logic
-    bt_data = calculate_backtest(port_ret, mkt_ret, ms_weights)
+    # Backtest logic (Walk-Forward Validation)
+    bt_data = walk_forward_backtest(port_ret, mkt_ret)
     bt_fig = go.Figure()
     if bt_data['dates']:
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='Portfolio', line=dict(color='#00FFAA', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO (OOS)', line=dict(color='#00FFAA', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['equal_weight_cum_returns'], mode='lines', name='Equal Weight', line=dict(color='#FCD34D', width=2)))
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
     bt_fig.update_layout(
         template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
