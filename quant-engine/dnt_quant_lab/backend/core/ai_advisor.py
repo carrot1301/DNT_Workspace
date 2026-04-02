@@ -1,4 +1,5 @@
 import os
+import json
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -89,6 +90,51 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
             fund_section += f"- {t}: Ngành {fd.get('industry', '--')} | P/E: {fd.get('pe', '--')} | P/B: {fd.get('pb', '--')} | Biên ROE: {fd.get('roe', '--')}% | Nợ/Vốn CSH: {fd.get('debt_on_equity', '--')} Lần\n"
         fund_section += "\n*Nhiệm vụ đặc biệt: Hãy đối chiếu tỉ trọng tối ưu phía trên với sức khỏe cơ bản ở đây. Cảnh báo rủi ro nếu thuật toán MVO dồn tỉ trọng quá lớn vào mã có ROE thấp, P/E quá cao hoặc dính nợ rủi ro.*"
 
+    # Lấy thêm list manual BCTC (RAG Mode)
+    manual_bctc_tickers = data.get("manual_bctc_tickers", [])
+    manual_bctc_section = ""
+    if manual_bctc_tickers:
+        registry_path = os.path.join(os.path.dirname(__file__), "..", "data", "bctc_registry.json")
+        if os.path.exists(registry_path):
+            with open(registry_path, "r", encoding="utf-8") as f:
+                registry = json.load(f)
+            
+            for t in manual_bctc_tickers:
+                t = t.upper()
+                if t in registry:
+                    bctc_file = registry[t].get("file")
+                    bctc_path = os.path.join(os.path.dirname(__file__), "..", "data", "bctc_manual", bctc_file)
+                    if os.path.exists(bctc_path):
+                        with open(bctc_path, "r", encoding="utf-8") as bf:
+                            content = bf.read()
+                            manual_bctc_section += f"\n\n--- BÁO CÁO TÀI CHÍNH THỦ CÔNG: {t} ---\n{content}\n"
+    
+        if manual_bctc_section:
+            if lang == "vi":
+                manual_bctc_section = f"\n📚 **TÀI LIỆU BCTC BỔ SUNG (RAG MODE):**\nNgười dùng đã chủ động đính kèm BCTC chuyên sâu dưới đây cho các mã {', '.join(manual_bctc_tickers)}. Bạn PHẢI đọc kỹ và dùng thông tin này làm trọng tâm để tư vấn dài hạn, đối chiếu chúng với trọng số của thuật toán Quant." + manual_bctc_section
+            else:
+                manual_bctc_section = f"\n📚 **SUPPLEMENTARY FINANCIAL REPORTS (RAG MODE):**\nThe user actively attached the following deep-dive reports for {', '.join(manual_bctc_tickers)}. You MUST read this carefully and use it as the core for long-term advice, contrasting it against the Quant algorithm's weights." + manual_bctc_section
+
+    # Lấy tin tức (vnstock3 - RAG)
+    news_data = data.get("news_data", {})
+    news_section = ""
+    if news_data:
+        if lang == "vi":
+            news_section = "\n📰 **TIN TỨC THỊ TRƯỜNG MỚI NHẤT (SENTIMENT):**\n"
+        else:
+            news_section = "\n📰 **LATEST MARKET NEWS (SENTIMENT):**\n"
+
+        for t, news_list in news_data.items():
+            if news_list:
+                news_section += f"📌 {t}:\n"
+                for nItem in news_list:
+                    news_section += f"  - [{nItem.get('publishDate', '')}] {nItem.get('title', '')}: {nItem.get('summary', '')}\n"
+        
+        if lang == "vi":
+            news_section += "\n*Nhiệm vụ: Hãy phân tích tâm lý dòng tiền (Sentiment) từ các tin tức này để kết hợp với số liệu định lượng, đưa ra thông điệp mua/bán.*"
+        else:
+            news_section += "\n*Task: Analyze market sentiment from these news events to evaluate the short-term outlook, combined with the quantitative metrics.*"
+
     # --- Format phân bổ tỉ trọng ---
     weights_section = ""
     if weights:
@@ -149,6 +195,8 @@ Below are the full results of a Monte Carlo quantitative analysis (10,000 random
 - Estimated Loss: {_format_vnd(stress_loss)}
 {weights_section.replace("PHÂN BỔ TỐI ƯU", "OPTIMAL ALLOCATION")}
 {fund_section}
+{manual_bctc_section}
+{news_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Based on the simulation results and fundamental data, provide investment advice to the user following this structure:
@@ -197,6 +245,8 @@ Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carl
 - Tổn thất ước tính: {_format_vnd(stress_loss)}
 {weights_section}
 {fund_section}
+{manual_bctc_section}
+{news_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Dựa vào kết quả chạy mô phỏng và sức khỏe tài chính trên, hãy đưa ra lời khuyên đầu tư cho người dùng theo cấu trúc sau:

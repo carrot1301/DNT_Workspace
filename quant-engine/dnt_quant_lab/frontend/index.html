@@ -88,6 +88,16 @@
                     
                 </div>
 
+                <!-- Global Manual BCTC Alert for Optimizer/Evaluator -->
+                <div id="manual-bctc-alert" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; background: rgba(0, 255, 170, 0.05); border: 1px solid rgba(0, 255, 170, 0.4); box-shadow: 0 0 10px rgba(0, 255, 170, 0.1);">
+                    <div style="font-size: 0.8rem; color: #00ffaa; font-weight: bold; margin-bottom: 5px;">✨ [BETA] TÀI LIỆU AI CỐ TRỢ (RAG)</div>
+                    <p id="bctc-alert-msg" style="font-size: 0.75rem; margin-top: 0; color: #d1d5db;">Phát hiện kho dữ liệu có sẵn BCTC phân tích chuyên sâu cho: <strong id="bctc-alert-tickers" style="color: white;">--</strong>.</p>
+                    <label style="font-size: 0.75rem; color: white; display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="use-manual-bctc-checkbox" checked style="margin-right: 5px;">
+                        <span data-i18n="use_bctc_cb">Đính kèm vào Prompt (AI tốn thêm ~15s)</span>
+                    </label>
+                </div>
+
                 <!-- Mode 3: Financials -->
                 <div id="mode-financial" style="display: none;">
                     <h3 data-i18n="fin_title">Tra Cứu BCTC</h3>
@@ -211,6 +221,15 @@
                             <span class="caption" style="font-size: 0.75rem;">Max Drawdown</span><br>
                             <strong id="metric-mdd" class="neon-alert">--</strong>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Live News Card -->
+                <div class="card glass-panel span-2" id="live-news-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                    <h3>Bản tin Thị trường Thể thao (Live) <span style="font-size: 0.8rem; border: 1px solid #F59E0B; color: #F59E0B; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">vnstock</span></h3>
+                    <p class="caption" style="font-size: 0.8rem; margin: 0; color: #00ffaa;">Đã lấy dữ liệu tin tức <strong id="news-tickers-list" style="color: white;">--</strong> thành công.</p>
+                    <div id="live-news-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+                        <!-- JS Injected -->
                     </div>
                 </div>
 

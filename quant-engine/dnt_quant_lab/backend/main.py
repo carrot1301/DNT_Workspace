@@ -26,7 +26,7 @@ def sanitize_floats(obj):
         return int(obj)
     return obj
 
-from core.data_engine import prepare_portfolio_data, fetch_current_prices
+from core.data_engine import prepare_portfolio_data, fetch_current_prices, fetch_recent_news
 from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio, calculate_backtest, calculate_advanced_metrics
 from core.ai_advisor import stream_ai_advice
 from core.backtester import walk_forward_backtest
@@ -172,11 +172,46 @@ def get_simulation_data(req: SimulationRequest):
     }
     return sanitize_floats(res)
 
+# ── BCTC Manual Check ─────────────────────────────────────────
+@app.get("/api/check-manual-bctc")
+def check_manual_bctc(tickers: str):
+    """
+    Kiểm tra xem các mã truyền vào đã có BCTC thủ công (RAG) chưa.
+    """
+    registry_path = os.path.join(os.path.dirname(__file__), "data", "bctc_registry.json")
+    if not os.path.exists(registry_path):
+        return {}
+    try:
+        with open(registry_path, "r", encoding="utf-8") as f:
+            registry = json.load(f)
+    except Exception:
+        return {}
+        
+    ticker_list = [t.strip().upper() for t in tickers.split(",")]
+    matches = {}
+    for t in ticker_list:
+        if t in registry:
+            matches[t] = registry[t]
+            
+    return matches
+
+# ── Live News (vnstock) ───────────────────────────────────────
+@app.get("/api/news")
+def get_live_news(tickers: str):
+    """
+    Lấy điểm tin (Headlines & Summaries) từ vnstock.
+    """
+    ticker_list = [t.strip().upper() for t in tickers.split(",")]
+    news = fetch_recent_news(ticker_list, limit=3)
+    return news
+
 # ── Gemini AI Advice ──────────────────────────────────────────
 class AIAdviceRequest(BaseModel):
     monte_carlo: dict
     stress_test: dict
     advanced_metrics: dict = {}
+    manual_bctc_tickers: list[str] = []
+    news_data: dict = {}
     lang: str = "vi"
 
 @app.post("/api/ai-advice")
@@ -188,7 +223,9 @@ def get_ai_advice(req: AIAdviceRequest):
     data = {
         "monte_carlo": req.monte_carlo,
         "stress_test": req.stress_test,
-        "advanced_metrics": req.advanced_metrics
+        "advanced_metrics": req.advanced_metrics,
+        "manual_bctc_tickers": req.manual_bctc_tickers,
+        "news_data": req.news_data
     }
 
     def generate():

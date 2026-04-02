@@ -134,3 +134,35 @@ def fetch_current_prices(tickers: list) -> dict:
             prices[t] = float(df['close'].iloc[-1]) * 1000
     return prices
 
+
+def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
+    """
+    Sử dụng thư viện vnstock3 để kéo tin tức công ty mới nhất.
+    Trả về dict: { "FPT": [ {"title": "...", "summary": "...", "publishDate": "..."} ] }
+    """
+    news_data = {}
+    try:
+        from vnstock3 import Vnstock
+        for t in tickers:
+            try:
+                stock = Vnstock().stock(symbol=t, source='TCBS')
+                df = stock.company.news()
+                if df is not None and not df.empty:
+                    tops = df.head(limit)
+                    t_news = []
+                    for _, row in tops.iterrows():
+                        t_news.append({
+                            "publishDate": str(row.get('publishDate', '')),
+                            "title": str(row.get('title', '')),
+                            "summary": str(row.get('summary', ''))
+                        })
+                    news_data[t] = t_news
+                else:
+                    news_data[t] = []
+            except Exception as e:
+                print(f"Error fetching news for {t}: {e}")
+                news_data[t] = []
+    except ImportError:
+        print("vnstock3 library is not available.")
+    
+    return news_data

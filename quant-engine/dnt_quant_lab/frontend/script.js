@@ -77,7 +77,8 @@ const I18N = {
         'btn_close_qr': 'Cancel / Close',
         'polling_text': 'Waiting for payment (Polling)...',
         'btn_export_pdf': '⬇️ Download PDF',
-        'pdf_title': 'VIP INVESTMENT ADVISORY REPORT'
+        'pdf_title': 'VIP INVESTMENT ADVISORY REPORT',
+        'use_bctc_cb': 'Include RAG Document in Prompt (Costs AI ~15s)'
     },
     'vi': {
         'subtitle': 'Trợ lý Đầu tư AI',
@@ -157,7 +158,8 @@ const I18N = {
         'btn_close_qr': 'Hủy / Đóng',
         'polling_text': 'Đang chờ nhận thanh toán (Polling)...',
         'btn_export_pdf': '⬇️ Tải PDF',
-        'pdf_title': 'BÁO CÁO TƯ VẤN ĐẦU TƯ VIP'
+        'pdf_title': 'BÁO CÁO TƯ VẤN ĐẦU TƯ VIP',
+        'use_bctc_cb': 'Đính kèm vào Prompt (AI tốn thêm ~15s)'
     }
 };
 
@@ -407,6 +409,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
         setTimeout(() => { displayCap.style.transform = "scale(1)"; }, 200);
 
+        // --- Render Live News ---
+        const newsCard = document.getElementById("live-news-card");
+        const newsList = document.getElementById("live-news-list");
+        const newsTickersLabel = document.getElementById("news-tickers-list");
+        
+        if (data.news_data && Object.keys(data.news_data).length > 0) {
+            newsList.innerHTML = "";
+            let fetchedTickers = [];
+            for (const [t, newsArr] of Object.entries(data.news_data)) {
+                if (newsArr.length > 0) {
+                    fetchedTickers.push(t);
+                    newsArr.forEach(nItem => {
+                        const itemDiv = document.createElement("div");
+                        itemDiv.style.background = "rgba(255,255,255,0.05)";
+                        itemDiv.style.padding = "10px";
+                        itemDiv.style.borderRadius = "6px";
+                        itemDiv.style.borderLeft = "3px solid #00B8FF";
+                        itemDiv.innerHTML = `
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 3px;">
+                                <strong style="color: #00B8FF;">${t}</strong> • ${nItem.publishDate}
+                            </div>
+                            <div style="font-size: 0.9rem; color: white; font-weight: 500;">
+                                ${nItem.title}
+                            </div>
+                        `;
+                        newsList.appendChild(itemDiv);
+                    });
+                }
+            }
+            if (fetchedTickers.length > 0) {
+                newsTickersLabel.textContent = fetchedTickers.join(", ");
+                newsCard.style.display = "block";
+            } else {
+                newsCard.style.display = "none";
+            }
+        } else {
+            newsCard.style.display = "none";
+        }
+
         // --- NEW: Trigger AI Advice Automatically ---
         fetchAIAdvice(data);
     }
@@ -425,6 +466,12 @@ document.addEventListener("DOMContentLoaded", () => {
         aiBadge.classList.remove("done");
         aiBadgeText.textContent = I18N[currentLang]['ai_analyzing'];
 
+        let manualBctcPayload = [];
+        if (document.getElementById("manual-bctc-alert").style.display !== "none" && document.getElementById("use-manual-bctc-checkbox").checked) {
+            manualBctcPayload = availableManualBCTC;
+            aiBadgeText.textContent = "Gemini AI đang đọc BCTC chuyên sâu (RAG)...";
+        }
+
         try {
             const response = await fetch('/api/ai-advice', {
                 method: 'POST',
@@ -434,6 +481,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     stress_test: data.stress_test,
                     advanced_metrics: data.advanced_metrics,
                     fundamentals: data.fundamentals,
+                    manual_bctc_tickers: manualBctcPayload,
+                    news_data: data.news_data,
                     lang: currentLang
                 })
             });
@@ -551,6 +600,58 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('chart-container').innerHTML = `<p style="color: var(--neon-alert); text-align: center; margin-top: 50px;">${I18N[currentLang]['err_wait']}</p>`;
     }
 
+    // --- RAG BCTC Checker ---
+    const bctcAlert = document.getElementById("manual-bctc-alert");
+    const bctcAlertTickers = document.getElementById("bctc-alert-tickers");
+    let availableManualBCTC = [];
+
+    async function evaluateTickersForManualBCTC() {
+        let tickers = [];
+        const activeNav = document.querySelector('.nav-item.active');
+        if (!activeNav) return;
+
+        if (activeNav.getAttribute('data-i18n') === 'nav_opt') {
+            const raw = document.getElementById("tickers-input").value;
+            tickers = raw.split(',').map(t => t.trim().toUpperCase()).filter(t => t);
+        } else if (activeNav.getAttribute('data-i18n') === 'nav_eval') {
+            document.querySelectorAll('.t-input').forEach(input => {
+                let val = input.value.trim().toUpperCase();
+                if(val) tickers.push(val);
+            });
+        }
+        
+        if (tickers.length === 0) {
+            bctcAlert.style.display = "none";
+            availableManualBCTC = [];
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/check-manual-bctc?tickers=${tickers.join(',')}`);
+            const data = await res.json();
+            const matched = Object.keys(data);
+            
+            if (matched.length > 0) {
+                availableManualBCTC = matched;
+                bctcAlertTickers.textContent = matched.join(', ');
+                bctcAlert.style.display = "block";
+            } else {
+                availableManualBCTC = [];
+                bctcAlert.style.display = "none";
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.getElementById("tickers-input").addEventListener("blur", evaluateTickersForManualBCTC);
+    document.getElementById("holdings-list").addEventListener("blur", (e) => {
+        if (e.target && e.target.classList.contains("t-input")) {
+            evaluateTickersForManualBCTC();
+        }
+    }, true);
+
+
     // Execution Mode: Optimizer
     runBtn.addEventListener("click", () => {
         const rawCap = document.getElementById("capital-input").value.replace(/\./g, "");
@@ -565,12 +666,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
 
-        fetch('/api/run-simulation', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang})
+        runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
+
+        Promise.all([
+            fetch('/api/run-simulation', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang})
+            }).then(res => {
+                if (!res.ok) throw new Error("Simulation API Error");
+                return res.json();
+            }),
+            fetch(`/api/news?tickers=${tickersArray.join(',')}`).then(r => r.json()).catch(() => ({}))
+        ])
+        .then(([simData, newsData]) => {
+            simData.news_data = newsData;
+            handleApiResponse(simData);
         })
-        .then(res => res.json()).then(handleApiResponse).catch(handleError)
+        .catch(handleError)
         .finally(() => { runBtn.textContent = I18N[currentLang]['btn_run']; runBtn.disabled = false; });
     });
 
@@ -592,12 +705,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
 
-        fetch('/api/evaluate-portfolio', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({holdings: holdings, days: tf, lang: currentLang})
+        evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
+
+        Promise.all([
+            fetch('/api/evaluate-portfolio', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({holdings: holdings, days: tf, lang: currentLang})
+            }).then(res => {
+                if (!res.ok) throw new Error("Evaluate API Error");
+                return res.json();
+            }),
+            fetch(`/api/news?tickers=${Object.keys(holdings).join(',')}`).then(r => r.json()).catch(() => ({}))
+        ])
+        .then(([simData, newsData]) => {
+            simData.news_data = newsData;
+            handleApiResponse(simData);
         })
-        .then(res => res.json()).then(handleApiResponse).catch(handleError)
+        .catch(handleError)
         .finally(() => { evalBtn.textContent = I18N[currentLang]['btn_eval']; evalBtn.disabled = false; });
     });
 
