@@ -132,18 +132,31 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- Tab Switch Logic ---
     let currentMode = 'optimizer';
     const navItems = document.querySelectorAll(".nav-menu .nav-item");
+    const modeOpts = document.getElementById("mode-optimizer");
+    const modeEval = document.getElementById("mode-evaluator");
+    const modeFin = document.getElementById("mode-financial");
+    
+    function hideAllModes() {
+        modeOpts.style.display = 'none';
+        modeEval.style.display = 'none';
+        if(modeFin) modeFin.style.display = 'none';
+        navItems.forEach(el => el.classList.remove('active'));
+    }
+
     navItems[0].addEventListener("click", () => {
-        navItems[0].classList.add('active'); navItems[1].classList.remove('active');
-        document.getElementById("mode-optimizer").style.display = 'block';
-        document.getElementById("mode-evaluator").style.display = 'none';
-        currentMode = 'optimizer';
+        hideAllModes(); navItems[0].classList.add('active');
+        modeOpts.style.display = 'block'; currentMode = 'optimizer';
     });
     navItems[1].addEventListener("click", () => {
-        navItems[1].classList.add('active'); navItems[0].classList.remove('active');
-        document.getElementById("mode-evaluator").style.display = 'block';
-        document.getElementById("mode-optimizer").style.display = 'none';
-        currentMode = 'evaluator';
+        hideAllModes(); navItems[1].classList.add('active');
+        modeEval.style.display = 'block'; currentMode = 'evaluator';
     });
+    if(navItems[2]) {
+        navItems[2].addEventListener("click", () => {
+            hideAllModes(); navItems[2].classList.add('active');
+            modeFin.style.display = 'block'; currentMode = 'financial';
+        });
+    }
 
     // --- Evaluator Dynamic Rows ---
     const addRowBtn = document.getElementById("add-holding-btn");
@@ -482,5 +495,111 @@ document.addEventListener("DOMContentLoaded", () => {
         
         setTimeout(() => { stressText.style.transform = "scale(1)"; }, 300);
     });
+
+    // --- Financial Reports & SePay Paywall Logic ---
+    let currentSessionId = localStorage.getItem('dnt_session_id');
+    if (!currentSessionId) {
+        currentSessionId = 'S' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('dnt_session_id', currentSessionId);
+    }
+    let pollingInterval = null;
+
+    const finBtn = document.getElementById('fin-view-btn');
+    if (finBtn) {
+        finBtn.addEventListener('click', async () => {
+            const ticker = document.getElementById('fin-ticker-input').value.trim();
+            if (!ticker) return alert("Vui lòng nhập mã cổ phiếu!");
+            
+            finBtn.textContent = 'Fetching...';
+            try {
+                const res = await fetch(`/api/financials/${ticker}?session_id=${currentSessionId}`);
+                const data = await res.json();
+                
+                if (data.error) throw new Error(data.error);
+
+                document.getElementById('fin-report-card').style.display = 'block';
+                document.getElementById('fin-ticker').textContent = data.ticker;
+                document.getElementById('fin-pepb').textContent = `${data.pe.toFixed(2)} | ${data.pb.toFixed(2)}`;
+                document.getElementById('fin-industry').textContent = data.industry || '--';
+                document.getElementById('fin-marketcap').textContent = data.marketCap ? (data.marketCap).toLocaleString() : '--';
+                
+                // Fields
+                renderPaywallField('fin-roe', data.roe, data.roa, data.is_paid, '% | ', '%');
+                renderPaywallField('fin-debt', data.debt_on_equity, '', data.is_paid, ' Lần', '');
+                renderPaywallField('fin-profit', data.profit_growth, '', data.is_paid, '% (YoY)', '');
+                
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                finBtn.textContent = 'Fetch Data';
+            }
+        });
+    }
+
+    function renderPaywallField(id, val1, val2, isPaid, unit1='', unit2='') {
+        const el = document.getElementById(id);
+        const container = el.closest('.blur-box');
+        const overlay = container.querySelector('.pay-overlay');
+        
+        if (isPaid) {
+            el.style.filter = 'none';
+            if(overlay) overlay.style.display = 'none';
+            let txt = val1 + unit1;
+            if(val2) txt += val2 + unit2;
+            el.textContent = txt;
+        } else {
+            el.style.filter = 'blur(6px)';
+            if(overlay) overlay.style.display = 'flex';
+            el.textContent = "LOCKED";
+        }
+    }
+
+    // Modal Handle
+    const unlockBtns = document.querySelectorAll('.unlock-btn');
+    const qrModal = document.getElementById('qr-modal');
+    const closeQr = document.getElementById('close-qr-btn');
+    const qrImg = document.getElementById('vietqr-img');
+
+    unlockBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Generate VietQR Link
+            // STK: 1001213140604, Ngân hàng VPB (VPBank), DOAN NGUYEN TRI
+            const msg = `DNTLAB ${currentSessionId}`;
+            const amount = 5000;
+            // Dùng img.vietqr.io
+            const qrUrl = `https://img.vietqr.io/image/VPB-1001213140604-compact2.jpg?amount=${amount}&addInfo=${msg}&accountName=DOAN%20NGUYEN%20TRI`;
+            qrImg.src = qrUrl;
+            qrModal.style.display = 'flex';
+            
+            // Start Polling
+            startPaymentPolling();
+        });
+    });
+
+    closeQr.addEventListener('click', () => {
+        qrModal.style.display = 'none';
+        if(pollingInterval) clearInterval(pollingInterval);
+    });
+
+    async function startPaymentPolling() {
+        if(pollingInterval) clearInterval(pollingInterval);
+        
+        pollingInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/payment-status?session_id=${currentSessionId}`);
+                const data = await res.json();
+                
+                if(data.paid) {
+                    clearInterval(pollingInterval);
+                    alert("Cảm ơn bạn! Thanh toán 5.000 VNĐ đã được SePay ghi nhận thành công.");
+                    qrModal.style.display = 'none';
+                    // Auto refetch data to unblur
+                    if(document.getElementById('fin-ticker').textContent !== '--') {
+                        document.getElementById('fin-view-btn').click(); 
+                    }
+                }
+            } catch(e) {}
+        }, 3000); // Mỗi 3 giây
+    }
 
 });
