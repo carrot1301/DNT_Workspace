@@ -374,28 +374,14 @@ def fetch_financials_internal(ticker: str):
 def get_financial_reports(ticker: str, session_id: str = None):
     """
     Kéo API miễn phí từ TCBS v1/ticker/overview
-    Có cơ chế Paywall ẩn dữ liệu nâng cao nếu khách chưa chuyển khoản.
+    Cơ chế Paywall đã được thay bằng quyên góp tự nguyện.
+    Trả về toàn bộ dữ liệu chỉ số cơ bản.
     """
-    # Kiểm tra hóa đơn
-    is_paid = False
-    if session_id and payments_db.get(session_id, False):
-        is_paid = True
-        
     financière_data = fetch_financials_internal(ticker)
     if "error" in financière_data:
         return financière_data
         
     financials = financière_data.copy()
-        
-    # Cơ chế Blur dữ liệu (Paywall)
-    if not is_paid:
-        financials["roe"] = "locked"
-        financials["roa"] = "locked"
-        financials["debt_on_equity"] = "locked"
-        financials["revenue_growth"] = "locked"
-        financials["profit_growth"] = "locked"
-        
-    financials["is_paid"] = is_paid
     return sanitize_floats(financials)
 
 
