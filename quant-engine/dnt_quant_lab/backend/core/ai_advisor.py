@@ -27,6 +27,8 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     """
     mc = data.get("monte_carlo", {})
     stress = data.get("stress_test", {})
+    adv = data.get("advanced_metrics", {})
+    fundamentals_data = data.get("fundamentals", {})
 
     # --- Trích xuất dữ liệu theo từng mode ---
     is_optimizer = "max_sharpe" in mc
@@ -78,6 +80,14 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     if any(w >= 0.30 for w in weights.values()) or 'VIC' in weights:
         overfit_warning_en = "\n⚠️ OVERFITTING WARNING: The model heavily leverages historical volatility/Alpha (especially checking for VIC or >=30% allocations). Inform the user that this might be 'Severe Overfitting'. They should strongly research financial statements or consult experts rather than purely trusting the mathematical weights."
         overfit_warning_vi = "\n⚠️ LƯU Ý QUAN TRỌNG: Mô hình có dấu hiệu bị 'Overfitting nặng' (quá khớp) do dồn tỉ trọng vào các mã có độ biến động/Alpha cao trong quá khứ (như VIC). Hãy khuyên người dùng tìm hiểu kỹ Báo cáo tài chính và ý kiến chuyên gia, không nên nhắm mắt tin vào tỷ trọng này."
+
+    # --- Tóm tắt Fundamentals (BCTC) ---
+    fund_section = ""
+    if fundamentals_data:
+        fund_section = "📊 **SỨC KHỎE TÀI CHÍNH (Từ BCTC):**\n"
+        for t, fd in fundamentals_data.items():
+            fund_section += f"- {t}: Ngành {fd.get('industry', '--')} | P/E: {fd.get('pe', '--')} | P/B: {fd.get('pb', '--')} | Biên ROE: {fd.get('roe', '--')}% | Nợ/Vốn CSH: {fd.get('debt_on_equity', '--')} Lần\n"
+        fund_section += "\n*Nhiệm vụ đặc biệt: Hãy đối chiếu tỉ trọng tối ưu phía trên với sức khỏe cơ bản ở đây. Cảnh báo rủi ro nếu thuật toán MVO dồn tỉ trọng quá lớn vào mã có ROE thấp, P/E quá cao hoặc dính nợ rủi ro.*"
 
     # --- Format phân bổ tỉ trọng ---
     weights_section = ""
@@ -138,9 +148,10 @@ Below are the full results of a Monte Carlo quantitative analysis (10,000 random
 - Portfolio Beta: {beta:.2f}
 - Estimated Loss: {_format_vnd(stress_loss)}
 {weights_section.replace("PHÂN BỔ TỐI ƯU", "OPTIMAL ALLOCATION")}
+{fund_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Based on the simulation results, provide investment advice to the user following this structure:
+Based on the simulation results and fundamental data, provide investment advice to the user following this structure:
 
 **1. 📊 Portfolio Overview**
 (Assess portfolio quality based on Sharpe, Volatility, and Expected Return. Compare to market benchmark if applicable.)
@@ -185,9 +196,10 @@ Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carl
 - Beta danh mục: {beta:.2f}
 - Tổn thất ước tính: {_format_vnd(stress_loss)}
 {weights_section}
+{fund_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Dựa vào kết quả chạy mô phỏng trên, hãy đưa ra lời khuyên đầu tư cho người dùng theo cấu trúc sau:
+Dựa vào kết quả chạy mô phỏng và sức khỏe tài chính trên, hãy đưa ra lời khuyên đầu tư cho người dùng theo cấu trúc sau:
 
 **1. 📊 Đánh giá tổng quan danh mục**
 (Nhận xét về chất lượng danh mục qua các chỉ số — Sharpe, Volatility, kỳ vọng lợi nhuận. So sánh với benchmark thị trường nếu phù hợp.)

@@ -374,6 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     monte_carlo: data.monte_carlo,
                     stress_test: data.stress_test,
                     advanced_metrics: data.advanced_metrics,
+                    fundamentals: data.fundamentals,
                     lang: currentLang
                 })
             });
@@ -417,12 +418,46 @@ document.addEventListener("DOMContentLoaded", () => {
             cursor.remove();
             aiBadge.classList.add("done");
             aiBadgeText.textContent = I18N[currentLang]['ai_done'];
+            
+            // Hiện nút Download PDF
+            document.getElementById('btn-export-pdf').style.display = 'inline-block';
 
         } catch (err) {
             console.error("AI Advice Error:", err);
             aiLoading.style.display = "none";
             aiText.innerHTML = `<span style="color: var(--neon-alert)">⚠️ Error: Không thể kết nối Gemini AI. Kiểm tra .env hoặc API Key.</span>`;
         }
+    }
+
+    // --- Giấy Phép / Export PDF Logic ---
+    const btnExportPdf = document.getElementById('btn-export-pdf');
+    if (btnExportPdf) {
+        btnExportPdf.addEventListener('click', () => {
+            const element = document.getElementById('pdf-content-wrapper');
+            const title = document.getElementById('pdf-report-title');
+            
+            // Hiện tiêu đề ẩn chuyên cho PDF
+            title.style.display = 'block';
+            
+            // Tùy chỉnh Options cho HTML2PDF
+            const opt = {
+              margin:       10,
+              filename:     `DNT_Quant_VIP_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+              image:        { type: 'jpeg', quality: 0.98 },
+              html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' }, // Khớp với theme tối
+              jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Trạng thái nút tải
+            btnExportPdf.textContent = 'Đang render...';
+            btnExportPdf.disabled = true;
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                title.style.display = 'none';
+                btnExportPdf.textContent = '⬇️ Tải PDF';
+                btnExportPdf.disabled = false;
+            });
+        });
     }
 
     function handleError(error) {

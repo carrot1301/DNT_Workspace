@@ -138,31 +138,37 @@ def get_simulation_data(req: SimulationRequest):
     bt_fig = go.Figure()
     if bt_data['dates']:
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO (OOS)', line=dict(color='#00FFAA', width=2)))
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['equal_weight_cum_returns'], mode='lines', name='Equal Weight', line=dict(color='#FCD34D', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['equal_weight_returns'], mode='lines', name='Equal Weight', line=dict(color='#F59E0B', width=2)))
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
-    bt_fig.update_layout(
-        template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8'),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
+        bt_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#94A3B8'))
+    
+    bt_chart_json = json.loads(bt_fig.to_json()) if bt_data['dates'] else None
     
     # Advanced Metrics & Raw Prices
     port_ret_selected = port_ret[list(ms_weights.keys())]
     daily_port_returns = port_ret_selected.dot(np.array(list(ms_weights.values())))
     adv_metrics = calculate_advanced_metrics(daily_port_returns, mkt_ret)
-    raw_prices = fetch_current_prices(req.tickers)
-    last_updated_date = port_ret.index.max().strftime('%d-%m-%Y') if not port_ret.index.empty else ""
+    cur_prices = fetch_current_prices(req.tickers)
     
-    return sanitize_floats({
+    # Fetch Fundamental data for all tickers to assist AI
+    fundamentals_data = {}
+    for t in req.tickers:
+        fund_res = fetch_financials_internal(t)
+        if "error" not in fund_res:
+            fundamentals_data[t] = fund_res
+
+    res = {
+        "monte_carlo": mc_results,
+        "stress_test": st_results,
+        "advanced_metrics": adv_metrics,
+        "raw_prices": cur_prices,
+        "fundamentals": fundamentals_data,
+        "last_updated_date": datetime.now().strftime("%d-%m-%Y"),
         "chart": chart_json,
         "pie_chart": json.loads(pie_fig.to_json()),
-        "backtest_chart": json.loads(bt_fig.to_json()),
-        "monte_carlo": mc_results,
-        "stress_test": stress_test_results,
-        "advanced_metrics": adv_metrics,
-        "raw_prices": raw_prices,
-        "last_updated_date": last_updated_date
-    })
+        "backtest_chart": bt_chart_json
+    }
+    return sanitize_floats(res)
 
 # ── Gemini AI Advice ──────────────────────────────────────────
 class AIAdviceRequest(BaseModel):
@@ -321,28 +327,15 @@ def get_payment_status(session_id: str):
     is_paid = payments_db.get(session_id, False)
     return {"paid": is_paid}
 
-
-@app.get("/api/financials/{ticker}")
-def get_financial_reports(ticker: str, session_id: str = None):
-    """
-    Kéo API miễn phí từ TCBS v1/ticker/overview
-    Có cơ chế Paywall ẩn dữ liệu nâng cao nếu khách chưa chuyển khoản.
-    """
+def fetch_financials_internal(ticker: str):
     ticker = ticker.upper()
     headers = {'User-Agent': 'Mozilla/5.0'}
-    
-    # Kiểm tra hóa đơn
-    is_paid = False
-    if session_id and payments_db.get(session_id, False):
-        is_paid = True
-        
     try:
         url = f"https://apipubaws.tcbs.com.vn/tcanalysis/v1/ticker/{ticker}/overview"
         res = requests.get(url, headers=headers, timeout=5)
         res.raise_for_status()
         data = res.json()
     except Exception as api_err:
-        print(f"TCBS API Error for {ticker}, falling back to mock: {api_err}")
         import random
         # Fallback Mock Data for demo purposes if external API is dead
         data = {
@@ -371,9 +364,26 @@ def get_financial_reports(ticker: str, session_id: str = None):
             "revenue_growth": data.get("revenueGrowth", 0) * 100 if data.get("revenueGrowth") else 0,
             "profit_growth": data.get("profitGrowth", 0) * 100 if data.get("profitGrowth") else 0,
         }
-        
+        return financials
     except Exception as e:
         return {"error": f"Lỗi parse dữ liệu TCBS: {str(e)}"}
+
+@app.get("/api/financials/{ticker}")
+def get_financial_reports(ticker: str, session_id: str = None):
+    """
+    Kéo API miễn phí từ TCBS v1/ticker/overview
+    Có cơ chế Paywall ẩn dữ liệu nâng cao nếu khách chưa chuyển khoản.
+    """
+    # Kiểm tra hóa đơn
+    is_paid = False
+    if session_id and payments_db.get(session_id, False):
+        is_paid = True
+        
+    financière_data = fetch_financials_internal(ticker)
+    if "error" in financière_data:
+        return financière_data
+        
+    financials = financière_data.copy()
         
     # Cơ chế Blur dữ liệu (Paywall)
     if not is_paid:

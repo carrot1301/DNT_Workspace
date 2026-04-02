@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Import Plotly.js for frontend chart rendering -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+    <!-- Html2Pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -251,31 +253,39 @@
                 </div>
 
                 <!-- AI Advice Panel — full width, auto-triggered after simulation -->
-                <div class="card glass-panel span-2 ai-advice-card" id="ai-advice-card" style="display: none;">
-                    <div class="ai-panel-header">
+                <div class="card glass-panel span-2 ai-advice-card" id="ai-advice-card" style="display: none; position: relative;">
+                    <div class="ai-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 class="ai-panel-title">
                                 <span class="ai-gem-icon">✦</span>
-                                <span data-i18n="ai_title">Gemini AI — Lời khuyên Đầu tư</span>
+                                <span data-i18n="ai_title">Gemini AI — Cố Vấn Tích Hợp (Quant + BCTC)</span>
                             </h3>
-                            <p class="caption" data-i18n="ai_subtitle">Phân tích chuyên sâu dựa trên 10.000 kịch bản Monte Carlo</p>
+                            <p class="caption" data-i18n="ai_subtitle">Phân tích chuyên sâu dựa trên kịch bản Quant & Báo cáo Sức khỏe Tài chính</p>
                         </div>
-                        <div class="ai-badge" id="ai-badge">
-                            <span class="ai-badge-dot"></span>
-                            <span id="ai-badge-text" data-i18n="ai_analyzing">Đang phân tích...</span>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="btn-export-pdf" class="action-btn" style="background:var(--neon-green); padding: 5px 15px; font-size: 0.85rem; display: none;">⬇️ Tải PDF</button>
+                            <div class="ai-badge" id="ai-badge">
+                                <span class="ai-badge-dot"></span>
+                                <span id="ai-badge-text" data-i18n="ai_analyzing">Đang phân tích...</span>
+                            </div>
                         </div>
                     </div>
                     <div class="ai-divider"></div>
-                    <div class="ai-body">
-                        <!-- Loading skeleton -->
-                        <div class="ai-loading" id="ai-loading">
-                            <div class="ai-loading-dots">
-                                <span></span><span></span><span></span>
+                    
+                    <!-- Khối nội dung sẽ được in PDF -->
+                    <div id="pdf-content-wrapper" style="border-radius: 8px;">
+                        <h2 style="display: none; text-align: center; color: #00FFAA; margin-bottom: 20px;" id="pdf-report-title">BÁO CÁO TƯ VẤN ĐẦU TƯ VIP</h2>
+                        <div class="ai-body">
+                            <!-- Loading skeleton -->
+                            <div class="ai-loading" id="ai-loading">
+                                <div class="ai-loading-dots">
+                                    <span></span><span></span><span></span>
+                                </div>
+                                <span data-i18n="ai_thinking">Gemini đang phân tích lượng hóa và BCTC...</span>
                             </div>
-                            <span data-i18n="ai_thinking">Gemini đang phân tích dữ liệu...</span>
+                            <!-- Actual AI text output -->
+                            <div class="ai-text" id="ai-text" style="font-size: 0.95rem; line-height: 1.6;"></div>
                         </div>
-                        <!-- Actual AI text output -->
-                        <div class="ai-text" id="ai-text"></div>
                     </div>
                 </div>
 
