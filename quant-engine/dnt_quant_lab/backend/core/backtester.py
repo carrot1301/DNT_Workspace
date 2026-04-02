@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 def simple_ma_crossover(df: pd.DataFrame, short_window: int = 20, long_window: int = 50) -> pd.DataFrame:
     """
     Kỳ vọng backtest dựa trên Giao cắt rãnh giá Moving Average.
