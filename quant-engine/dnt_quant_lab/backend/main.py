@@ -29,7 +29,8 @@ def sanitize_floats(obj):
 from core.data_engine import prepare_portfolio_data, fetch_current_prices, fetch_recent_news
 from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_custom_portfolio, calculate_backtest, calculate_advanced_metrics
 from core.ai_advisor import stream_ai_advice
-from core.backtester import walk_forward_backtest
+from core.backtester import run_backtrader_strategy
+from core.signals import compute_signals
 
 app = FastAPI(title="DNT Quant Lab API")
 
@@ -135,16 +136,18 @@ def get_simulation_data(req: SimulationRequest):
         margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8')
     )
     
-    # Backtest logic (Walk-Forward Validation)
-    bt_data = walk_forward_backtest(port_ret, mkt_ret)
+    # Backtest logic (Backtrader Validation)
+    bt_data = run_backtrader_strategy(req.tickers, ms_weights, req.capital)
     bt_fig = go.Figure()
     if bt_data['dates']:
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO (OOS)', line=dict(color='#00FFAA', width=2)))
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['equal_weight_cum_returns'], mode='lines', name='Equal Weight', line=dict(color='#F59E0B', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO Strategy (BT)', line=dict(color='#00FFAA', width=2)))
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
         bt_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#94A3B8'))
     
     bt_chart_json = json.loads(bt_fig.to_json()) if bt_data['dates'] else None
+    
+    # Real-time Signals
+    signals_data = compute_signals(req.tickers, ms_weights, req.capital)
     
     # Advanced Metrics & Raw Prices
     port_ret_selected = port_ret[list(ms_weights.keys())]
@@ -168,7 +171,8 @@ def get_simulation_data(req: SimulationRequest):
         "last_updated_date": datetime.now().strftime("%d-%m-%Y"),
         "chart": chart_json,
         "pie_chart": json.loads(pie_fig.to_json()),
-        "backtest_chart": bt_chart_json
+        "backtest_chart": bt_chart_json,
+        "trading_signals": signals_data
     }
     return sanitize_floats(res)
 
@@ -291,11 +295,11 @@ def evaluate_custom(req: EvaluationRequest):
         font=dict(color='#94A3B8')
     )
     
-    # Backtest logic
-    bt_data = calculate_backtest(port_ret, mkt_ret, weights)
+    # Backtest logic (Backtrader Evaluation)
+    bt_data = run_backtrader_strategy(tickers, weights, total_capital)
     bt_fig = go.Figure()
     if bt_data['dates']:
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='Custom Portfolio', line=dict(color='#00FFAA', width=2)))
+        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='Custom Strategy (BT)', line=dict(color='#00FFAA', width=2)))
         bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
     bt_fig.update_layout(
         template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -317,7 +321,8 @@ def evaluate_custom(req: EvaluationRequest):
         "stress_test": stress_test_results,
         "advanced_metrics": adv_metrics,
         "raw_prices": current_prices,
-        "last_updated_date": last_updated_date
+        "last_updated_date": last_updated_date,
+        "trading_signals": compute_signals(tickers, weights, total_capital)
     })
 
 @app.get("/api/current-prices")

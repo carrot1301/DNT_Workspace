@@ -78,7 +78,14 @@ const I18N = {
         'polling_text': 'Waiting for payment (Polling)...',
         'btn_export_pdf': '⬇️ Download PDF',
         'pdf_title': 'VIP INVESTMENT ADVISORY REPORT',
-        'use_bctc_cb': 'Include RAG Document in Prompt (Costs AI ~15s)'
+        'use_bctc_cb': 'Include RAG Document in Prompt (Costs AI ~15s)',
+        'sig_col_ticker': 'Ticker',
+        'sig_col_signal': 'Signal',
+        'sig_col_vol': 'Suggested Volume',
+        'sig_col_action': 'Execution',
+        'btn_vps_cta': 'Open VPS Trading ↗',
+        'signals_title': 'Real-Time Trading Signals',
+        'signals_desc': 'Technical Analysis (SMA Crossover) & Direct Broker Integration.'
     },
     'vi': {
         'subtitle': 'Trợ lý Đầu tư AI',
@@ -159,7 +166,14 @@ const I18N = {
         'polling_text': 'Đang chờ nhận thanh toán (Polling)...',
         'btn_export_pdf': '⬇️ Tải PDF',
         'pdf_title': 'BÁO CÁO TƯ VẤN ĐẦU TƯ VIP',
-        'use_bctc_cb': 'Đính kèm vào Prompt (AI tốn thêm ~15s)'
+        'use_bctc_cb': 'Đính kèm vào Prompt (AI tốn thêm ~15s)',
+        'sig_col_ticker': 'Mã CP',
+        'sig_col_signal': 'Tín Hiệu',
+        'sig_col_vol': 'Khối Lượng Đề Xuất',
+        'sig_col_action': 'Khớp Lệnh',
+        'btn_vps_cta': 'Mở VPS Đặt Lệnh ↗',
+        'signals_title': 'Tín Hiệu Giao Dịch Thời Gian Thực',
+        'signals_desc': 'Tín hiệu Phân tích Kỹ thuật (SMA Crossover) & Đặt lệnh mua bán liên thông VPS.'
     }
 };
 
@@ -372,6 +386,35 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('metric-rsq').textContent = data.advanced_metrics.r_squared != null ? data.advanced_metrics.r_squared.toFixed(2) : '--';
             document.getElementById('metric-calmar').textContent = data.advanced_metrics.calmar != null ? data.advanced_metrics.calmar.toFixed(2) : '--';
             document.getElementById('metric-mdd').textContent = data.advanced_metrics.max_drawdown != null ? (data.advanced_metrics.max_drawdown * 100).toFixed(2) + '%' : '--';
+        }
+        
+        // --- Trading Signals ---
+        if (data.trading_signals) {
+            const signalsCard = document.getElementById('trading-signals-card');
+            const signalsTbody = document.getElementById('trading-signals-tbody');
+            if (signalsCard && signalsTbody) {
+                signalsTbody.innerHTML = '';
+                for (const [ticker, sig] of Object.entries(data.trading_signals)) {
+                    let badgeClass = 'badge-hold';
+                    if (sig.action.includes('BUY')) badgeClass = 'badge-buy';
+                    else if (sig.action.includes('SELL')) badgeClass = 'badge-sell';
+                    
+                    signalsTbody.innerHTML += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 10px; font-weight: bold; color: white;">${ticker}</td>
+                            <td style="padding: 10px;">
+                                <span class="signal-badge ${badgeClass}">${sig.action}</span>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; max-width: 250px;">${sig.detail || ''}</div>
+                            </td>
+                            <td style="padding: 10px; color: var(--text-muted);">${sig.volume.toLocaleString('vi-VN')} CP<br><small style="font-size: 0.75rem;">@ ${formatVND(sig.price)}</small></td>
+                            <td style="padding: 10px; text-align: right;">
+                                <a href="${sig.broker_url}" target="_blank" class="btn-vps-cta">${I18N[currentLang]['btn_vps_cta']}</a>
+                            </td>
+                        </tr>
+                    `;
+                }
+                signalsCard.style.display = 'block';
+            }
         }
         
         const mc = data.monte_carlo;

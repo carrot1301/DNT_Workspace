@@ -170,6 +170,27 @@
                     <div id="pie-chart-container" style="width: 100%; height: 350px;"></div>
                 </div>
 
+                <!-- Trading Signals Card -->
+                <div class="card glass-panel span-2" id="trading-signals-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                    <h3 data-i18n="signals_title">Tín Hiệu Giao Dịch Thời Gian Thực</h3>
+                    <p class="caption" data-i18n="signals_desc">Tín hiệu Phân tích Kỹ thuật (SMA Crossover) & Đặt lệnh mua bán liên thông VPS.</p>
+                    <div class="table-responsive" style="margin-top: 15px; margin-bottom: 5px; max-height: 300px; overflow-y: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.9rem;">
+                                    <th style="padding: 10px;" data-i18n="sig_col_ticker">Mã CP</th>
+                                    <th style="padding: 10px;" data-i18n="sig_col_signal">Tín Hiệu</th>
+                                    <th style="padding: 10px;" data-i18n="sig_col_vol">Khối Lượng Đề Xuất</th>
+                                    <th style="padding: 10px; text-align: right;" data-i18n="sig_col_action">Khớp Lệnh</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trading-signals-tbody" style="font-size: 0.95rem;">
+                                <!-- JS Injected -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Raw Prices Card -->
                 <div class="card glass-panel" id="raw-prices-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
                     <h3 data-i18n="raw_price_title">Bảng Giá Đóng cửa</h3>

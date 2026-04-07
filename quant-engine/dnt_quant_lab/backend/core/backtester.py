@@ -1,140 +1,159 @@
+import backtrader as bt
 import pandas as pd
 import numpy as np
-def simple_ma_crossover(df: pd.DataFrame, short_window: int = 20, long_window: int = 50) -> pd.DataFrame:
+from core.data_engine import fetch_stock_data, fetch_index_data
+
+class ValueTracker(bt.Analyzer):
     """
-    Kỳ vọng backtest dựa trên Giao cắt rãnh giá Moving Average.
+    Theo dõi Giá trị Tài Khoản (Portfolio Value) tại mỗi Node thời gian
+    giúp chúng ta trích xuất dữ liệu gửi về API thay vì vẽ đồ thị tĩnh (Matplotlib).
     """
-    signals = pd.DataFrame(index=df.index)
-    signals['signal'] = 0.0
+    def __init__(self):
+        self.val_hist = {}
 
-    # Tính Moving Average
-    signals['short_mavg'] = df['close'].rolling(window=short_window, min_periods=1, center=False).mean()
-    signals['long_mavg'] = df['close'].rolling(window=long_window, min_periods=1, center=False).mean()
+    def next(self):
+        self.val_hist[self.strategy.datetime.date(0)] = self.strategy.broker.getvalue()
 
-    # Tạo tín hiệu Bán/Mua (1.0 là Mua)
-    signals['signal'][short_window:] = np.where(signals['short_mavg'][short_window:] 
-                                                > signals['long_mavg'][short_window:], 1.0, 0.0)   
+    def get_analysis(self):
+        return self.val_hist
 
-    # Ghi nhận trạng thái chuyển dịch (Cross)
-    signals['positions'] = signals['signal'].diff()
-    return signals
-
-from scipy.optimize import minimize
-from sklearn.covariance import LedoitWolf
-
-def walk_forward_backtest(port_returns: pd.DataFrame, market_returns: pd.Series, 
-                          train_window: int = 252, test_window: int = 21) -> dict:
+class MACrossoverStrategy(bt.Strategy):
     """
-    [Tác Vụ 2.2 & 2.3] Walk-Forward Validation Backtesting
-    Hệ thống backtest chia data thành In-Sample (train_window) để tìm Max Sharpe MVO,
-    và Out-of-Sample (test_window) để đánh giá thực tế.
-    Bao gồm cả Baseline: Equal Weight.
+    Chiến lược Backtrader: Giao cắt trung bình động (MA Crossover).
+    SMA20 cắt lên SMA50 -> MUA (Allocate target weight).
+    SMA20 cắt xuống SMA50 -> BÁN (Allocate 0%).
     """
-    total_len = len(port_returns)
-    if total_len <= train_window:
-        # Nhỏ hơn train_window -> không đủ dữ liệu, fallback sang Equal Weight
-        return fallback_backtest(port_returns, market_returns)
+    params = (
+        ('short_period', 20),
+        ('long_period', 50),
+        ('weights', {}), # Dict lưu tỷ trọng kỳ vọng của mỗi mã, VD: {'FPT': 0.3}
+    )
 
-    # Khởi tạo kết quả chuỗi OOS
-    oos_portfolio_returns = []
-    oos_ew_returns = []
-    oos_market_returns = []
-    oos_dates = []
+    def __init__(self):
+        self.inds = {}
+        self.in_market = set()
+        for d in self.datas:
+            # Tạo indicator cho từng luồng dữ liệu (Feed)
+            self.inds[d] = {
+                'sma_short': bt.indicators.SMA(d.close, period=self.params.short_period),
+                'sma_long': bt.indicators.SMA(d.close, period=self.params.long_period)
+            }
 
-    tickers = port_returns.columns
-    num_assets = len(tickers)
+    def next(self):
+        for d in self.datas:
+            ticker = d._name
+            if ticker not in self.params.weights:
+                continue
+                
+            sma_s = self.inds[d]['sma_short']
+            sma_l = self.inds[d]['sma_long']
+            
+            if len(sma_s) < 2 or len(sma_l) < 2:
+                continue
+
+            target_w = self.params.weights[ticker]
+            in_pos = ticker in self.in_market
+            
+            # Trừ hao 1% cho Margin/Commission để tránh bị chối lệnh (Order Margin Canceled)
+            buffered_target = target_w * 0.99
+
+            # Chỉ phát lệnh mua khi có tín hiệu tăng VÀ chưa giữ vị thế (tránh bào phí trade mỗi ngày)
+            if sma_s[0] > sma_l[0] and not in_pos:
+                self.order_target_percent(d, target=buffered_target)
+                self.in_market.add(ticker)
+            
+            # Thoát vị thế dứt khoát khi đảo chiều
+            elif sma_s[0] < sma_l[0] and in_pos:
+                self.order_target_percent(d, target=0.0)
+                self.in_market.remove(ticker)
+
+def run_backtrader_strategy(tickers: list, weights: dict, initial_capital: float, days_back: int = 252) -> dict:
+    """
+    Chạy engine Backtrader thay thế cho backtest chay cũ.
+    Trả về Dict gồm:
+    - dates: list ngày tháng ("YYYY-MM-DD")
+    - portfolio_cum_returns: list % lợi nhuận 누적 của danh mục MVO qua các lệnh trade.
+    - market_cum_returns: list % lợi nhuận lũy kế VNINDEX/VN30 làm Benchmark.
+    """
+    cerebro = bt.Cerebro()
+    cerebro.broker.setcash(initial_capital)
+    cerebro.broker.setcommission(commission=0.001) # Phí môi giới chuẩn: 0.1%
+
+    valid_tickers = []
     
-    # Baseline: Tỉ trọng đều (Equal Weight)
-    ew_weights = np.ones(num_assets) / num_assets
+    # Kéo thêm data để bù cho 50 ngày Warm-up của SMA50, đảm bảo backtest đúng số days_back
+    warmup_days = 60
+    total_days = days_back + warmup_days
 
-    current_start = 0
-    while current_start + train_window < total_len:
-        train_end = current_start + train_window
-        test_end = min(train_end + test_window, total_len)
+    for ticker in tickers:
+        df = fetch_stock_data(ticker, days_back=total_days)
+        if df.empty or len(df) < 50:
+            continue
+            
+        valid_tickers.append(ticker)
+        data = bt.feeds.PandasData(
+            dataname=df,
+            name=ticker,
+            open='open', high='high', low='low', close='close', volume='volume'
+        )
+        cerebro.adddata(data)
 
-        # 1. In-Sample Data (Train)
-        train_data = port_returns.iloc[current_start:train_end]
-        
-        # MVO Math - Train
-        mean_returns = train_data.mean() * 252
-        cov_matrix_np = LedoitWolf().fit(train_data).covariance_
-        cov_matrix = cov_matrix_np * 252
-        
-        # Variance Drag
-        variances = np.diag(cov_matrix)
-        expected_returns = mean_returns.values - (variances / 2)
+    if not valid_tickers:
+        return {'dates': [], 'portfolio_cum_returns': [], 'market_cum_returns': []}
 
-        # Max Sharpe Optimization
-        def negative_sharpe(w):
-            w = np.array(w)
-            port_r = np.sum(expected_returns * w)
-            port_v = np.sqrt(np.dot(w.T, np.dot(cov_matrix, w)))
-            # Sharpe: Giả định Risk Free = 3%
-            return -((port_r - 0.03) / port_v)
+    w_sum = sum(weights.get(t, 0) for t in valid_tickers)
+    norm_weights = {t: weights.get(t, 0) / w_sum for t in valid_tickers} if w_sum > 0 else {}
 
-        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-        bounds = tuple((0.05, 0.40) for _ in range(num_assets))
-        init_guess = ew_weights
-        
-        optimized_result = minimize(negative_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        ms_weights = optimized_result.x
-        
-        # 2. Out-of-Sample Data (Test)
-        test_data = port_returns.iloc[train_end:test_end]
-        test_mkt = market_returns.iloc[train_end:test_end]
-        
-        # Lợi nhuận danh mục MVO trong test_window
-        daily_oos_mvo = test_data.dot(ms_weights)
-        # Lợi nhuận danh mục Equal Weight trong test_window
-        daily_oos_ew = test_data.dot(ew_weights)
-        
-        oos_portfolio_returns.extend(daily_oos_mvo.tolist())
-        oos_ew_returns.extend(daily_oos_ew.tolist())
-        oos_market_returns.extend(test_mkt.tolist())
-        oos_dates.extend(test_data.index.tolist())
+    cerebro.addstrategy(MACrossoverStrategy, weights=norm_weights)
+    cerebro.addanalyzer(ValueTracker, _name='val_tracker')
 
-        # Cuộn cửa sổ
-        current_start += test_window
+    results = cerebro.run()
+    strat = results[0]
+    val_tracker = strat.analyzers.val_tracker.get_analysis()
 
-    # Chuyển đổi Log Returns lũy kế (Tác Vụ 2.1)
-    # Vì log returns có tính cộng dồn, ta dùng cumulative sum sau đó exp - 1
-    # Tuy nhiên, nếu là simple list, ta làm như sau:
-    mvo_series = pd.Series(oos_portfolio_returns, index=oos_dates)
-    ew_series = pd.Series(oos_ew_returns, index=oos_dates)
-    mkt_series = pd.Series(oos_market_returns, index=oos_dates)
+    if not val_tracker:
+        return {'dates': [], 'portfolio_cum_returns': [], 'market_cum_returns': []}
+
+    dates_list = list(val_tracker.keys())
+    port_vals = list(val_tracker.values())
+
+    port_df = pd.DataFrame({'date': dates_list, 'port_val': port_vals})
+    port_df['date'] = pd.to_datetime(port_df['date'])
+    port_df.set_index('date', inplace=True)
     
-    cum_mvo = np.exp(mvo_series.cumsum()) - 1
-    cum_ew = np.exp(ew_series.cumsum()) - 1
-    cum_mkt = np.exp(mkt_series.cumsum()) - 1
+    # Lấy chính xác `days_back` ngày cuối cùng sau khi đã warm-up
+    if len(port_df) > days_back:
+        port_df = port_df.tail(days_back)
+    
+    # Re-normalize initial capital tại thời điểm bắt đầu biểu đồ hiển thị
+    chart_start_val = port_df['port_val'].iloc[0] if len(port_df) > 0 else initial_capital
+    port_df['port_cum_ret'] = (port_df['port_val'] / chart_start_val) - 1.0
 
-    dates_str = [d.strftime("%Y-%m-%d") for d in mvo_series.index]
+    # Benchmark cũng fetch đúng total_days và slice tương tự
+    mkt_df = fetch_index_data('VN30', total_days)
+    market_cum_returns = []
+    
+    if not mkt_df.empty and 'close' in mkt_df.columns:
+        mkt_df.index = pd.to_datetime(mkt_df.index)
+        # Chỉ ghép các ngày có chung với Portfolio
+        aligned_mkt = mkt_df.reindex(port_df.index).ffill()
+        
+        # Điền các giá trị NaN nếu có
+        if aligned_mkt['close'].isna().any():
+            aligned_mkt['close'] = aligned_mkt['close'].fillna(method='bfill').fillna(1.0)
+            
+        chart_start_mkt = aligned_mkt['close'].iloc[0] if len(aligned_mkt) > 0 else 1.0
+        aligned_mkt['mkt_cum_ret'] = (aligned_mkt['close'] / chart_start_mkt) - 1.0
+        
+        market_cum_returns = aligned_mkt['mkt_cum_ret'].tolist()
+    else:
+        # Fallback nếu Market Error
+        market_cum_returns = [0] * len(port_df)
+
+    dates_str = [d.strftime("%Y-%m-%d") for d in port_df.index]
 
     return {
         'dates': dates_str,
-        'portfolio_cum_returns': cum_mvo.fillna(0).tolist(),
-        'equal_weight_cum_returns': cum_ew.fillna(0).tolist(),
-        'market_cum_returns': cum_mkt.fillna(0).tolist()
-    }
-
-def fallback_backtest(port_returns: pd.DataFrame, market_returns: pd.Series) -> dict:
-    """Xử lý trường hợp dữ liệu quá ít (Chỉ báo Equal Weight)"""
-    num_assets = len(port_returns.columns)
-    if num_assets == 0:
-        return {'dates': [], 'portfolio_cum_returns': [], 'equal_weight_cum_returns': [], 'market_cum_returns': []}
-        
-    ew_weights = np.ones(num_assets) / num_assets
-    daily_ew = port_returns.dot(ew_weights)
-    
-    cum_ew = np.exp(daily_ew.cumsum()) - 1
-    cum_mkt = np.exp(market_returns.cumsum()) - 1
-    
-    # Đồng bộ index
-    cum_mkt = cum_mkt.reindex(cum_ew.index).ffill().fillna(0)
-    dates_str = [d.strftime("%Y-%m-%d") for d in cum_ew.index]
-    
-    return {
-        'dates': dates_str,
-        'portfolio_cum_returns': cum_ew.fillna(0).tolist(), # Fallback MVO thành EW
-        'equal_weight_cum_returns': cum_ew.fillna(0).tolist(),
-        'market_cum_returns': cum_mkt.tolist()
+        'portfolio_cum_returns': port_df['port_cum_ret'].tolist(),
+        'market_cum_returns': market_cum_returns
     }
