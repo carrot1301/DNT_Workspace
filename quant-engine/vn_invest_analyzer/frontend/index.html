@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VN Invest Analyzer - Screener & Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body class="dark-mode">
+    <header class="navbar">
+        <div class="logo">VN INVEST <span>ANALYZER</span></div>
+        <nav>
+            <button class="nav-btn active" id="btn-screener" onclick="switchView('screener-view', this)">Bộ Lọc Hiện Tượng</button>
+            <button class="nav-btn" id="btn-deepdive" onclick="switchView('deepdive-view', this)">Phân Tích Chuyên Sâu</button>
+        </nav>
+    </header>
+
+    <main id="app-container">
+        <!-- Screener View -->
+        <section id="screener-view" class="view active">
+            <div class="header-section">
+                <h1>Bảng Lọc Cổ Phiếu Dẫn Dắt</h1>
+                <p>Khám phá dòng tiền & xu hướng thời gian thực</p>
+            </div>
+            <div class="market-overview">
+                <div class="card market-card">
+                    <h3>VN-INDEX</h3>
+                    <div class="value positive" id="vnindex-value">Loading...</div>
+                </div>
+                <div class="card market-card">
+                    <h3>VN30</h3>
+                    <div class="value positive" id="vn30-value">Loading...</div>
+                </div>
+            </div>
+
+            <div class="card table-container">
+                <div class="table-header">
+                    <h2>Cổ Phiếu Đột Biến</h2>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mã CP</th>
+                            <th>Giá</th>
+                            <th>Biến động (%)</th>
+                            <th>Tín Hiệu</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="screener-tbody">
+                        <tr><td colspan="5">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Deep Dive View -->
+        <section id="deepdive-view" class="view hidden">
+            <div class="header-section flex-row">
+                <div class="left">
+                    <h1 id="analyzer-ticker">Vui lòng chọn Mã CP từ Bộ Lọc</h1>
+                    <div class="price-big" id="analyzer-price">--</div>
+                </div>
+                <div class="right">
+                    <button class="btn btn-primary" id="btn-generate-report" onclick="generateReport()">Tạo Báo Cáo AI</button>
+                </div>
+            </div>
+
+            <div class="grid-layout">
+                <!-- TA Chart -->
+                <div class="card chart-card span-2">
+                    <h2>Phân Tích Kỹ Thuật (TA)</h2>
+                    <div id="tvchart" class="chart-container"></div>
+                </div>
+                <!-- FA Card -->
+                <div class="card fa-card">
+                    <h2>Tổng Quan Cơ Bản (FA)</h2>
+                    <div class="metrics-grid" id="fa-metrics">
+                        <div class="metric-box"><span>P/E</span><strong>--</strong></div>
+                    </div>
+                </div>
+                <!-- Quant Score Card -->
+                <div class="card quant-card">
+                    <h2>Đánh Giá Quant</h2>
+                    <div class="score-circle">
+                        <span id="quant-score-value">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Modal/Section -->
+            <div class="card report-card hidden" id="report-section">
+                <h2>Trợ Lý Phân Tích AI</h2>
+                <div class="report-content" id="report-content">
+                    Đang quét các tham số...
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
