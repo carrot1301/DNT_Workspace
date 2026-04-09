@@ -31,12 +31,16 @@ from core.portfolio_opt import run_monte_carlo, calculate_stress_test, evaluate_
 from core.ai_advisor import stream_ai_advice
 from core.backtester import run_backtrader_strategy
 from core.signals import compute_signals
+from core.screener import run_daily_radar
 
 app = FastAPI(title="DNT Quant Lab API")
 
 # Database (RAM) để lưu trạng thái thanh toán
 # Format: {"SESSION_ID": True}
 payments_db = {}
+
+# Đệm cho radar F0
+radar_cache = {"date": None, "data": []}
 
 # Setup CORS for frontend to communicate without policy errors
 app.add_middleware(
@@ -208,6 +212,29 @@ def get_live_news(tickers: str):
     ticker_list = [t.strip().upper() for t in tickers.split(",")]
     news = fetch_recent_news(ticker_list, limit=3)
     return news
+
+# ── AI Auto Radar (F0) ───────────────────────────────────────
+@app.get("/api/ai-radar")
+def get_ai_radar():
+    """
+    Trả về top 5 mã cổ phiếu có điểm FA (Cơ bản) và TA (Kỹ thuật) tốt nhất hiện tại.
+    Có Cache trên RAM theo ngày để tối ưu performance.
+    """
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    if radar_cache["date"] == today_str and radar_cache["data"]:
+        return radar_cache["data"]
+        
+    try:
+        top_picks = sanitize_floats(run_daily_radar())
+        radar_cache["date"] = today_str
+        radar_cache["data"] = top_picks
+        return top_picks
+    except Exception as e:
+        print(f"Lỗi AI Radar: {e}")
+        return []
+
+
 
 # ── Gemini AI Advice ──────────────────────────────────────────
 class AIAdviceRequest(BaseModel):

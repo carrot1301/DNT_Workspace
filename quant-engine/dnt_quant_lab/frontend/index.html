@@ -39,6 +39,18 @@
                     <h3 data-i18n="params_title">Investment Parameters</h3>
                 <div class="input-group">
                     <label data-i18n="label_tickers">Mã Cổ phiếu (Cách nhau bởi dấu phẩy)</label>
+                    
+                    <!-- AI Radar Container -->
+                    <div id="ai-radar-container" style="margin-bottom: 8px; font-size: 0.8rem; color: #94A3B8;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <span>💡 <strong style="color: #00FFAA;">AI Radar:</strong> Gợi ý hôm nay</span>
+                            <span id="ai-radar-status" style="font-size: 0.7rem; color: #F59E0B;" class="loading-dots">Đang quét VN30...</span>
+                        </div>
+                        <div id="ai-radar-pills" style="display: flex; flex-wrap: wrap; gap: 5px;">
+                            <!-- JS will inject pills here -->
+                        </div>
+                    </div>
+
                     <input type="text" id="tickers-input" placeholder="e.g. FPT, MWG, VCB" class="glass-input" data-i18n-ph="ph_tickers">
                 </div>
                 <div class="input-group">

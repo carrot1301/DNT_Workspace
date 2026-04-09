@@ -924,4 +924,71 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 3000); // Mỗi 3 giây
     }
 
+    // --- AI Radar Screener Auto-Fetch ---
+    async function fetchAiRadar() {
+        const radarStatus = document.getElementById("ai-radar-status");
+        const pillsContainer = document.getElementById("ai-radar-pills");
+        if (!radarStatus || !pillsContainer) return;
+
+        try {
+            const res = await fetch('/api/ai-radar');
+            if (!res.ok) throw new Error("Máy chủ Backend chưa sẵn sàng hoặc lỗi: " + res.status);
+            const data = await res.json();
+            
+            radarStatus.textContent = "Đã cập nhật (VN30)";
+            radarStatus.classList.remove("loading-dots");
+            radarStatus.style.color = "#00FFAA";
+            pillsContainer.innerHTML = "";
+
+            if (data && data.length > 0) {
+                // Thêm 1 nút chọn tất cả
+                let allTickers = data.map(i => i.ticker).join(", ");
+                const allPill = document.createElement("button");
+                allPill.className = "radar-pill radar-pill-all";
+                allPill.innerHTML = `💯 Thêm TẤT CẢ (${data.length} mã)`;
+                allPill.style.cssText = "background: rgba(0, 255, 170, 0.1); border: 1px solid rgba(0, 255, 170, 0.5); color: #00FFAA; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-right: 5px; transition: all 0.2s;";
+                allPill.onclick = (e) => {
+                    e.preventDefault();
+                    document.getElementById("tickers-input").value = allTickers;
+                    evaluateTickersForManualBCTC();
+                };
+                pillsContainer.appendChild(allPill);
+
+                // Các mã đơn lẻ
+                data.forEach(item => {
+                    const pill = document.createElement("button");
+                    pill.className = "radar-pill";
+                    pill.textContent = `+ ${item.ticker}`;
+                    pill.style.cssText = "background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;";
+                    pill.title = `Score: ${item.score.toFixed(2)}`;
+                    
+                    pill.onmouseover = () => { pill.style.background = "rgba(255,255,255,0.1)"; };
+                    pill.onmouseout = () => { pill.style.background = "rgba(255,255,255,0.05)"; };
+                    
+                    pill.onclick = (e) => {
+                        e.preventDefault();
+                        const input = document.getElementById("tickers-input");
+                        let currentVals = input.value.split(",").map(s => s.trim()).filter(s => s.length > 0);
+                        if (!currentVals.includes(item.ticker)) {
+                            currentVals.push(item.ticker);
+                            input.value = currentVals.join(", ");
+                            evaluateTickersForManualBCTC();
+                        }
+                    };
+                    pillsContainer.appendChild(pill);
+                });
+            } else {
+                radarStatus.textContent = "Không tìm thấy";
+            }
+        } catch (e) {
+            console.error("AI Radar Fetch Error:", e);
+            radarStatus.textContent = "Lỗi kết nối AI";
+            radarStatus.style.color = "var(--neon-alert)";
+        }
+    }
+    
+    // Khởi động AI Radar khi tải trang
+    fetchAiRadar();
+
 });
+
