@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.optimize import minimize
 from sklearn.covariance import LedoitWolf
 
-def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000) -> dict:
+def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252) -> dict:
     """
     Sinh Monte Carlo: Tối ưu hoá Danh mục đầu tư.
     Tính toán Efficient Frontier, điểm Sharpe tối ưu và Khoảng tin cậy (Confidence Interval).
@@ -12,16 +12,20 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     points = np.zeros((num_portfolios, 3)) # Return, Volatility, Sharpe
     weights_record = np.zeros((num_portfolios, num_assets))
     
-    mean_returns = returns_df.mean() * 252
+    # Scale returns and covariance to the specific timeframe (e.g. 63 days for 3 months)
+    mean_returns = returns_df.mean() * trading_days
     
     # [Tác Vụ 2.2] Covariance Shrinkage với Ledoit-Wolf
     cov_matrix_daily = LedoitWolf().fit(returns_df).covariance_
-    cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * 252
+    cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * trading_days
     
     # [Tác Vụ 2.1] Điều chỉnh lực cản biến động (Variance Drag)
     # Expected Return = mu - (sigma^2 / 2)
     variances = np.diag(cov_matrix)
     expected_returns = mean_returns - (variances / 2)
+    
+    # Scale risk-free rate based on the timeframe (assume 3% annually)
+    risk_free_rate = 0.03 * (trading_days / 252)
     
     # Sinh trọng số ngẫu nhiên
     for i in range(num_portfolios):
@@ -32,7 +36,7 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
         port_variance = np.dot(weights.T, np.dot(cov_matrix, weights))
         port_volatility = np.sqrt(port_variance)
         
-        sharpe = (port_return - 0.03) / port_volatility # Giả định risk-free rate 3%
+        sharpe = (port_return - risk_free_rate) / port_volatility 
         
         points[i, :] = [port_return, port_volatility, sharpe]
         weights_record[i, :] = weights
@@ -41,7 +45,7 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     def negative_sharpe(weights):
         port_return = np.sum(expected_returns * weights)
         port_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
-        sharpe_ratio = (port_return - 0.03) / port_volatility
+        sharpe_ratio = (port_return - risk_free_rate) / port_volatility
         return -sharpe_ratio
 
     # Ràng buộc: Tổng tỉ trọng = 1
@@ -57,7 +61,7 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     ms_weights = optimized_result.x
     ms_return = np.sum(expected_returns * ms_weights)
     ms_volatil = np.sqrt(np.dot(ms_weights.T, np.dot(cov_matrix, ms_weights)))
-    ms_sharpe = (ms_return - 0.03) / ms_volatil
+    ms_sharpe = (ms_return - risk_free_rate) / ms_volatil
     
     # -- TÍNH KHOẢNG XÁC SUẤT 95% (CONFIDENCE INTERVAL) --
     # Khảo sát Return theo danh mục Max Sharpe với phân phối chuẩn
@@ -99,6 +103,7 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
             'ci_upper_value': upper_bound_val,
             'var_value_loss': var_95_value
         },
+        'timeframe_days': trading_days,
         'frontier_points_x': points[:, 1].tolist(),
         'frontier_points_y': points[:, 0].tolist(),
         'frontier_points_c': points[:, 2].tolist()

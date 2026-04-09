@@ -34,6 +34,19 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     # --- Trích xuất dữ liệu theo từng mode ---
     is_optimizer = "max_sharpe" in mc
 
+    # Lấy thông tin thời gian (áp dụng chung)
+    days = mc.get("timeframe_days", 252) # Mặc định 252 (1 năm)
+    timeframe_map = {
+        21: "1 tháng", 
+        63: "3 tháng", 
+        126: "6 tháng", 
+        189: "9 tháng",
+        252: "1 năm",
+        504: "2 năm",
+        756: "3 năm"
+    }
+    timeframe_note = timeframe_map.get(days, f"{days} ngày giao dịch")
+
     if is_optimizer:
         ms = mc["max_sharpe"]
         values = mc["monetary_values"]
@@ -42,7 +55,6 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
         sharpe = ms.get("sharpe", 0)
         weights: dict = ms.get("weights", {})
         initial_capital = values.get("initial_capital", 0)
-        timeframe_note = "1 năm (252 ngày giao dịch)"
     else:
         values = mc.get("monetary_values", {})
         expected_return_pct = mc.get("expected_return", 0) * 100
@@ -50,9 +62,6 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
         sharpe = None
         weights = {}
         initial_capital = values.get("initial_capital", 0)
-        days = mc.get("timeframe_days", 63)
-        timeframe_map = {21: "1 tháng", 63: "3 tháng", 126: "6 tháng", 252: "1 năm"}
-        timeframe_note = timeframe_map.get(days, f"{days} ngày giao dịch")
 
     expected_value = values.get("expected_value", 0)
     ci_lower = values.get("ci_lower_value", 0)
@@ -300,4 +309,10 @@ def stream_ai_advice(data: dict, lang: str = "vi"):
             if chunk.text:
                 yield chunk.text
     except Exception as e:
-        yield f"\n\n**Lỗi khi gọi Gemini API:** {str(e)}"
+        error_msg = str(e)
+        if "429" in error_msg or "Quota exceeded" in error_msg:
+            err_msg_vi = "\n\n**🤖 Máy chủ AI đang quá tải (Rate Limit)**\nDo bạn đang sử dụng gói tính năng AI miễn phí nên hệ thống đã tạm thời giới hạn số lần yêu cầu liên tục để tránh lạm dụng. Vui lòng chờ khoảng **30 giây** rồi thử lại nhé!"
+            err_msg_en = "\n\n**🤖 AI Server is overloaded (Rate Limit)**\nYou are currently using the Free Tier AI which limits rapid consecutive requests. Please wait about **30 seconds** and try again!"
+            yield err_msg_vi if lang == "vi" else err_msg_en
+        else:
+            yield f"\n\n**Lỗi khi gọi Gemini API:** {error_msg}"

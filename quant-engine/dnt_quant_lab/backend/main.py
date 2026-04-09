@@ -63,6 +63,7 @@ class SimulationRequest(BaseModel):
     target_return: float
     tickers: list[str]
     lang: str = "vi"
+    timeframe_days: int = 252
 
 @app.post("/api/run-simulation")
 def get_simulation_data(req: SimulationRequest):
@@ -74,7 +75,7 @@ def get_simulation_data(req: SimulationRequest):
     
     # 2. Chạy thuật toán Monte Carlo
     num_ports = 10000
-    mc_results = run_monte_carlo(port_ret, num_ports, req.capital)
+    mc_results = run_monte_carlo(port_ret, num_ports, req.capital, req.timeframe_days)
     
     # 3. Chạy Stress Test dựa trên rổ cổ phiếu Max Sharpe
     stress_test_results = calculate_stress_test(

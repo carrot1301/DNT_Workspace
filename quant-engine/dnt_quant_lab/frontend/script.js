@@ -18,7 +18,10 @@ const I18N = {
         'tf_1m': '1 Month (21 Days)',
         'tf_3m': '3 Months (63 Days)',
         'tf_6m': '6 Months (126 Days)',
+        'tf_9m': '9 Months (189 Days)',
         'tf_1y': '1 Year (252 Days)',
+        'tf_2y': '2 Years (504 Days)',
+        'tf_3y': '3 Years (756 Days)',
         'main_title': 'Portfolio Status',
         'status_connected': 'Server Connected',
         'chart_title': 'Analysis & Projections',
@@ -106,7 +109,10 @@ const I18N = {
         'tf_1m': '1 tháng (21 ngày giao dịch)',
         'tf_3m': '3 tháng (63 ngày giao dịch)',
         'tf_6m': '6 tháng (126 ngày giao dịch)',
+        'tf_9m': '9 tháng (189 ngày giao dịch)',
         'tf_1y': '1 năm (252 ngày giao dịch)',
+        'tf_2y': '2 năm (504 ngày giao dịch)',
+        'tf_3y': '3 năm (756 ngày giao dịch)',
         'main_title': 'Tổng quan Danh mục',
         'status_connected': 'Đã kết nối máy chủ',
         'chart_title': 'Phân tích & Dự phóng',
@@ -711,11 +717,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
 
+        const tfSelect = document.getElementById("opt-timeframe-select");
+        const tfValue = tfSelect ? parseInt(tfSelect.value) : 252;
+
         Promise.all([
             fetch('/api/run-simulation', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang})
+                body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang, timeframe_days: tfValue})
             }).then(res => {
                 if (!res.ok) throw new Error("Simulation API Error");
                 return res.json();
