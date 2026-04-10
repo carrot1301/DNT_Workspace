@@ -303,24 +303,39 @@ def stream_ai_advice(data: dict, lang: str = "vi"):
 
     prompt = build_prompt(data, lang)
 
-    try:
-        response = model.generate_content(prompt, stream=True)
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
-    except Exception as e:
-        import time
-        error_msg = str(e)
-        if "429" in error_msg or "Quota exceeded" in error_msg:
-            err_msg_vi = "\n\n**🤖 Máy chủ AI đang quá tải (Rate Limit)**\nDo bạn đang sử dụng gói tính năng AI miễn phí nên hệ thống đã tạm thời giới hạn số lần yêu cầu liên tục để tránh lạm dụng. Vui lòng chờ khoảng **60 giây** rồi thử lại nhé!"
-            err_msg_en = "\n\n**🤖 AI Server is overloaded (Rate Limit)**\nYou are currently using the Free Tier AI which limits rapid consecutive requests. Please wait about **60 seconds** and try again!"
-            
-            msg = err_msg_vi if lang == "vi" else err_msg_en
-            for word in msg.split(" "):
-                yield word + " "
-                time.sleep(0.05)
-        else:
-            err_msg = f"\n\n**Lỗi khi gọi Gemini API:** {error_msg}"
-            for word in err_msg.split(" "):
-                yield word + " "
-                time.sleep(0.05)
+    import time
+    max_wait = 240
+    start_time = time.time()
+
+    while True:
+        try:
+            response = model.generate_content(prompt, stream=True)
+            for chunk in response:
+                if chunk.text:
+                    yield chunk.text
+            return
+        except Exception as e:
+            error_msg = str(e)
+            if "429" in error_msg or "Quota exceeded" in error_msg:
+                elapsed = time.time() - start_time
+                if elapsed < max_wait:
+                    # Giữ kết nối (keep-alive) không bị đứt bởi Koyeb/Vercel timeout trong lúc chờ retry
+                    for _ in range(15):
+                        yield "<!-- wait -->"
+                        time.sleep(1)
+                    continue
+                else:
+                    err_msg_vi = "\n\n**🤖 Máy chủ AI đang quá tải (Rate Limit)**\nDo bạn đang sử dụng gói tính năng AI miễn phí nên hệ thống đã tạm thời giới hạn số lần yêu cầu liên tục để tránh lạm dụng. Vui lòng chờ khoảng **60 giây** rồi thử lại nhé!"
+                    err_msg_en = "\n\n**🤖 AI Server is overloaded (Rate Limit)**\nYou are currently using the Free Tier AI which limits rapid consecutive requests. Please wait about **60 seconds** and try again!"
+                    
+                    msg = err_msg_vi if lang == "vi" else err_msg_en
+                    for word in msg.split(" "):
+                        yield word + " "
+                        time.sleep(0.05)
+                    return
+            else:
+                err_msg = f"\n\n**Lỗi khi gọi Gemini API:** {error_msg}"
+                for word in err_msg.split(" "):
+                    yield word + " "
+                    time.sleep(0.05)
+                return
