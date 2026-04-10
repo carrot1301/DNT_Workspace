@@ -88,7 +88,8 @@ const I18N = {
         'sig_col_action': 'Execution',
         'btn_vps_cta': 'Open VPS Trading ↗',
         'signals_title': 'Real-Time Trading Signals',
-        'signals_desc': 'Technical Analysis (SMA Crossover) & Direct Broker Integration.'
+        'signals_desc': 'Technical Analysis (SMA Crossover) & Direct Broker Integration.',
+        'use_ai_report': 'Enable AI Advisor Report (Consumes Token)'
     },
     'vi': {
         'subtitle': 'Trợ lý Đầu tư AI',
@@ -179,7 +180,8 @@ const I18N = {
         'sig_col_action': 'Khớp Lệnh',
         'btn_vps_cta': 'Mở VPS Đặt Lệnh ↗',
         'signals_title': 'Tín Hiệu Giao Dịch Thời Gian Thực',
-        'signals_desc': 'Tín hiệu Phân tích Kỹ thuật (SMA Crossover) & Đặt lệnh mua bán liên thông VPS.'
+        'signals_desc': 'Tín hiệu Phân tích Kỹ thuật (SMA Crossover) & Đặt lệnh mua bán liên thông VPS.',
+        'use_ai_report': 'Bật Trợ Lý AI Phân Tích (Tốn Token)'
     }
 };
 
@@ -498,7 +500,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // --- NEW: Trigger AI Advice Automatically ---
-        fetchAIAdvice(data);
+        const aiCheckbox = document.getElementById("generate-ai-report-checkbox");
+        if (aiCheckbox && aiCheckbox.checked) {
+            fetchAIAdvice(data);
+        } else {
+            const aiCard = document.getElementById("ai-advice-card");
+            if (aiCard) aiCard.style.display = "none";
+        }
     }
 
     async function fetchAIAdvice(data) {
