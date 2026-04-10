@@ -13,7 +13,7 @@ def _get_model():
     if not api_key or api_key == "your_gemini_api_key_here":
         return None
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 
 def _format_vnd(value: float) -> str:
