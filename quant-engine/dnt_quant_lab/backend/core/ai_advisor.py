@@ -13,7 +13,7 @@ def _get_model():
     if not api_key or api_key == "your_gemini_api_key_here":
         return None
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return genai.GenerativeModel("gemini-1.5-flash")
 
 
 def _format_vnd(value: float) -> str:
@@ -309,10 +309,18 @@ def stream_ai_advice(data: dict, lang: str = "vi"):
             if chunk.text:
                 yield chunk.text
     except Exception as e:
+        import time
         error_msg = str(e)
         if "429" in error_msg or "Quota exceeded" in error_msg:
             err_msg_vi = "\n\n**🤖 Máy chủ AI đang quá tải (Rate Limit)**\nDo bạn đang sử dụng gói tính năng AI miễn phí nên hệ thống đã tạm thời giới hạn số lần yêu cầu liên tục để tránh lạm dụng. Vui lòng chờ khoảng **60 giây** rồi thử lại nhé!"
             err_msg_en = "\n\n**🤖 AI Server is overloaded (Rate Limit)**\nYou are currently using the Free Tier AI which limits rapid consecutive requests. Please wait about **60 seconds** and try again!"
-            yield err_msg_vi if lang == "vi" else err_msg_en
+            
+            msg = err_msg_vi if lang == "vi" else err_msg_en
+            for word in msg.split(" "):
+                yield word + " "
+                time.sleep(0.05)
         else:
-            yield f"\n\n**Lỗi khi gọi Gemini API:** {error_msg}"
+            err_msg = f"\n\n**Lỗi khi gọi Gemini API:** {error_msg}"
+            for word in err_msg.split(" "):
+                yield word + " "
+                time.sleep(0.05)
