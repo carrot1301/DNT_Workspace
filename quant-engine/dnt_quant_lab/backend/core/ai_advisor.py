@@ -145,13 +145,23 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
             news_section += "\n*Task: Analyze market sentiment from these news events to evaluate the short-term outlook, combined with the quantitative metrics.*"
 
     # --- Format phân bổ tỉ trọng ---
+    bl_event = mc.get("black_litterman_event", {})
+    is_bl_active = bl_event.get("is_active", False)
+    
     weights_section = ""
     if weights:
+        b_note = ""
+        if is_bl_active:
+            if lang == "vi":
+                b_note = "\n*(Lưu ý từ thuật toán Quant: Phân bổ này đã được tái định giá bằng thuật toán Black-Litterman (theo ma trận P, Q). Hệ thống tự động đẩy Alpha kỳ vọng với nhóm cổ phiếu hưởng lợi từ lộ trình Nâng hạng FTSE 4 giai đoạn. Bạn hãy nhắc người dùng điều này khi phân tích)*\n"
+            else:
+                b_note = "\n*(Quant Engine Note: Returns have been recalibrated using the Black-Litterman algorithm. Alpha was injected for key stocks benefiting from the 4-phase FTSE upgrade. Mention this to the user).* \n"
+
         sorted_w = sorted(weights.items(), key=lambda x: -x[1])
         weights_lines = "\n".join(
             f"    • {t}: {w * 100:.1f}%" for t, w in sorted_w
         )
-        weights_section = f"\n**PHÂN BỔ TỐI ƯU (Max Sharpe):**\n{weights_lines}"
+        weights_section = f"\n**PHÂN BỔ TỐI ƯU (Max Sharpe):**{b_note}\n{weights_lines}"
 
     # --- VaR interpretation ---
     if var_loss >= 0:

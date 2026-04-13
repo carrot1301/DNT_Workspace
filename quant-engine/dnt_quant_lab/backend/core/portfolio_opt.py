@@ -3,10 +3,83 @@ import pandas as pd
 from scipy.optimize import minimize
 from sklearn.covariance import LedoitWolf
 
-def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252) -> dict:
+class BlackLittermanOptimizer:
+    """
+    [Tác Vụ Mô Hình Hóa] Black-Litterman Model
+    Mô hình tích hợp kỳ vọng chủ quan (Views) vào Implied Equilibrium Returns.
+    """
+    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.05):
+        self.risk_aversion = risk_aversion
+        self.tau = tau
+        
+    def implied_returns(self, cov_matrix: pd.DataFrame, weights: np.ndarray) -> pd.Series:
+        """Tính Prior: Implied Equilibrium Returns (Equally Weighted nếu không có Market Cap)"""
+        return pd.Series(self.risk_aversion * np.dot(cov_matrix.values, weights), index=cov_matrix.columns)
+        
+    def optimize(self, cov_matrix: pd.DataFrame, implied_returns: pd.Series, 
+                 P: np.ndarray = None, Q: np.ndarray = None, omega: np.ndarray = None):
+        """Toán học Black-Litterman Bayersian Equation"""
+        if P is None or Q is None or len(P) == 0:
+            return implied_returns
+            
+        Sigma = cov_matrix.values
+        Pi = implied_returns.values
+        
+        # Rủi ro views (omega), mặc định nội suy từ P và Sigma nếu chưa truyền
+        if omega is None:
+            omega = np.diag(np.diag(np.dot(np.dot(P, self.tau * Sigma), P.T)))
+        elif len(omega.shape) == 1:
+            omega = np.diag(omega)
+                
+        try:
+            tau_sigma_inv = np.linalg.inv(self.tau * Sigma)
+            omega_inv = np.linalg.inv(omega)
+            
+            # [ (tau*Sigma)^-1 + P^T * Omega^-1 * P ]^-1
+            part1 = np.linalg.inv(tau_sigma_inv + np.dot(np.dot(P.T, omega_inv), P))
+            # [ (tau*Sigma)^-1 * Pi + P^T * Omega^-1 * Q ]
+            part2 = np.dot(tau_sigma_inv, Pi) + np.dot(np.dot(P.T, omega_inv), Q)
+            
+            posterior_expected_returns = np.dot(part1, part2)
+            return pd.Series(posterior_expected_returns, index=cov_matrix.columns)
+        except np.linalg.LinAlgError:
+            return implied_returns
+
+def generate_ftse_views(tickers: list, timeframe_days: int) -> dict:
+    """Sinh Ma trận Views cho sự kiện nâng hạng FTSE (T9/2026 tới T9/2027)"""
+    # Xử lý list thụ hưởng user nhập:
+    FTSE_BENEFICIARIES = ['VIC', 'VHM', 'HPG', 'FPT', 'SSI', 'MSN', 'VCB', 'VNM', 'VJC', 'VIX', 'STB', 'VRE', 'SHB', 'GEX', 'VCI', 'KDH', 'KBC', 'BID', 'NVL', 'DGC', 'EIB', 'PDR', 'DXG', 'DIG', 'DPM']
+    
+    # Sốc Alpha Kỳ vọng tuỳ theo Timeframe cắt ngang mốc hay không (tạm fix theo duration)
+    alpha_bump = 0.05
+    if timeframe_days >= 126:
+        alpha_bump = 0.08
+    if timeframe_days >= 252:
+        alpha_bump = 0.12
+
+    views = {}
+    for t in tickers:
+        if t in FTSE_BENEFICIARIES:
+            views[t] = alpha_bump
+    return views
+
+def build_views_matrices(tickers: list, views_dict: dict):
+    if not dict or len(views_dict) == 0:
+        return None, None
+    num_assets = len(tickers)
+    num_views = len(views_dict)
+    P = np.zeros((num_views, num_assets))
+    Q = np.zeros(num_views)
+    for i, (ticker, excess_return) in enumerate(views_dict.items()):
+        if ticker in tickers:
+            asset_idx = tickers.index(ticker)
+            P[i, asset_idx] = 1.0 # View tuyệt đối
+            Q[i] = excess_return
+    return P, Q
+def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252, apply_ftse_event: bool = True) -> dict:
     """
     Sinh Monte Carlo: Tối ưu hoá Danh mục đầu tư.
-    Tính toán Efficient Frontier, điểm Sharpe tối ưu và Khoảng tin cậy (Confidence Interval).
+    Tích hợp mô hình Black-Litterman và Rà soát sự kiện Nâng hạng FTSE.
     """
     num_assets = len(returns_df.columns)
     points = np.zeros((num_portfolios, 3)) # Return, Volatility, Sharpe
@@ -18,11 +91,36 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     # [Tác Vụ 2.2] Covariance Shrinkage với Ledoit-Wolf
     cov_matrix_daily = LedoitWolf().fit(returns_df).covariance_
     cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * trading_days
-    
-    # [Tác Vụ 2.1] Điều chỉnh lực cản biến động (Variance Drag)
-    # Expected Return = mu - (sigma^2 / 2)
     variances = np.diag(cov_matrix)
-    expected_returns = mean_returns - (variances / 2)
+    
+    # -----------------------------------------------------------------
+    # Nâng cấp thuật toán Hướng sự kiện: BLACK-LITTERMAN (Mô hình BL)
+    # -----------------------------------------------------------------
+    bl_p_matrix_out = []
+    bl_q_vector_out = []
+    is_bl_active = False
+    
+    if apply_ftse_event:
+        tickers_list = list(returns_df.columns)
+        eq_weights = np.ones(len(tickers_list)) / len(tickers_list)
+        bl_optimizer = BlackLittermanOptimizer()
+        implied_ret = bl_optimizer.implied_returns(cov_matrix, eq_weights)
+        
+        ftse_views = generate_ftse_views(tickers_list, trading_days)
+        if ftse_views:
+            P, Q = build_views_matrices(tickers_list, ftse_views)
+            if P is not None and Q is not None:
+                bl_p_matrix_out = P.tolist()
+                bl_q_vector_out = Q.tolist()
+                post_ret = bl_optimizer.optimize(cov_matrix, implied_ret, P, Q)
+                
+                # Apply Variance Drag trên Posterior Returns (Chuyển Mean thành Expected Return thuần)
+                expected_returns = post_ret.values - (variances / 2)
+                is_bl_active = True
+                
+    # Fallback to Markowitz Lịch sử nếu không kích hoạt hoặc rỗng View
+    if not is_bl_active:
+        expected_returns = mean_returns - (variances / 2)
     
     # Scale risk-free rate based on the timeframe (assume 3% annually)
     risk_free_rate = 0.03 * (trading_days / 252)
@@ -106,7 +204,12 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
         'timeframe_days': trading_days,
         'frontier_points_x': points[:, 1].tolist(),
         'frontier_points_y': points[:, 0].tolist(),
-        'frontier_points_c': points[:, 2].tolist()
+        'frontier_points_c': points[:, 2].tolist(),
+        'black_litterman_event': {
+            'is_active': is_bl_active,
+            'P_matrix': bl_p_matrix_out,
+            'Q_vector': bl_q_vector_out
+        }
     }
 
 def calculate_stress_test(port_returns: pd.DataFrame, market_returns: pd.Series, weights_dict: dict, initial_capital: float, crash_percent: float = -0.05) -> dict:
@@ -306,30 +409,3 @@ def calculate_advanced_metrics(daily_port_returns: pd.Series, market_returns: pd
         "beta": beta
     }
 
-class BlackLittermanOptimizer:
-    """
-    [Tác Vụ Mô Hình Hóa] Black-Litterman Model Placeholder.
-    Mô hình tích hợp kỳ vọng chủ quan (Views) vào Implied Equilibrium Returns.
-    """
-    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.05):
-        self.risk_aversion = risk_aversion
-        self.tau = tau
-        
-    def implied_returns(self, cov_matrix: pd.DataFrame, weights: np.ndarray) -> np.ndarray:
-        """Tính Prior: Implied Equilibrium Returns (Market Cap hoặc Equal Weight)"""
-        return self.risk_aversion * np.dot(cov_matrix.values, weights)
-        
-    def optimize(self, cov_matrix: pd.DataFrame, implied_returns: np.ndarray, 
-                 P: np.ndarray = None, Q: np.ndarray = None, omega: np.ndarray = None):
-        """
-        Kết hợp góc nhìn vĩ mô:
-        P (Pick matrix): Tham chiếu tài sản trong góc nhìn.
-        Q (Views vector): Kỳ vọng lợi nhuận.
-        Nếu P và Q = None, hệ thống trả về nguyên Implied Returns.
-        """
-        if P is None or Q is None:
-            return implied_returns
-            
-        # BL Math Formula placeholder for future version:
-        # Returns = (...) * Prior + (...) * Views
-        pass
