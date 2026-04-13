@@ -321,8 +321,13 @@ def stream_ai_advice(data: dict, lang: str = "vi"):
         try:
             response = model.generate_content(prompt, stream=True)
             for chunk in response:
-                if chunk.text:
-                    yield chunk.text
+                try:
+                    txt = chunk.text
+                    if txt:
+                        yield txt
+                except ValueError:
+                    # Bỏ qua lỗi invalid Part khi finish_reason=1 (chunk rỗng)
+                    pass
             return
         except Exception as e:
             error_msg = str(e)
