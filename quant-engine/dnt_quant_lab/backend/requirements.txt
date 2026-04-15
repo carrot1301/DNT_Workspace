@@ -11,4 +11,4 @@ requests-cache
 scikit-learn
 scipy
 backtrader==1.9.78.123
-pandas_ta
+pandas-ta
