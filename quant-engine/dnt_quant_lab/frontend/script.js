@@ -197,196 +197,201 @@ function openTAModal(ticker) {
     const title = document.getElementById('ta-modal-title');
     const body = document.getElementById('ta-modal-body');
 
-    title.textContent = `Phân tích Kỹ thuật: ${ticker}`;
-
-    // Helper: color based on signal
-    function sigColor(sig) {
-        if (!sig) return '#94a3b8';
-        if (sig.includes('BUY')) return '#00FFAA';
-        if (sig.includes('SELL')) return '#FF5555';
-        return '#94a3b8';
-    }
-
-    function sigBg(sig) {
-        if (!sig) return 'rgba(148,163,184,0.1)';
-        if (sig.includes('BUY')) return 'rgba(0,255,170,0.08)';
-        if (sig.includes('SELL')) return 'rgba(255,85,85,0.08)';
-        return 'rgba(148,163,184,0.08)';
-    }
+    title.textContent = `${ticker} - Phân tích kỹ thuật`;
 
     function fmt(v) {
-        if (v === undefined || v === null || isNaN(v)) return '--';
+        if (v === undefined || v === null) return '--';
         return typeof v === 'number' ? v.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) : v;
     }
 
-    function fmtVND(v) {
-        if (!v || isNaN(v)) return '--';
-        return Math.floor(v).toLocaleString('vi-VN') + '₫';
+    function txColor(text) {
+        if (!text) return '#94a3b8';
+        if (text.includes('MUA') || text.includes('Mua')) return '#34C759'; // Xanh lá
+        if (text.includes('BÁN') || text.includes('Bán')) return '#FF3B30'; // Đỏ
+        return '#8e95a5';
     }
 
-    const summary = ta.summary || {};
-    const trend = ta.trend || {};
-    const osc = ta.oscillators || {};
-    const vol = ta.volatility || {};
-    const volume = ta.volume || {};
-    const macd = trend.MACD || {};
-    const bb = vol.BollingerBands || {};
-    const stoch = osc.Stochastic || {};
+    function sigBgColor(text) {
+        if (!text) return '#8e95a5';
+        if (text.includes('MUA MẠNH')) return '#28a745';
+        if (text.includes('MUA')) return '#34C759';
+        if (text.includes('BÁN MẠNH')) return '#dc3545';
+        if (text.includes('BÁN')) return '#FF3B30';
+        return '#6c757d';
+    }
 
-    const overallSig = summary.overall_signal || 'NEUTRAL';
-    const score = summary.score != null ? summary.score : 0;
-    const buyCount = summary.buy_count || 0;
-    const sellCount = summary.sell_count || 0;
-    const neutralCount = summary.neutral_count || 0;
+    // Chuyển score [-1, 1] sang rotation degree [0, 180] cho Needle (-1 = 0deg, 1 = 180deg)
+    // -1 = Bán Mạnh, 1 = Mua Mạnh
+    function needleRot(score) {
+        let sc = parseFloat(score) || 0;
+        // sc range: -1 to 1. Map to 0 to 180 degrees.
+        // Actually, css starts from left to right. 0 deg = left (Bán mạnh), 180 deg = right (Mua mạnh)
+        let deg = (sc + 1) * 90; 
+        // Need to offset by -90 since rotate starts from top in standard transform, 
+        // but if we rotate a bottom-origin stick, 0deg is vertical.
+        // Let's adjust stick rotation mapping: -90deg is full left (Sell), +90deg is full right (Buy).
+        let r = sc * 90;
+        if (r > 90) r = 90;
+        if (r < -90) r = -90;
+        return r;
+    }
 
-    // Score bar percentage (maps -1..1 to 0..100)
-    const scorePercent = Math.round((score + 1) / 2 * 100);
+    // Render Pivot Rows
+    function pivotRows(arr) {
+        return arr.map(p => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px; text-align: left; font-weight: bold;">${p.name}</td>
+                <td style="padding: 12px;">${p.S3 > 0 ? fmt(p.S3) : ''}</td>
+                <td style="padding: 12px;">${p.S2 > 0 ? fmt(p.S2) : ''}</td>
+                <td style="padding: 12px;">${p.S1 > 0 ? fmt(p.S1) : ''}</td>
+                <td style="padding: 12px; font-weight: bold;">${p.Points > 0 ? fmt(p.Points) : ''}</td>
+                <td style="padding: 12px;">${p.R1 > 0 ? fmt(p.R1) : ''}</td>
+                <td style="padding: 12px;">${p.R2 > 0 ? fmt(p.R2) : ''}</td>
+                <td style="padding: 12px;">${p.R3 > 0 ? fmt(p.R3) : ''}</td>
+            </tr>
+        `).join('');
+    }
 
-    // RSI gauge
-    const rsi = osc.RSI || 0;
-    let rsiLabel = 'Trung tính';
-    let rsiColor = '#94a3b8';
-    if (rsi > 70) { rsiLabel = 'Quá mua'; rsiColor = '#FF5555'; }
-    else if (rsi < 30) { rsiLabel = 'Quá bán'; rsiColor = '#00FFAA'; }
-    else if (rsi > 50) { rsiLabel = 'Tích cực'; rsiColor = '#00FFAA'; }
-    else { rsiLabel = 'Tiêu cực'; rsiColor = '#FF5555'; }
+    // Render Indicators
+    function indRows(arr) {
+        return arr.map(i => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px; font-weight: bold; text-align: left;">${i.name}</td>
+                <td style="padding: 12px; text-align: right;">${fmt(i.value)}</td>
+                <td style="padding: 12px; text-align: center; color: ${txColor(i.action)};">${i.action}</td>
+            </tr>
+        `).join('');
+    }
 
-    // MFI gauge
-    const mfi = volume.MFI || 0;
-    let mfiLabel = 'Trung tính';
-    let mfiColor = '#94a3b8';
-    if (mfi > 80) { mfiLabel = 'Quá mua'; mfiColor = '#FF5555'; }
-    else if (mfi < 20) { mfiLabel = 'Quá bán'; mfiColor = '#00FFAA'; }
-
-    // ADX interpretation
-    const adx = trend.ADX || 0;
-    let adxLabel = 'Yếu';
-    if (adx > 50) adxLabel = 'Rất mạnh';
-    else if (adx > 25) adxLabel = 'Mạnh';
+    // Render Moving Averages
+    function maRows(arr) {
+        return arr.map(m => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px; font-weight: bold; text-align: left;">${m.name}</td>
+                <td style="padding: 12px; text-align: center;">
+                    <div>${fmt(m.sma_val)}</div>
+                    <div style="font-size: 11px; color: ${txColor(m.sma_action)};">${m.sma_action}</div>
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <div>${fmt(m.ema_val)}</div>
+                    <div style="font-size: 11px; color: ${txColor(m.ema_action)};">${m.ema_action}</div>
+                </td>
+            </tr>
+        `).join('');
+    }
 
     body.innerHTML = `
-        <!-- Overall Summary -->
-        <div style="background: ${sigBg(overallSig)}; border: 1px solid ${sigColor(overallSig)}30; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
-            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">Tín hiệu tổng hợp</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: ${sigColor(overallSig)}; text-shadow: 0 0 20px ${sigColor(overallSig)}40;">${overallSig}</div>
-            <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 6px;">
-                Giá: <strong style="color: white;">${fmtVND(ta.current_price)}</strong>
-            </div>
-            <!-- Score Bar -->
-            <div style="margin-top: 12px;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; margin-bottom: 4px;">
-                    <span>SELL</span><span>NEUTRAL</span><span>BUY</span>
-                </div>
-                <div style="width: 100%; height: 8px; background: linear-gradient(to right, #FF5555, #94a3b8, #00FFAA); border-radius: 4px; position: relative;">
-                    <div style="position: absolute; top: -3px; left: ${scorePercent}%; transform: translateX(-50%); width: 14px; height: 14px; background: white; border-radius: 50%; border: 2px solid ${sigColor(overallSig)}; box-shadow: 0 0 8px ${sigColor(overallSig)};"></div>
-                </div>
-                <div style="text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">
-                    Score: ${fmt(score)} | 🟢 ${buyCount} MUA · 🔴 ${sellCount} BÁN · ⚪ ${neutralCount} TRUNG TÍNH
-                </div>
-            </div>
-        </div>
-
-        <!-- Bento Grid -->
-        <div class="ta-grid">
-            <!-- Trend Box -->
-            <div class="ta-box" style="grid-column: span 2;">
-                <div style="font-size: 0.85rem; font-weight: 700; color: #00B8FF; margin-bottom: 10px;">📈 XU HƯỚNG (TREND)</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div>
-                        <span>SMA 20</span><br>
-                        <strong style="color: ${ta.current_price > trend.SMA20 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.SMA20)}</strong>
-                    </div>
-                    <div>
-                        <span>SMA 50</span><br>
-                        <strong style="color: ${ta.current_price > trend.SMA50 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.SMA50)}</strong>
-                    </div>
-                    <div>
-                        <span>SMA 200</span><br>
-                        <strong style="color: ${ta.current_price > trend.SMA200 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.SMA200)}</strong>
-                    </div>
-                    <div>
-                        <span>EMA 20</span><br>
-                        <strong style="color: ${ta.current_price > trend.EMA20 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.EMA20)}</strong>
-                    </div>
-                </div>
-                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                    <div>
-                        <span>MACD Line</span><br>
-                        <strong style="color: ${macd.line > macd.signal ? '#00FFAA' : '#FF5555'};">${fmt(macd.line)}</strong>
-                    </div>
-                    <div>
-                        <span>Signal Line</span><br>
-                        <strong style="color: #cbd5e1;">${fmt(macd.signal)}</strong>
-                    </div>
-                    <div>
-                        <span>ADX (${adxLabel})</span><br>
-                        <strong style="color: ${adx > 25 ? '#F59E0B' : '#94a3b8'};">${fmt(adx)}</strong>
-                    </div>
-                </div>
+        <div style="padding: 0 8px; font-family: 'Inter', sans-serif;">
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <span style="font-weight: bold; color: white;">Chu kỳ:</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">1 phút</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">5 phút</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">15 phút</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">1 giờ</span>
+                <span style="background: #00B8FF; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">1 ngày</span>
+                <span style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">1 tuần</span>
             </div>
 
-            <!-- Oscillators Box -->
-            <div class="ta-box">
-                <div style="font-size: 0.85rem; font-weight: 700; color: #8B5CF6; margin-bottom: 10px;">🔄 DAO ĐỘNG</div>
-                <div style="margin-bottom: 8px;">
-                    <span>RSI (14)</span>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                        <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                            <div style="width: ${rsi}%; height: 100%; background: ${rsiColor}; border-radius: 3px;"></div>
+            <!-- Top Summary -->
+            <div style="display: flex; justify-content: space-between; background: #232838; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <!-- Left Details -->
+                <div style="flex: 1; max-width: 400px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <span style="font-size: 14px; font-weight: bold; width: 140px; color: white;">TỔNG HỢP:</span>
+                        <span style="background: ${sigBgColor(ta.summary.overall_vi)}; color: white; border-radius: 20px; padding: 6px 14px; font-weight: bold; font-size: 13px;">${ta.summary.overall_vi}</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size: 13px; width: 140px; color: white;">Đường trung bình:</span>
+                        <span style="color: ${txColor(ta.summary.ma_signal)}; font-weight: bold; flex: 1; font-size: 14px;">${ta.summary.ma_signal}</span>
+                        <div style="display: flex; gap: 12px; font-size: 13px; color: white;">
+                            <span>Mua (<b style="color: white;">${ta.summary.ma_buy}</b>)</span>
+                            <span>Bán (<b style="color: white;">${ta.summary.ma_sell}</b>)</span>
                         </div>
-                        <strong style="color: ${rsiColor}; font-size: 0.9rem; min-width: 40px;">${fmt(rsi)}</strong>
                     </div>
-                    <div style="font-size: 0.7rem; color: ${rsiColor}; margin-top: 2px;">${rsiLabel}</div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
-                    <div>
-                        <span>Stoch %K</span><br>
-                        <strong style="color: #cbd5e1;">${fmt(stoch.k)}</strong>
-                    </div>
-                    <div>
-                        <span>Stoch %D</span><br>
-                        <strong style="color: #cbd5e1;">${fmt(stoch.d)}</strong>
-                    </div>
-                    <div>
-                        <span>CCI (14)</span><br>
-                        <strong style="color: ${osc.CCI < -100 ? '#00FFAA' : osc.CCI > 100 ? '#FF5555' : '#94a3b8'};">${fmt(osc.CCI)}</strong>
-                    </div>
-                    <div>
-                        <span>Williams %R</span><br>
-                        <strong style="color: #cbd5e1;">${fmt(osc.WilliamsR)}</strong>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Volatility + Volume Box -->
-            <div class="ta-box">
-                <div style="font-size: 0.85rem; font-weight: 700; color: #F59E0B; margin-bottom: 10px;">📊 BIẾN ĐỘNG & KHỐI LƯỢNG</div>
-                <div style="margin-bottom: 8px;">
-                    <span>Bollinger Bands (20)</span>
-                    <div style="margin-top: 6px; position: relative; height: 40px; background: rgba(255,255,255,0.03); border-radius: 6px; overflow: hidden;">
-                        <div style="position: absolute; top: 0; bottom: 0; left: 10%; right: 10%; background: rgba(245,158,11,0.1); border-left: 2px dashed #F59E0B40; border-right: 2px dashed #F59E0B40;"></div>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7rem; color: #94a3b8;">
-                            ${fmtVND(bb.lower)} — <strong style="color: white;">${fmtVND(bb.middle)}</strong> — ${fmtVND(bb.upper)}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size: 13px; width: 140px; color: white;">Chỉ số kỹ thuật:</span>
+                        <span style="color: ${txColor(ta.summary.ind_signal)}; font-weight: bold; flex: 1; font-size: 14px;">${ta.summary.ind_signal}</span>
+                        <div style="display: flex; gap: 12px; font-size: 13px; color: white;">
+                            <span>Mua (<b style="color: white;">${ta.summary.ind_buy}</b>)</span>
+                            <span>Bán (<b style="color: white;">${ta.summary.ind_sell}</b>)</span>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 11px; color: #8e95a5; margin-top: 12px;">* Dữ liệu được tính toán tự động theo thời gian thực</div>
+                </div>
+                
+                <!-- Speedometer / Gauge -->
+                <div style="width: 250px; display: flex; align-items: center; justify-content: center; position: relative; margin-right: 20px;">
+                    <div style="position: relative; width: 180px; height: 90px; overflow: hidden;">
+                        <!-- Semi-circle arcs -->
+                        <div style="position: absolute; top: 0; left: 0; width: 180px; height: 180px; border-radius: 50%; background: conic-gradient(from -90deg at 50% 50%, #FF3B30 0%, #FF3B30 30%, #8E8E93 45%, #8E8E93 55%, #34C759 70%, #34C759 100%); clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 0% 50%); transform: rotate(180deg);"></div>
+                        <!-- Inner cut-out -->
+                        <div style="position: absolute; top: 12px; left: 12px; width: 156px; height: 156px; border-radius: 50%; background: #232838;"></div>
+                        <!-- Dash marks to look like Fireant -->
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border-top: 8px dashed #232838; box-sizing: border-box; opacity: 0.5;"></div>
+                        
+                        <!-- Needle Pivot -->
+                        <div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: #34C759; border-radius: 50%; z-index: 2;"></div>
+                        <!-- Needle stick -->
+                        <div style="position: absolute; bottom: 0px; left: 50%; width: 4px; height: 65px; background: #34C759; transform-origin: bottom center; transform: translateX(-50%) rotate(${needleRot(ta.summary.score)}deg); border-radius: 4px 4px 0 0; z-index: 1;">
+                            <div style="position:absolute; top:-12px; left:-6px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:12px solid #34C759;"></div>
                         </div>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;">
-                    <div>
-                        <span>MFI (14)</span>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
-                            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                                <div style="width: ${mfi}%; height: 100%; background: ${mfiColor}; border-radius: 3px;"></div>
-                            </div>
-                            <strong style="color: ${mfiColor}; font-size: 0.85rem;">${fmt(mfi)}</strong>
-                        </div>
-                        <div style="font-size: 0.7rem; color: ${mfiColor};">${mfiLabel}</div>
-                    </div>
-                    <div>
-                        <span>OBV</span><br>
-                        <strong style="color: #cbd5e1; font-size: 0.85rem;">${fmt(volume.OBV)}</strong>
-                    </div>
+            </div>
+            
+            <!-- Pivot Points Table -->
+            <div style="margin-bottom: 20px;">
+                <div style="font-weight: bold; margin-bottom: 12px; font-size: 14px; color: white;">Pivot Points</div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: right; background: #1f2231; border-radius: 6px; overflow: hidden; color: white;">
+                        <tr style="color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+                            <th style="padding: 12px; text-align: left;">Tên</th>
+                            <th style="padding: 12px;">S3</th>
+                            <th style="padding: 12px;">S2</th>
+                            <th style="padding: 12px;">S1</th>
+                            <th style="padding: 12px;">Points</th>
+                            <th style="padding: 12px;">R1</th>
+                            <th style="padding: 12px;">R2</th>
+                            <th style="padding: 12px;">R3</th>
+                        </tr>
+                        ${pivotRows(ta.pivot_points)}
+                    </table>
                 </div>
             </div>
+
+            <!-- Two Columns -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Column 1: Chỉ số kỹ thuật -->
+                <div>
+                    <div style="font-weight: bold; margin-bottom: 12px; font-size: 14px; color: white;">Chỉ số kỹ thuật</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; background: #1f2231; border-radius: 6px; color: white;">
+                        <tr style="color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+                            <th style="padding: 12px; text-align: left;">Tên</th>
+                            <th style="padding: 12px; text-align: right;">Giá trị</th>
+                            <th style="padding: 12px; text-align: center;">Hành động</th>
+                        </tr>
+                        ${indRows(ta.technical_indicators)}
+                    </table>
+                </div>
+                
+                <!-- Column 2: Đường trung bình -->
+                <div>
+                    <div style="font-weight: bold; margin-bottom: 12px; font-size: 14px; color: white;">Đường trung bình</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; background: #1f2231; border-radius: 6px; color: white;">
+                        <tr style="color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+                            <th style="padding: 12px; text-align: left;">Tên</th>
+                            <th style="padding: 12px; text-align: center;">Simple</th>
+                            <th style="padding: 12px; text-align: center;">Exponential</th>
+                        </tr>
+                        ${maRows(ta.moving_averages)}
+                    </table>
+                </div>
+            </div>
+            
         </div>
     `;
 

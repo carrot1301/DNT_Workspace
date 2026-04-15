@@ -4,7 +4,7 @@ import numpy as np
 
 def compute_full_ta(df: pd.DataFrame, ticker: str = "") -> dict:
     """
-    Computes comprehensive technical analysis indicators using pandas_ta.
+    Computes comprehensive technical analysis indicators matching Fireant's detailed TA screen.
     """
     if df is None or df.empty or len(df) < 200:
         return {
@@ -17,175 +17,251 @@ def compute_full_ta(df: pd.DataFrame, ticker: str = "") -> dict:
         df.index = pd.to_datetime(df.index)
     df = df.sort_index()
     
-    # Calculate indicators
     try:
-        # Trend
-        df.ta.sma(length=10, append=True)
-        df.ta.sma(length=20, append=True)
-        df.ta.sma(length=50, append=True)
-        df.ta.sma(length=200, append=True)
-        df.ta.ema(length=10, append=True)
-        df.ta.ema(length=20, append=True)
-        df.ta.ema(length=50, append=True)
-        df.ta.ema(length=200, append=True)
-        df.ta.macd(fast=12, slow=26, signal=9, append=True)
-        df.ta.adx(length=14, append=True)
+        # Moving Averages
+        for length in [5, 10, 20, 50, 100, 200]:
+            df.ta.sma(length=length, append=True)
+            df.ta.ema(length=length, append=True)
         
-        # Oscillators
+        # Technical Indicators
         df.ta.rsi(length=14, append=True)
-        df.ta.stoch(append=True) # STOCHk_14_3_3, STOCHd_14_3_3
-        df.ta.cci(length=14, append=True)
+        df.ta.stoch(append=True) # STOCHk_14_3_3, STOCHd
+        df.ta.stochrsi(length=14, append=True) # STOCHRSI
+        df.ta.macd(fast=12, slow=26, signal=9, append=True)
         df.ta.willr(length=14, append=True)
-        
-        # Volatility
-        df.ta.bbands(length=20, append=True) # BBL_20_2.0, BBM_20_2.0, BBU_20_2.0
-        
-        # Volume
-        df.ta.obv(append=True)
+        df.ta.cci(length=14, append=True)
+        df.ta.ao(fast=5, slow=34, append=True)
+        df.ta.roc(length=14, append=True)
         df.ta.mfi(length=14, append=True)
-        
     except Exception as e:
         return {"ticker": ticker, "error": f"TA computation failed: {str(e)}"}
 
-    # Extract latest values
     latest = df.iloc[-1].to_dict()
-    prev = df.iloc[-2].to_dict() if len(df) > 1 else latest
+    prev1 = df.iloc[-2].to_dict() if len(df) > 1 else latest
     
-    current_price = latest.get('close', 0)
+    current_price = latest.get('close', 0.0)
     
-    # helper for safe float conversion
     def sf(val):
         if pd.isna(val) or np.isinf(val): return 0.0
         return float(val)
 
-    # Signal Evaluation Logic
-    signals = []
-    
-    # 1. SMAs
-    sma20 = sf(latest.get('SMA_20'))
-    sma50 = sf(latest.get('SMA_50'))
-    sma200 = sf(latest.get('SMA_200'))
-    
-    sma_sig = "NEUTRAL"
-    if current_price > sma20 and sma20 > sma50:
-        sma_sig = "BUY"
-    elif current_price < sma20 and sma20 < sma50:
-        sma_sig = "SELL"
-    signals.append(sma_sig)
-    
-    # 2. MACD
-    macd_line = sf(latest.get('MACD_12_26_9'))
-    macd_sig = sf(latest.get('MACDs_12_26_9'))
-    macd_hist = sf(latest.get('MACDh_12_26_9'))
-    prev_macd_hist = sf(prev.get('MACDh_12_26_9'))
-    
-    macd_decision = "NEUTRAL"
-    if macd_line > macd_sig and macd_hist > prev_macd_hist:
-        macd_decision = "BUY"
-    elif macd_line < macd_sig and macd_hist < prev_macd_hist:
-        macd_decision = "SELL"
-    signals.append(macd_decision)
-    
-    # 3. RSI
-    rsi_val = sf(latest.get('RSI_14'))
-    rsi_sig = "NEUTRAL"
-    if rsi_val > 70:
-        rsi_sig = "SELL" # Overbought
-    elif rsi_val < 30:
-        rsi_sig = "BUY"  # Oversold
-    elif rsi_val > 50:
-        rsi_sig = "BUY" # Bullish territory
-    else:
-        rsi_sig = "SELL" # Bearish territory
-    signals.append(rsi_sig)
-    
-    # 4. Bollinger Bands
-    bbu = sf(latest.get('BBU_20_2.0'))
-    bbl = sf(latest.get('BBL_20_2.0'))
-    bb_sig = "NEUTRAL"
-    if current_price > bbu:
-        bb_sig = "SELL" # Overbought
-    elif current_price < bbl:
-        bb_sig = "BUY"  # Oversold
-    signals.append(bb_sig)
-    
-    # 5. Stochastic
-    stoch_k = sf(latest.get('STOCHk_14_3_3'))
-    stoch_d = sf(latest.get('STOCHd_14_3_3'))
-    stoch_sig = "NEUTRAL"
-    if stoch_k < 20 and stoch_d < 20 and stoch_k > stoch_d:
-        stoch_sig = "BUY"
-    elif stoch_k > 80 and stoch_d > 80 and stoch_k < stoch_d:
-        stoch_sig = "SELL"
-    signals.append(stoch_sig)
+    def get_col(prefix):
+        for k, v in latest.items():
+            if k.startswith(prefix):
+                return sf(v)
+        return 0.0
 
-    # 6. ADX
-    adx_val = sf(latest.get('ADX_14'))
-    dmp = sf(latest.get('DMP_14'))
-    dmn = sf(latest.get('DMN_14'))
-    adx_sig = "NEUTRAL"
-    if adx_val > 25:
-        if dmp > dmn: adx_sig = "BUY"
-        else: adx_sig = "SELL"
-    signals.append(adx_sig)
+    # 1. Moving Averages
+    ma_buy = 0
+    ma_sell = 0
+    ma_list = []
+    
+    for length in [5, 10, 20, 50, 100, 200]:
+        sma_val = get_col(f'SMA_{length}')
+        ema_val = get_col(f'EMA_{length}')
+        
+        sma_action = "Mua" if current_price > sma_val else "Bán"
+        ema_action = "Mua" if current_price > ema_val else "Bán"
+        
+        if sma_action == "Mua": ma_buy += 1
+        else: ma_sell += 1
+        
+        if ema_action == "Mua": ma_buy += 1
+        else: ma_sell += 1
+        
+        ma_list.append({
+            "name": f"MA{length}",
+            "sma_val": sma_val * 1000 if sma_val > 0 else 0,
+            "sma_action": sma_action if sma_val > 0 else "--",
+            "ema_val": ema_val * 1000 if ema_val > 0 else 0,
+            "ema_action": ema_action if ema_val > 0 else "--"
+        })
+        
+    ma_summary = "MUA MẠNH" if ma_buy >= 10 else "MUA" if ma_buy > ma_sell else "BÁN MẠNH" if ma_sell >= 10 else "BÁN"
+    if ma_buy == ma_sell: ma_summary = "TRUNG TÍNH"
 
-    # 7. CCI
-    cci_val = sf(latest.get('CCI_14_0.015'))
-    cci_sig = "NEUTRAL"
-    if cci_val < -100: cci_sig = "BUY"
-    elif cci_val > 100: cci_sig = "SELL"
-    signals.append(cci_sig)
+    # 2. Oscillators / Technical Indicators
+    ind_buy = 0
+    ind_sell = 0
+    ind_neutral = 0
+    indicators_list = []
     
-    # 8. MFI
-    mfi_val = sf(latest.get('MFI_14'))
-    mfi_sig = "NEUTRAL"
-    if mfi_val < 20: mfi_sig = "BUY"
-    elif mfi_val > 80: mfi_sig = "SELL"
-    signals.append(mfi_sig)
+    # RSI
+    rsi = get_col('RSI')
+    rsi_action = "Mua" if 30 < rsi < 70 else "Quá bán" if rsi <= 30 else "Quá mua"
+    if rsi_action in ["Mua", "Quá bán"]: ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "RSI(14)", "value": rsi, "action": rsi_action})
     
-    # Calculate Summary Score
-    buy_count = signals.count("BUY")
-    sell_count = signals.count("SELL")
-    neutral_count = signals.count("NEUTRAL")
-    total_signals = len(signals)
+    # Stochastic
+    stoch = get_col('STOCHk')
+    stoch_action = "Mua" if 20 < stoch < 80 else "Quá bán" if stoch <= 20 else "Quá mua"
+    if stoch_action in ["Mua", "Quá bán"]: ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "Stochastic(14, 3)", "value": stoch, "action": stoch_action})
     
-    score = (buy_count - sell_count) / total_signals if total_signals > 0 else 0
-    overall_signal = "NEUTRAL"
-    if score > 0.3: overall_signal = "STRONG BUY"
-    elif score > 0.1: overall_signal = "BUY"
-    elif score < -0.3: overall_signal = "STRONG SELL"
-    elif score < -0.1: overall_signal = "SELL"
+    # Stochastic RSI
+    stochrsi = get_col('STOCHRSIk')
+    stochrsi_action = "Mua" if 20 < stochrsi < 80 else "Quá bán" if stochrsi <= 20 else "Quá mua"
+    if stochrsi_action in ["Mua", "Quá bán"]: ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "Stochastic RSI(14)", "value": stochrsi, "action": stochrsi_action})
+    
+    # MACD
+    macd = get_col('MACD_')
+    macd_sig = get_col('MACDs_')
+    macd_action = "Mua" if macd > macd_sig else "Bán"
+    if macd_action == "Mua": ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "MACD(12, 26)", "value": macd, "action": macd_action})
+    
+    # William %R
+    willr = get_col('WILLR')
+    willr_action = "Mua" if -80 < willr < -20 else "Quá bán" if willr <= -80 else "Quá mua"
+    if willr_action in ["Mua", "Quá bán"]: ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "WilliamR(14)", "value": willr, "action": willr_action})
+    
+    # CCI
+    cci = get_col('CCI')
+    cci_action = "Mua" if cci < -100 else "Bán" if cci > 100 else "Trung tính"
+    if cci_action == "Mua": ind_buy += 1
+    elif cci_action == "Bán": ind_sell += 1
+    else: ind_neutral += 1
+    indicators_list.append({"name": "CCI(14)", "value": cci, "action": cci_action})
+    
+    # Awesome Oscillator
+    ao = get_col('AO')
+    ao_action = "Mua" if ao > 0 else "Bán"
+    if ao_action == "Mua": ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "Awesome Oscillator(5, 34)", "value": ao, "action": ao_action})
+    
+    # ROC
+    roc = get_col('ROC')
+    roc_action = "Mua" if roc > 0 else "Bán"
+    if roc_action == "Mua": ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "ROC(14)", "value": roc, "action": roc_action})
+    
+    # MFI
+    mfi = get_col('MFI')
+    mfi_action = "Mua" if 20 < mfi < 80 else "Quá bán" if mfi <= 20 else "Quá mua"
+    if mfi_action in ["Mua", "Quá bán"]: ind_buy += 1
+    else: ind_sell += 1
+    indicators_list.append({"name": "MFI(14)", "value": mfi, "action": mfi_action})
+    
+    ind_summary = "MUA MẠNH" if ind_buy >= 6 else "MUA" if ind_buy > ind_sell else "BÁN MẠNH" if ind_sell >= 6 else "BÁN"
+    if ind_buy == ind_sell: ind_summary = "TRUNG TÍNH"
+    
+    # Overall summary logic mapping to EN for backend compatibility
+    total_buy = ma_buy + ind_buy
+    total_sell = ma_sell + ind_sell
+    total_neutral = ind_neutral
+    
+    overall_signal = "STRONG BUY" if total_buy >= 14 else "BUY" if total_buy > total_sell else "STRONG SELL" if total_sell >= 14 else "SELL"
+    if total_buy == total_sell: overall_signal = "NEUTRAL"
+    score = (total_buy - total_sell) / (total_buy + total_sell + total_neutral) if (total_buy + total_sell + total_neutral) > 0 else 0
+    overall_vi = "MUA MẠNH" if total_buy >= 14 else "MUA" if total_buy > total_sell else "BÁN MẠNH" if total_sell >= 14 else "BÁN"
+    if total_buy == total_sell: overall_vi = "TRUNG TÍNH"
+
+    # 3. Pivot Points
+    high = prev1.get('high', 0.0)
+    low = prev1.get('low', 0.0)
+    close = prev1.get('close', 0.0)
+    open_p = prev1.get('open', 0.0)
+    
+    H = sf(high) * 1000
+    L = sf(low) * 1000
+    C = sf(close) * 1000
+    O = sf(open_p) * 1000
+    
+    pivot_points = []
+    
+    # Classic
+    PP = (H + L + C) / 3
+    pivot_points.append({
+        "name": "Classic",
+        "S3": PP - 2 * (H - L),
+        "S2": PP - (H - L),
+        "S1": (PP * 2) - H,
+        "Points": PP,
+        "R1": (PP * 2) - L,
+        "R2": PP + (H - L),
+        "R3": PP + 2 * (H - L)
+    })
+    
+    # Fibonacci
+    pivot_points.append({
+        "name": "Fibonacci",
+        "S3": PP - 1.000 * (H - L),
+        "S2": PP - 0.618 * (H - L),
+        "S1": PP - 0.382 * (H - L),
+        "Points": PP,
+        "R1": PP + 0.382 * (H - L),
+        "R2": PP + 0.618 * (H - L),
+        "R3": PP + 1.000 * (H - L)
+    })
+    
+    # Camarilla
+    pivot_points.append({
+        "name": "Camarilla",
+        "S3": C - (H - L) * 1.1 / 4,
+        "S2": C - (H - L) * 1.1 / 6,
+        "S1": C - (H - L) * 1.1 / 12,
+        "Points": C,
+        "R1": C + (H - L) * 1.1 / 12,
+        "R2": C + (H - L) * 1.1 / 6,
+        "R3": C + (H - L) * 1.1 / 4
+    })
+    
+    # Woodie
+    PP_wood = (H + L + 2 * C) / 4
+    pivot_points.append({
+        "name": "Woodie",
+        "S3": L - 2 * (H - PP_wood),
+        "S2": PP_wood - (H - L),
+        "S1": (PP_wood * 2) - H,
+        "Points": PP_wood,
+        "R1": (PP_wood * 2) - L,
+        "R2": PP_wood + (H - L),
+        "R3": H + 2 * (PP_wood - L)
+    })
+    
+    # DeMark
+    if C < O: X = H + 2 * L + C
+    elif C > O: X = 2 * H + L + C
+    else: X = H + L + 2 * C
+    PP_demark = X / 4
+    pivot_points.append({
+        "name": "DeMark",
+        "S3": 0,
+        "S2": 0,
+        "S1": X / 2 - H,
+        "Points": PP_demark,
+        "R1": X / 2 - L,
+        "R2": 0,
+        "R3": 0
+    })
 
     return {
         "ticker": ticker,
         "current_price": current_price * 1000,
         "summary": {
-            "overall_signal": overall_signal,
-            "buy_count": buy_count,
-            "sell_count": sell_count,
-            "neutral_count": neutral_count,
+            "overall_signal": overall_signal, 
+            "overall_vi": overall_vi, # UI display string 
+            "overall_buy": total_buy,
+            "overall_sell": total_sell,
+            "ma_signal": ma_summary,
+            "ma_buy": ma_buy,
+            "ma_sell": ma_sell,
+            "ind_signal": ind_summary,
+            "ind_buy": ind_buy,
+            "ind_sell": ind_sell,
+            "ind_neutral": ind_neutral,
             "score": sf(score)
         },
-        "trend": {
-            "SMA20": sf(sma20 * 1000),
-            "SMA50": sf(sma50 * 1000),
-            "SMA200": sf(sma200 * 1000),
-            "EMA20": sf(latest.get('EMA_20', 0) * 1000),
-            "MACD": {"line": sf(macd_line), "signal": sf(macd_sig), "hist": sf(macd_hist)},
-            "ADX": sf(adx_val)
-        },
-        "oscillators": {
-            "RSI": sf(rsi_val),
-            "Stochastic": {"k": sf(stoch_k), "d": sf(stoch_d)},
-            "CCI": sf(cci_val),
-            "WilliamsR": sf(latest.get('WILLR_14', 0))
-        },
-        "volatility": {
-            "BollingerBands": {"upper": sf(bbu * 1000), "middle": sf(latest.get('BBM_20_2.0', 0) * 1000), "lower": sf(bbl * 1000)}
-        },
-        "volume": {
-            "OBV": sf(latest.get('OBV', 0)),
-            "MFI": sf(mfi_val)
-        }
+        "moving_averages": ma_list,
+        "technical_indicators": indicators_list,
+        "pivot_points": pivot_points
     }
-

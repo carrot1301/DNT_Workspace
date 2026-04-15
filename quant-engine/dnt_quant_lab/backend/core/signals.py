@@ -33,7 +33,7 @@ def compute_signals(tickers: list, weights: dict, capital: float) -> dict:
         if "summary" in ta_data:
             action = ta_data["summary"]["overall_signal"]
             score = ta_data["summary"]["score"]
-            detail = f"Điểm TA: {score:.2f} | B:{ta_data['summary']['buy_count']} S:{ta_data['summary']['sell_count']} N:{ta_data['summary']['neutral_count']}"
+            detail = f"Điểm TA: {score:.2f} | Mua:{ta_data['summary']['overall_buy']} Bán:{ta_data['summary']['overall_sell']} N:{ta_data['summary']['ind_neutral']}"
         else:
             action = "HOLD"
             detail = "Lỗi xử lý TA"
