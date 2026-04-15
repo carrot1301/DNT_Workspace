@@ -144,6 +144,27 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
         else:
             news_section += "\n*Task: Analyze market sentiment from these news events to evaluate the short-term outlook, combined with the quantitative metrics.*"
 
+    # Lấy Technical Analysis từ signals_data
+    ta_data = data.get("trading_signals", {})
+    ta_section = ""
+    if ta_data:
+        if lang == "vi":
+            ta_section = "\n**PHÂN TÍCH KỸ THUẬT (TECHNICAL ANALYSIS - Dài hạn & Ngắn hạn):**\n"
+        else:
+            ta_section = "\n**TECHNICAL ANALYSIS:**\n"
+        for t, signal_info in ta_data.items():
+            ta_analysis = signal_info.get("ta_analysis")
+            if ta_analysis and "summary" in ta_analysis:
+                summary = ta_analysis["summary"]
+                ta_section += f" - {t}: Tổng quan ({summary['overall_signal']}) | Score: {summary['score']:.2f}\n"
+                ta_section += f"   + Trend: SMA20={ta_analysis['trend'].get('SMA20', '')}, SMA50={ta_analysis['trend'].get('SMA50', '')}, SMA200={ta_analysis['trend'].get('SMA200', '')}\n"
+                ta_section += f"   + RSI: {ta_analysis['oscillators'].get('RSI', '')}\n"
+                ta_section += f"   + MACD Line: {ta_analysis['trend'].get('MACD', {}).get('line', '')}\n"
+        if lang == "vi":
+            ta_section += "\n*Nhiệm vụ: Kết hợp TA để đưa ra khuyến nghị thời điểm mua/bán ngắn hạn so với chiến lược dài hạn.*"
+        else:
+            ta_section += "\n*Task: Combine TA signals to advise on short-term entry/exit points alongside the long-term strategy.*"
+
     # --- Format phân bổ tỉ trọng ---
     bl_event = mc.get("black_litterman_event", {})
     is_bl_active = bl_event.get("is_active", False)
@@ -217,6 +238,7 @@ Below are the full results of a Monte Carlo quantitative analysis (10,000 random
 - Estimated Loss: {_format_vnd(stress_loss)}
 {weights_section.replace("PHÂN BỔ TỐI ƯU", "OPTIMAL ALLOCATION")}
 {fund_section}
+{ta_section}
 {manual_bctc_section}
 {news_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -270,6 +292,7 @@ Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carl
 - Tổn thất ước tính: {_format_vnd(stress_loss)}
 {weights_section}
 {fund_section}
+{ta_section}
 {manual_bctc_section}
 {news_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

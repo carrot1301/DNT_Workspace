@@ -32,6 +32,7 @@ from core.ai_advisor import stream_ai_advice
 from core.backtester import run_backtrader_strategy
 from core.signals import compute_signals
 from core.screener import run_daily_radar
+from core.ta_engine import compute_full_ta
 
 app = FastAPI(title="DNT Quant Lab API")
 
@@ -453,6 +454,20 @@ def get_financial_reports(ticker: str, session_id: str = None):
         
     financials = financière_data.copy()
     return sanitize_floats(financials)
+
+
+@app.get("/api/technical-analysis/{ticker}")
+def get_technical_analysis(ticker: str):
+    """
+    Tính toán Technical Analysis trực tiếp bằng pandas_ta
+    Trích xuất từ OHLCV data.
+    """
+    from core.data_engine import fetch_stock_data
+    df = fetch_stock_data(ticker.upper(), days_back=365)
+    if df.empty:
+        return {"error": "Không tìm thấy dữ liệu"}
+    ta_data = compute_full_ta(df, ticker.upper())
+    return sanitize_floats(ta_data)
 
 
 # Mount toàn bộ folder frontend làm static files (đặt cuối cùng sau tất cả API routes)
