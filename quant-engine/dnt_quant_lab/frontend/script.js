@@ -185,6 +185,222 @@ const I18N = {
     }
 };
 
+// ═══════════════════════════════════════════════════
+// GLOBAL: Open TA Modal (called from inline onclick)
+// ═══════════════════════════════════════════════════
+function openTAModal(ticker) {
+    const signals = window.globalTradingSignals;
+    if (!signals || !signals[ticker] || !signals[ticker].ta_analysis) return;
+
+    const ta = signals[ticker].ta_analysis;
+    const modal = document.getElementById('ta-modal');
+    const title = document.getElementById('ta-modal-title');
+    const body = document.getElementById('ta-modal-body');
+
+    title.textContent = `Phân tích Kỹ thuật: ${ticker}`;
+
+    // Helper: color based on signal
+    function sigColor(sig) {
+        if (!sig) return '#94a3b8';
+        if (sig.includes('BUY')) return '#00FFAA';
+        if (sig.includes('SELL')) return '#FF5555';
+        return '#94a3b8';
+    }
+
+    function sigBg(sig) {
+        if (!sig) return 'rgba(148,163,184,0.1)';
+        if (sig.includes('BUY')) return 'rgba(0,255,170,0.08)';
+        if (sig.includes('SELL')) return 'rgba(255,85,85,0.08)';
+        return 'rgba(148,163,184,0.08)';
+    }
+
+    function fmt(v) {
+        if (v === undefined || v === null || isNaN(v)) return '--';
+        return typeof v === 'number' ? v.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) : v;
+    }
+
+    function fmtVND(v) {
+        if (!v || isNaN(v)) return '--';
+        return Math.floor(v).toLocaleString('vi-VN') + '₫';
+    }
+
+    const summary = ta.summary || {};
+    const trend = ta.trend || {};
+    const osc = ta.oscillators || {};
+    const vol = ta.volatility || {};
+    const volume = ta.volume || {};
+    const macd = trend.MACD || {};
+    const bb = vol.BollingerBands || {};
+    const stoch = osc.Stochastic || {};
+
+    const overallSig = summary.overall_signal || 'NEUTRAL';
+    const score = summary.score != null ? summary.score : 0;
+    const buyCount = summary.buy_count || 0;
+    const sellCount = summary.sell_count || 0;
+    const neutralCount = summary.neutral_count || 0;
+
+    // Score bar percentage (maps -1..1 to 0..100)
+    const scorePercent = Math.round((score + 1) / 2 * 100);
+
+    // RSI gauge
+    const rsi = osc.RSI || 0;
+    let rsiLabel = 'Trung tính';
+    let rsiColor = '#94a3b8';
+    if (rsi > 70) { rsiLabel = 'Quá mua'; rsiColor = '#FF5555'; }
+    else if (rsi < 30) { rsiLabel = 'Quá bán'; rsiColor = '#00FFAA'; }
+    else if (rsi > 50) { rsiLabel = 'Tích cực'; rsiColor = '#00FFAA'; }
+    else { rsiLabel = 'Tiêu cực'; rsiColor = '#FF5555'; }
+
+    // MFI gauge
+    const mfi = volume.MFI || 0;
+    let mfiLabel = 'Trung tính';
+    let mfiColor = '#94a3b8';
+    if (mfi > 80) { mfiLabel = 'Quá mua'; mfiColor = '#FF5555'; }
+    else if (mfi < 20) { mfiLabel = 'Quá bán'; mfiColor = '#00FFAA'; }
+
+    // ADX interpretation
+    const adx = trend.ADX || 0;
+    let adxLabel = 'Yếu';
+    if (adx > 50) adxLabel = 'Rất mạnh';
+    else if (adx > 25) adxLabel = 'Mạnh';
+
+    body.innerHTML = `
+        <!-- Overall Summary -->
+        <div style="background: ${sigBg(overallSig)}; border: 1px solid ${sigColor(overallSig)}30; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">Tín hiệu tổng hợp</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: ${sigColor(overallSig)}; text-shadow: 0 0 20px ${sigColor(overallSig)}40;">${overallSig}</div>
+            <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 6px;">
+                Giá: <strong style="color: white;">${fmtVND(ta.current_price)}</strong>
+            </div>
+            <!-- Score Bar -->
+            <div style="margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; margin-bottom: 4px;">
+                    <span>SELL</span><span>NEUTRAL</span><span>BUY</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: linear-gradient(to right, #FF5555, #94a3b8, #00FFAA); border-radius: 4px; position: relative;">
+                    <div style="position: absolute; top: -3px; left: ${scorePercent}%; transform: translateX(-50%); width: 14px; height: 14px; background: white; border-radius: 50%; border: 2px solid ${sigColor(overallSig)}; box-shadow: 0 0 8px ${sigColor(overallSig)};"></div>
+                </div>
+                <div style="text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">
+                    Score: ${fmt(score)} | 🟢 ${buyCount} MUA · 🔴 ${sellCount} BÁN · ⚪ ${neutralCount} TRUNG TÍNH
+                </div>
+            </div>
+        </div>
+
+        <!-- Bento Grid -->
+        <div class="ta-grid">
+            <!-- Trend Box -->
+            <div class="ta-box" style="grid-column: span 2;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #00B8FF; margin-bottom: 10px;">📈 XU HƯỚNG (TREND)</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <span>SMA 20</span><br>
+                        <strong style="color: ${ta.current_price > trend.SMA20 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.SMA20)}</strong>
+                    </div>
+                    <div>
+                        <span>SMA 50</span><br>
+                        <strong style="color: ${ta.current_price > trend.SMA50 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.SMA50)}</strong>
+                    </div>
+                    <div>
+                        <span>SMA 200</span><br>
+                        <strong style="color: ${ta.current_price > trend.SMA200 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.SMA200)}</strong>
+                    </div>
+                    <div>
+                        <span>EMA 20</span><br>
+                        <strong style="color: ${ta.current_price > trend.EMA20 ? '#00FFAA' : '#FF5555'};">${fmtVND(trend.EMA20)}</strong>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div>
+                        <span>MACD Line</span><br>
+                        <strong style="color: ${macd.line > macd.signal ? '#00FFAA' : '#FF5555'};">${fmt(macd.line)}</strong>
+                    </div>
+                    <div>
+                        <span>Signal Line</span><br>
+                        <strong style="color: #cbd5e1;">${fmt(macd.signal)}</strong>
+                    </div>
+                    <div>
+                        <span>ADX (${adxLabel})</span><br>
+                        <strong style="color: ${adx > 25 ? '#F59E0B' : '#94a3b8'};">${fmt(adx)}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oscillators Box -->
+            <div class="ta-box">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #8B5CF6; margin-bottom: 10px;">🔄 DAO ĐỘNG</div>
+                <div style="margin-bottom: 8px;">
+                    <span>RSI (14)</span>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${rsi}%; height: 100%; background: ${rsiColor}; border-radius: 3px;"></div>
+                        </div>
+                        <strong style="color: ${rsiColor}; font-size: 0.9rem; min-width: 40px;">${fmt(rsi)}</strong>
+                    </div>
+                    <div style="font-size: 0.7rem; color: ${rsiColor}; margin-top: 2px;">${rsiLabel}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;">
+                    <div>
+                        <span>Stoch %K</span><br>
+                        <strong style="color: #cbd5e1;">${fmt(stoch.k)}</strong>
+                    </div>
+                    <div>
+                        <span>Stoch %D</span><br>
+                        <strong style="color: #cbd5e1;">${fmt(stoch.d)}</strong>
+                    </div>
+                    <div>
+                        <span>CCI (14)</span><br>
+                        <strong style="color: ${osc.CCI < -100 ? '#00FFAA' : osc.CCI > 100 ? '#FF5555' : '#94a3b8'};">${fmt(osc.CCI)}</strong>
+                    </div>
+                    <div>
+                        <span>Williams %R</span><br>
+                        <strong style="color: #cbd5e1;">${fmt(osc.WilliamsR)}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volatility + Volume Box -->
+            <div class="ta-box">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #F59E0B; margin-bottom: 10px;">📊 BIẾN ĐỘNG & KHỐI LƯỢNG</div>
+                <div style="margin-bottom: 8px;">
+                    <span>Bollinger Bands (20)</span>
+                    <div style="margin-top: 6px; position: relative; height: 40px; background: rgba(255,255,255,0.03); border-radius: 6px; overflow: hidden;">
+                        <div style="position: absolute; top: 0; bottom: 0; left: 10%; right: 10%; background: rgba(245,158,11,0.1); border-left: 2px dashed #F59E0B40; border-right: 2px dashed #F59E0B40;"></div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7rem; color: #94a3b8;">
+                            ${fmtVND(bb.lower)} — <strong style="color: white;">${fmtVND(bb.middle)}</strong> — ${fmtVND(bb.upper)}
+                        </div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;">
+                    <div>
+                        <span>MFI (14)</span>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                <div style="width: ${mfi}%; height: 100%; background: ${mfiColor}; border-radius: 3px;"></div>
+                            </div>
+                            <strong style="color: ${mfiColor}; font-size: 0.85rem;">${fmt(mfi)}</strong>
+                        </div>
+                        <div style="font-size: 0.7rem; color: ${mfiColor};">${mfiLabel}</div>
+                    </div>
+                    <div>
+                        <span>OBV</span><br>
+                        <strong style="color: #cbd5e1; font-size: 0.85rem;">${fmt(volume.OBV)}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+// Close modal on background click
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('ta-modal');
+    if (e.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     
     // --- Ngôn ngữ (i18n) ---
@@ -398,6 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // --- Trading Signals ---
         if (data.trading_signals) {
+            window.globalTradingSignals = data.trading_signals; // Save for modal
             const signalsCard = document.getElementById('trading-signals-card');
             const signalsTbody = document.getElementById('trading-signals-tbody');
             if (signalsCard && signalsTbody) {
@@ -407,6 +624,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (sig.action.includes('BUY')) badgeClass = 'badge-buy';
                     else if (sig.action.includes('SELL')) badgeClass = 'badge-sell';
                     
+                    let taBtn = '';
+                    if (sig.ta_analysis && !sig.ta_analysis.error) {
+                         taBtn = `<button onclick="openTAModal('${ticker}')" style="margin-top: 5px; padding: 4px 8px; font-size: 0.75rem; background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: white; border-radius: 4px; cursor: pointer;">Chi tiết TA</button>`;
+                    }
+
                     signalsTbody.innerHTML += `
                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <td style="padding: 10px; font-weight: bold; color: white;">${ticker}</td>
@@ -416,7 +638,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             </td>
                             <td style="padding: 10px; color: var(--text-muted);">${sig.volume.toLocaleString('vi-VN')} CP<br><small style="font-size: 0.75rem;">@ ${formatVND(sig.price)}</small></td>
                             <td style="padding: 10px; text-align: right;">
-                                <a href="${sig.broker_url}" target="_blank" class="btn-vps-cta">${I18N[currentLang]['btn_vps_cta']}</a>
+                                <a href="${sig.broker_url}" target="_blank" class="btn-vps-cta mb-1">${I18N[currentLang]['btn_vps_cta']}</a><br>
+                                ${taBtn}
                             </td>
                         </tr>
                     `;
