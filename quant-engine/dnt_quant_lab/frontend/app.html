@@ -123,7 +123,18 @@
                 <option value="en" selected style="background: #111;">🇺🇸 EN</option>
                 <option value="vi" style="background: #111;">🇻🇳 VI</option>
             </select>
-            <span class="icon-link" id="user-profile-icon" style="display: none; cursor: pointer; color: #00FFAA;" title="Profile">👤</span>
+            <div id="user-profile-container" style="display: none; position: relative; cursor: pointer; align-items: center; gap: 8px;" onclick="toggleProfileDropdown(event)">
+                <span class="icon-link" style="color: #00FFAA;" title="Profile">👤</span>
+                <span id="user-email-display" style="color: white; font-size: 0.9rem; font-weight: 500;"></span>
+                <div id="user-profile-dropdown" class="glass-panel" style="display: none; position: absolute; top: 100%; right: 0; min-width: 200px; padding: 10px; border-radius: 8px; z-index: 1001; margin-top: 15px; border: 1px solid rgba(0, 255, 170, 0.3); flex-direction: column; gap: 5px;">
+                    <button onclick="openChangePasswordModal()" style="width: 100%; text-align: left; background: transparent; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                        <span data-i18n="nav_change_pw">Đổi mật khẩu</span>
+                    </button>
+                    <a href="https://zalo.me/0886871437" target="_blank" style="width: 100%; text-align: left; background: transparent; border: none; color: #00B8FF; padding: 8px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; display: block; box-sizing: border-box; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                        📞 Hỗ trợ Zalo: 0886871437
+                    </a>
+                </div>
+            </div>
             <span id="user-tokens-display" style="display: none; color: #00FFAA; font-weight: bold; font-size: 0.9rem; border: 1px solid rgba(0,255,170,0.3); padding: 4px 10px; border-radius: 20px; background: rgba(0,255,170,0.1);"></span>
             <button class="btn-tv-blue" id="auth-btn" onclick="openAuthModal()" data-i18n="nav_login">Đăng nhập</button>
             <button class="btn-tv-blue" id="logout-btn" style="display: none; background: rgba(255,59,48,0.1); border-color: #FF3B30; color: #FF3B30;" onclick="handleLogout()" data-i18n="nav_logout">Thoát</button>
@@ -285,7 +296,7 @@
             <div style="margin-top: 20px; text-align: center;">
                 <button id="btn-donate-sidebar"
                     style="width: 100%; background: rgba(245,158,11,0.1); border: 1px solid #F59E0B; color: #F59E0B; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s ease;">
-                    <span data-i18n="btn_donate_sb">Ủng hộ / Donate ☕</span>
+                    <span data-i18n="btn_donate_sb">Nạp Token 🪙</span>
                 </button>
             </div>
 
@@ -582,30 +593,19 @@
             style="background: #111827; padding: 30px; border-radius: 12px; text-align: center; max-width: 450px; width: 90%; border: 1px solid rgba(255,255,255,0.1); position: relative;">
 
             <div id="donate-setup-view">
-                <h3 style="margin-top: 0; color: #F59E0B;" data-i18n="donate_title">Buy Me a Coffee ☕</h3>
+                <h3 style="margin-top: 0; color: #F59E0B;" data-i18n="donate_title">Nạp Token Hệ Thống 🪙</h3>
                 <p style="font-size: 0.85rem; color: #D1D5DB; margin-bottom: 20px; line-height: 1.5; text-align: justify;"
                     data-i18n="donate_msg">
-                    Vì đây là dự án cá nhân do sinh viên thực hiện nên em cần ít chi phí để duy trì server và token cho
-                    AI phân tích. Tất nhiên là không ép buộc và mọi truy cập đến trang web em đều rất hân hoan. Anh chị
-                    và các bạn có thể ủng hộ tùy tâm ạ ❤️
+                    Nạp Token để mở khóa các tính năng nâng cao như Trợ lý AI Phân tích chuyên sâu (2 Token/lần) và Mô phỏng Khuyến nghị. Token sẽ tự động cộng vào tài khoản sau khi thanh toán thành công.
                 </p>
 
                 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap;">
-                    <button class="donate-amt-btn" data-amt="5000"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;">5,000đ</button>
                     <button class="donate-amt-btn" data-amt="10000"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;">10,000đ</button>
-                    <button class="donate-amt-btn" data-amt="15000"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;">15,000đ</button>
-                    <button id="btn-custom-amt"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;"
-                        data-i18n="donate_custom">Tùy chọn</button>
-                </div>
-
-                <div id="custom-amt-container" style="display: none; margin-bottom: 15px;">
-                    <input type="number" id="custom-amt-input" class="glass-input"
-                        style="width: 100%; text-align: center;" placeholder="Nhập số tiền (VNĐ)"
-                        data-i18n-ph="donate_custom_ph">
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;">10,000đ (10 Token)</button>
+                    <button class="donate-amt-btn" data-amt="20000"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;">20,000đ (25 Token)</button>
+                    <button class="donate-amt-btn" data-amt="50000"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: white;">50,000đ (80 Token)</button>
                 </div>
 
                 <button id="btn-generate-qr"
@@ -645,6 +645,22 @@
             <div id="ta-modal-body">
                 <!-- Injected via JS -->
             </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-pw-modal" style="display: none; position: fixed; z-index: 999999 !important; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="glass-panel" style="background: #111827; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; border: 1px solid rgba(0, 255, 170, 0.3); box-shadow: 0 0 20px rgba(0, 255, 170, 0.1); position: relative;">
+            <button onclick="closeChangePasswordModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <h3 style="color: #00FFAA; margin-top: 0; text-align: center;" data-i18n="nav_change_pw">Đổi mật khẩu</h3>
+            
+            <div id="change-pw-msg" style="color: #F59E0B; font-size: 0.85rem; margin-bottom: 15px; text-align: center; display: none;"></div>
+            
+            <div style="margin-bottom: 15px;">
+                <input type="password" id="change-pw-input" class="glass-input" placeholder="Mật khẩu mới" data-i18n-ph="auth_ph_new_pw" style="width: 100%; box-sizing: border-box;">
+            </div>
+            
+            <button class="btn-tv-blue" style="width: 100%; padding: 10px; font-size: 1rem;" onclick="handleChangePassword()" data-i18n="btn_update">Cập nhật</button>
         </div>
     </div>
 

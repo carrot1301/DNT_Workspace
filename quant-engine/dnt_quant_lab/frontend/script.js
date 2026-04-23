@@ -187,7 +187,8 @@ async function fetchUserProfile(userId) {
 function updateAuthUI() {
     const authBtn = document.getElementById('auth-btn');
     const logoutBtn = document.getElementById('logout-btn');
-    const profileIcon = document.getElementById('user-profile-icon');
+    const profileContainer = document.getElementById('user-profile-container');
+    const emailDisplay = document.getElementById('user-email-display');
     const tokensDisplay = document.getElementById('user-tokens-display');
     
     const overlay = document.getElementById('login-overlay');
@@ -195,7 +196,9 @@ function updateAuthUI() {
         if(overlay) overlay.style.display = 'none';
         if(authBtn) authBtn.style.display = 'none';
         if(logoutBtn) logoutBtn.style.display = 'inline-block';
-        if(profileIcon) profileIcon.style.display = 'inline-block';
+        
+        if(profileContainer) profileContainer.style.display = 'flex';
+        if(emailDisplay && currentUser.email) emailDisplay.textContent = currentUser.email.split('@')[0];
         
         if (userProfile && tokensDisplay) {
             tokensDisplay.style.display = 'inline-block';
@@ -205,8 +208,60 @@ function updateAuthUI() {
         if(overlay) overlay.style.display = 'flex';
         if(authBtn) authBtn.style.display = 'inline-block';
         if(logoutBtn) logoutBtn.style.display = 'none';
-        if(profileIcon) profileIcon.style.display = 'none';
+        if(profileContainer) profileContainer.style.display = 'none';
         if(tokensDisplay) tokensDisplay.style.display = 'none';
+    }
+}
+
+function toggleProfileDropdown(event) {
+    if (event.target.closest('#user-profile-dropdown')) return;
+    const dropdown = document.getElementById('user-profile-dropdown');
+    dropdown.style.display = dropdown.style.display === 'flex' ? 'none' : 'flex';
+}
+
+document.addEventListener('click', function(e) {
+    const container = document.getElementById('user-profile-container');
+    if (container && !container.contains(e.target)) {
+        const dropdown = document.getElementById('user-profile-dropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    }
+});
+
+function openChangePasswordModal() {
+    document.getElementById('change-pw-modal').style.display = 'flex';
+    document.getElementById('change-pw-msg').style.display = 'none';
+    document.getElementById('change-pw-input').value = '';
+    const dropdown = document.getElementById('user-profile-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('change-pw-modal').style.display = 'none';
+}
+
+async function handleChangePassword() {
+    const pw = document.getElementById('change-pw-input').value;
+    const msgEl = document.getElementById('change-pw-msg');
+    
+    if (!pw) {
+        msgEl.innerText = window.getCurrentLang() === 'en' ? "Please enter a new password" : "Vui lòng nhập mật khẩu mới";
+        msgEl.style.display = 'block';
+        return;
+    }
+    
+    msgEl.innerText = window.getCurrentLang() === 'en' ? "Processing..." : "Đang xử lý...";
+    msgEl.style.color = '#00FFAA';
+    msgEl.style.display = 'block';
+    
+    const { data, error } = await supabaseClient.auth.updateUser({ password: pw });
+    
+    if (error) {
+        msgEl.innerText = 'Lỗi: ' + error.message;
+        msgEl.style.color = '#FF3B30';
+    } else {
+        msgEl.innerText = window.getCurrentLang() === 'en' ? "Password updated successfully!" : "Đổi mật khẩu thành công!";
+        msgEl.style.color = '#00FFAA';
+        setTimeout(() => { closeChangePasswordModal(); }, 1500);
     }
 }
 
@@ -225,6 +280,9 @@ async function apiFetch(url, options = {}) {
 const I18N = {
     'en': {
         'nav_login': 'Login',
+        'nav_change_pw': 'Change Password',
+        'auth_ph_new_pw': 'New Password',
+        'btn_update': 'Update',
         'nav_portfolio': 'Portfolio Allocation',
         'nav_health': 'Portfolio Health',
         'lock_title': 'Login to Unlock',
@@ -319,9 +377,9 @@ const I18N = {
         'fin_debt': 'Debt / Equity',
         'fin_profit': 'Profit Growth',
         'btn_unlock': 'Unlock',
-        'btn_donate_sb': 'Donate ☕',
-        'donate_title': 'Buy Me a Coffee ☕',
-        'donate_msg': 'Since this is a personal student project, I need funding to maintain servers and AI analysis tokens. It is entirely optional, and every visit to the website is greatly appreciated. If you wish, you can donate any amount ❤️',
+        'btn_donate_sb': 'Buy Tokens 🪙',
+        'donate_title': 'Purchase Tokens 🪙',
+        'donate_msg': 'Buy tokens to unlock advanced features like Deep AI Analysis (2 Tokens/request) and VIP Financial Reports. Tokens will be automatically added to your account after successful payment.',
         'donate_custom': 'Custom',
         'donate_custom_ph': 'Enter amount (VND)',
         'btn_gen_qr': 'Generate QR Code',
@@ -344,6 +402,9 @@ const I18N = {
     },
     'vi': {
         'nav_login': 'Đăng nhập',
+        'nav_change_pw': 'Đổi mật khẩu',
+        'auth_ph_new_pw': 'Mật khẩu mới',
+        'btn_update': 'Cập nhật',
         'nav_portfolio': 'Phân bổ danh mục',
         'nav_health': 'Sức khỏe danh mục',
         'lock_title': 'Đăng nhập để Mở khóa',
@@ -438,9 +499,9 @@ const I18N = {
         'fin_debt': 'Nợ / Vốn CSH',
         'fin_profit': 'Tăng trưởng LN',
         'btn_unlock': 'Mở khóa',
-        'btn_donate_sb': 'Ủng hộ / Donate ☕',
-        'donate_title': 'Buy Me a Coffee ☕',
-        'donate_msg': 'Vì đây là dự án cá nhân do sinh viên thực hiện nên em cần ít chi phí để duy trì server và token cho AI phân tích. Tất nhiên là không ép buộc và mọi truy cập đến trang web em đều rất hân hoan. Anh chị và các bạn có thể ủng hộ tùy tâm ạ ❤️',
+        'btn_donate_sb': 'Nạp Token 🪙',
+        'donate_title': 'Nạp Token Hệ Thống 🪙',
+        'donate_msg': 'Nạp Token để mở khóa các tính năng nâng cao như Trợ lý AI Phân tích chuyên sâu (2 Token/lần) và Mô phỏng Khuyến nghị. Token sẽ tự động cộng vào tài khoản sau khi thanh toán thành công.',
         'donate_custom': 'Tùy chọn',
         'donate_custom_ph': 'Nhập số tiền (VNĐ)',
         'btn_gen_qr': 'Tạo Mã QR',
@@ -690,7 +751,7 @@ document.addEventListener("DOMContentLoaded", () => {
     checkUserSession();
     
     // --- Ngôn ngữ (i18n) ---
-    const langSelector = document.getElementById("lang-select");
+    const langSelector = document.getElementById("lang-selector");
     let currentLang = 'en';
     window.getCurrentLang = () => currentLang;
 
@@ -1235,8 +1296,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
 
-        runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
-
         const tfSelect = document.getElementById("opt-timeframe-select");
         const tfValue = tfSelect ? parseInt(tfSelect.value) : 252;
 
@@ -1274,8 +1333,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (Object.keys(holdings).length === 0) {
             alert(I18N[currentLang]['err_input']); return;
         }
-
-        evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
 
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
 
@@ -1363,7 +1420,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const btnGenQr = document.getElementById('btn-generate-qr');
     let selectedAmount = 10000;
-    let pollingInterval = null;
 
     if (btnDonateSidebar) {
         btnDonateSidebar.addEventListener('click', () => {
