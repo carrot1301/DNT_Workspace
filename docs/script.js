@@ -283,6 +283,7 @@ const translations = {
         proj_2_desc: "An empirical analysis project examining the macro-economic relationship and exchange rate dynamics between the USD and VND.",
         proj_3_desc: "Developed a detailed credit scoring model involving synthetic data generation, rigorous feature engineering, and policy simulation.",
         view_code: "View Code",
+        btn_open_app: "Open Web App",
         github_cta_text: "Hungry for more? Explore all my repositories and experimental scripts.",
         github_cta_btn: "View more on GitHub",
         contact_title: "Get In Touch", contact_sub: "Currently seeking Quantitative Analyst / Data Analyst internship opportunities.",
@@ -314,6 +315,7 @@ const translations = {
         proj_2_desc: "Dự án phân tích thực nghiệm đánh giá mối quan hệ kinh tế vĩ mô và động lực tỷ giá hối đoái giữa USD và VND.",
         proj_3_desc: "Phát triển mô hình chấm điểm tín dụng chi tiết bao gồm tạo dữ liệu tổng hợp, tinh chỉnh đặc trưng chuyên sâu và mô phỏng chính sách.",
         view_code: "Xem Mã Nguồn",
+        btn_open_app: "Mở Web App",
         github_cta_text: "Bạn muốn xem thêm? Khám phá toàn bộ kho lưu trữ và các kịch bản thử nghiệm của mình.",
         github_cta_btn: "Xem thêm trên GitHub",
         contact_title: "Liên Hệ Với Mình", contact_sub: "Hiện mình đang tìm kiếm cơ hội thực tập vị trí Quantitative Analyst / Data Analyst.",
@@ -382,7 +384,7 @@ const iframeTitle = document.getElementById('iframe-browser-title');
 
 const projectsData = {
     quantlab: {
-        url: "https://interested-kathryn-tri1301-71097f9c.koyeb.app/",
+        url: "https://app.dntquantlab.pro.vn/",
         titleKey: "featured_title_quantlab",
         subKey: "featured_sub_quantlab",
         iframeKey: "iframe_title_quantlab"
