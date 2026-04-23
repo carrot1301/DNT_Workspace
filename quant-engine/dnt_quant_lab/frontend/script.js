@@ -122,18 +122,22 @@ async function handleAuth() {
     
     let error = null;
     
-    if (authMode === 'signup') {
-        const { data, error: err } = await supabaseClient.auth.signUp({ email, password });
-        error = err;
-        if (!error && data.user) {
-            msgEl.innerText = dict['auth_msg_success'];
-            msgEl.style.color = '#00FFAA';
-            setTimeout(() => { switchAuthMode(); }, 1500);
-            return;
+    try {
+        if (authMode === 'signup') {
+            const { data, error: err } = await supabaseClient.auth.signUp({ email, password });
+            error = err;
+            if (!error && data.user) {
+                msgEl.innerText = dict['auth_msg_success'];
+                msgEl.style.color = '#00FFAA';
+                setTimeout(() => { switchAuthMode(); }, 1500);
+                return;
+            }
+        } else {
+            const { data, error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
+            error = err;
         }
-    } else {
-        const { data, error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
-        error = err;
+    } catch(e) {
+        error = e;
     }
     
     if (error) {
@@ -154,14 +158,16 @@ async function handleLogout() {
 
 async function checkUserSession() {
     if (!supabaseClient) return;
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
         currentUser = session.user;
         await fetchUserProfile(currentUser.id);
     } else {
         currentUser = null;
         userProfile = null;
     }
+    } catch(e) { console.error("Session Error", e); }
     updateAuthUI();
 }
 
@@ -176,7 +182,9 @@ function updateAuthUI() {
     const profileIcon = document.getElementById('user-profile-icon');
     const tokensDisplay = document.getElementById('user-tokens-display');
     
+    const overlay = document.getElementById('login-overlay');
     if (currentUser) {
+        if(overlay) overlay.style.display = 'none';
         if(authBtn) authBtn.style.display = 'none';
         if(logoutBtn) logoutBtn.style.display = 'inline-block';
         if(profileIcon) profileIcon.style.display = 'inline-block';
@@ -186,6 +194,7 @@ function updateAuthUI() {
             tokensDisplay.innerHTML = `💎 Free: ${userProfile.free_credits} | 🪙 Paid: ${userProfile.paid_tokens}`;
         }
     } else {
+        if(overlay) overlay.style.display = 'flex';
         if(authBtn) authBtn.style.display = 'inline-block';
         if(logoutBtn) logoutBtn.style.display = 'none';
         if(profileIcon) profileIcon.style.display = 'none';
@@ -208,6 +217,10 @@ async function apiFetch(url, options = {}) {
 const I18N = {
     'en': {
         'nav_login': 'Login',
+        'nav_portfolio': 'Portfolio Allocation',
+        'nav_health': 'Portfolio Health',
+        'lock_title': 'Login to Unlock',
+        'lock_desc': 'Access all Technical Analysis tools, AI Advisor, and Portfolio Optimization.',
         'nav_logout': 'Logout',
         'subtitle': 'AI Quant Assistant',
         'auth_title_login': 'System Login',
@@ -320,6 +333,10 @@ const I18N = {
     },
     'vi': {
         'nav_login': 'Đăng nhập',
+        'nav_portfolio': 'Phân bổ danh mục',
+        'nav_health': 'Sức khỏe danh mục',
+        'lock_title': 'Đăng nhập để Mở khóa',
+        'lock_desc': 'Truy cập toàn bộ công cụ Phân tích Kỹ thuật, Trợ lý AI và Tối ưu hóa Danh mục.',
         'nav_logout': 'Thoát',
         'subtitle': 'Trợ lý Dữ liệu AI',
         'auth_title_login': 'Đăng nhập hệ thống',
