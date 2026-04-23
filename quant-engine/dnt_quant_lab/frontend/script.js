@@ -676,7 +676,7 @@ document.addEventListener("DOMContentLoaded", () => {
     checkUserSession();
     
     // --- Ngôn ngữ (i18n) ---
-    const langSelector = document.getElementById("lang-selector");
+    const langSelector = document.getElementById("lang-select");
     let currentLang = 'en';
     window.getCurrentLang = () => currentLang;
 
