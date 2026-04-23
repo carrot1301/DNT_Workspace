@@ -268,10 +268,17 @@ async function handleChangePassword() {
 
 async function apiFetch(url, options = {}) {
     if (!options.headers) options.headers = {};
-    if (supabaseClient) {
+    if (currentUser) {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.access_token) {
+        if (session) {
             options.headers['Authorization'] = `Bearer ${session.access_token}`;
+        } else {
+            currentUser = null;
+            userProfile = null;
+            updateAuthUI();
+            alert(window.getCurrentLang() === 'en' ? 'Your session has expired. Please log in again.' : 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+            openAuthModal();
+            throw new Error('Session Expired');
         }
     }
     return fetch(url, options);
