@@ -1,6 +1,233 @@
+// ═══════════════════════════════════════════════════
+// SUPABASE AUTHENTICATION
+// ═══════════════════════════════════════════════════
+const SUPABASE_URL = 'https://ojgbkfpoaozpvzmlerth.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_dSJ250bZQ28ejtkz_de9jw_9Kk_1ay5';
+let supabaseClient = null;
+
+if (window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+let currentUser = null;
+let userProfile = null;
+let authMode = 'login'; // 'login' or 'signup'
+
+function openAuthModal() {
+    document.getElementById('auth-modal').style.display = 'flex';
+    document.getElementById('auth-msg').style.display = 'none';
+}
+
+function closeAuthModal() {
+    document.getElementById('auth-modal').style.display = 'none';
+}
+
+function checkPasswordStrength() {
+    if (authMode === 'login') return;
+    
+    const pw = document.getElementById('auth-password').value;
+    const bar = document.getElementById('pw-strength-bar');
+    const text = document.getElementById('pw-strength-text');
+    
+    const hasUpper = /[A-Z]/.test(pw);
+    const hasLower = /[a-z]/.test(pw);
+    const hasNum = /[0-9]/.test(pw);
+    const hasSpec = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw);
+    
+    let score = 0;
+    if (pw.length > 0) score += 1;
+    if (pw.length >= 8) score += 1;
+    if (hasUpper && hasLower) score += 1;
+    if (hasNum) score += 1;
+    if (hasSpec) score += 1;
+    
+    if (pw.length === 0) {
+        bar.style.width = '0%';
+        text.innerText = window.getCurrentLang && window.getCurrentLang() === 'en' ? 'Strength: None' : 'Độ mạnh: Chưa nhập';
+        text.style.color = '#94a3b8';
+        return;
+    }
+    
+    bar.style.width = (score * 20) + '%';
+    if (score <= 2) {
+        bar.style.background = '#FF3B30';
+        text.innerText = window.getCurrentLang && window.getCurrentLang() === 'en' ? 'Strength: Weak' : 'Độ mạnh: Yếu';
+        text.style.color = '#FF3B30';
+    } else if (score <= 4) {
+        bar.style.background = '#F59E0B';
+        text.innerText = window.getCurrentLang && window.getCurrentLang() === 'en' ? 'Strength: Medium' : 'Độ mạnh: Trung bình';
+        text.style.color = '#F59E0B';
+    } else {
+        bar.style.background = '#00FFAA';
+        text.innerText = window.getCurrentLang && window.getCurrentLang() === 'en' ? 'Strength: Strong' : 'Độ mạnh: Rất mạnh';
+        text.style.color = '#00FFAA';
+    }
+}
+
+function switchAuthMode() {
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    document.getElementById('auth-msg').style.display = 'none';
+    document.getElementById('signup-fields').style.display = authMode === 'login' ? 'none' : 'block';
+    
+    document.getElementById('auth-title').setAttribute('data-i18n', authMode === 'login' ? 'auth_title_login' : 'auth_title_signup');
+    document.getElementById('auth-submit-btn').setAttribute('data-i18n', authMode === 'login' ? 'auth_btn_login' : 'auth_btn_signup');
+    document.getElementById('auth-switch-text').setAttribute('data-i18n', authMode === 'login' ? 'auth_switch_to_signup' : 'auth_switch_to_login');
+    document.getElementById('auth-switch-link').setAttribute('data-i18n', authMode === 'login' ? 'auth_switch_link_signup' : 'auth_switch_link_login');
+    
+    if (window.updateLanguageGlobal) window.updateLanguageGlobal();
+    checkPasswordStrength();
+}
+
+async function handleAuth() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const confirm = document.getElementById('auth-confirm-password').value;
+    const msgEl = document.getElementById('auth-msg');
+    const dict = I18N[window.getCurrentLang ? window.getCurrentLang() : 'vi'];
+    
+    if (authMode === 'signup') {
+        if (!email || !password || !confirm) {
+            msgEl.innerText = dict['auth_err_empty'];
+            msgEl.style.display = 'block';
+            return;
+        }
+        if (password !== confirm) {
+            msgEl.innerText = dict['auth_err_pw_match'];
+            msgEl.style.display = 'block';
+            return;
+        }
+        
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNum = /[0-9]/.test(password);
+        const hasSpec = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        const isValidLen = password.length >= 8 && password.length <= 36;
+        
+        if (!hasUpper || !hasLower || !hasNum || !hasSpec || !isValidLen) {
+            msgEl.innerText = dict['auth_err_pw_weak'];
+            msgEl.style.display = 'block';
+            return;
+        }
+    } else {
+        if (!email || !password) {
+            msgEl.innerText = dict['auth_err_empty'];
+            msgEl.style.display = 'block';
+            return;
+        }
+    }
+    
+    msgEl.innerText = dict['auth_msg_processing'];
+    msgEl.style.color = '#00FFAA';
+    msgEl.style.display = 'block';
+    
+    let error = null;
+    
+    if (authMode === 'signup') {
+        const { data, error: err } = await supabaseClient.auth.signUp({ email, password });
+        error = err;
+        if (!error && data.user) {
+            msgEl.innerText = dict['auth_msg_success'];
+            msgEl.style.color = '#00FFAA';
+            setTimeout(() => { switchAuthMode(); }, 1500);
+            return;
+        }
+    } else {
+        const { data, error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
+        error = err;
+    }
+    
+    if (error) {
+        msgEl.innerText = 'Lỗi: ' + error.message;
+        msgEl.style.color = '#FF3B30';
+    } else {
+        closeAuthModal();
+        checkUserSession();
+    }
+}
+
+async function handleLogout() {
+    await supabaseClient.auth.signOut();
+    currentUser = null;
+    userProfile = null;
+    updateAuthUI();
+}
+
+async function checkUserSession() {
+    if (!supabaseClient) return;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        await fetchUserProfile(currentUser.id);
+    } else {
+        currentUser = null;
+        userProfile = null;
+    }
+    updateAuthUI();
+}
+
+async function fetchUserProfile(userId) {
+    const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+    if (data) userProfile = data;
+}
+
+function updateAuthUI() {
+    const authBtn = document.getElementById('auth-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const profileIcon = document.getElementById('user-profile-icon');
+    const tokensDisplay = document.getElementById('user-tokens-display');
+    
+    if (currentUser) {
+        if(authBtn) authBtn.style.display = 'none';
+        if(logoutBtn) logoutBtn.style.display = 'inline-block';
+        if(profileIcon) profileIcon.style.display = 'inline-block';
+        
+        if (userProfile && tokensDisplay) {
+            tokensDisplay.style.display = 'inline-block';
+            tokensDisplay.innerHTML = `💎 Free: ${userProfile.free_credits} | 🪙 Paid: ${userProfile.paid_tokens}`;
+        }
+    } else {
+        if(authBtn) authBtn.style.display = 'inline-block';
+        if(logoutBtn) logoutBtn.style.display = 'none';
+        if(profileIcon) profileIcon.style.display = 'none';
+        if(tokensDisplay) tokensDisplay.style.display = 'none';
+    }
+}
+
+
+async function apiFetch(url, options = {}) {
+    if (!options.headers) options.headers = {};
+    if (supabaseClient) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.access_token) {
+            options.headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+    }
+    return fetch(url, options);
+}
+
 const I18N = {
     'en': {
+        'nav_login': 'Login',
+        'nav_logout': 'Logout',
         'subtitle': 'AI Quant Assistant',
+        'auth_title_login': 'System Login',
+        'auth_title_signup': 'Create Account',
+        'auth_ph_email': 'Email',
+        'auth_ph_pw': 'Password',
+        'auth_ph_confirm': 'Confirm Password',
+        'auth_pw_strength': 'Strength: None',
+        'auth_pw_note': '⚠️ Password must be 8-36 chars, including: uppercase, lowercase, number, and special char.',
+        'auth_btn_login': 'Login',
+        'auth_btn_signup': 'Sign Up',
+        'auth_switch_to_signup': 'No account yet?',
+        'auth_switch_link_signup': 'Sign up now',
+        'auth_switch_to_login': 'Already have an account?',
+        'auth_switch_link_login': 'Login here',
+        'auth_err_empty': 'Please enter all fields!',
+        'auth_err_pw_match': 'Passwords do not match!',
+        'auth_err_pw_weak': 'Password does not meet the requirements!',
+        'auth_msg_processing': 'Processing...',
+        'auth_msg_success': 'Registration successful! Please login.',
         'nav_opt': 'Portfolio Optimizer',
         'nav_eval': 'Portfolio Evaluator',
         'params_title': 'Investment Parameters',
@@ -92,7 +319,27 @@ const I18N = {
         'use_ai_report': 'Enable AI Analysis Report (Consumes Token)'
     },
     'vi': {
+        'nav_login': 'Đăng nhập',
+        'nav_logout': 'Thoát',
         'subtitle': 'Trợ lý Dữ liệu AI',
+        'auth_title_login': 'Đăng nhập hệ thống',
+        'auth_title_signup': 'Tạo tài khoản',
+        'auth_ph_email': 'Email',
+        'auth_ph_pw': 'Mật khẩu',
+        'auth_ph_confirm': 'Xác nhận Mật khẩu',
+        'auth_pw_strength': 'Độ mạnh: Chưa nhập',
+        'auth_pw_note': '⚠️ Mật khẩu từ 8-36 ký tự, gồm: chữ hoa, chữ thường, số và ký tự đặc biệt. Vui lòng ghi nhớ mật khẩu!',
+        'auth_btn_login': 'Đăng nhập',
+        'auth_btn_signup': 'Đăng ký',
+        'auth_switch_to_signup': 'Chưa có tài khoản?',
+        'auth_switch_link_signup': 'Đăng ký ngay',
+        'auth_switch_to_login': 'Đã có tài khoản?',
+        'auth_switch_link_login': 'Đăng nhập',
+        'auth_err_empty': 'Vui lòng nhập đầy đủ thông tin!',
+        'auth_err_pw_match': 'Mật khẩu xác nhận không khớp!',
+        'auth_err_pw_weak': 'Mật khẩu chưa đủ mạnh!',
+        'auth_msg_processing': 'Đang xử lý...',
+        'auth_msg_success': 'Đăng ký thành công! Vui lòng đăng nhập.',
         'nav_opt': 'Tối ưu hóa Danh mục',
         'nav_eval': 'Đánh giá Danh mục',
         'params_title': 'Thông số đầu vào',
@@ -408,9 +655,13 @@ document.addEventListener('click', function(e) {
 
 document.addEventListener("DOMContentLoaded", () => {
     
+    // Check auth state on load
+    checkUserSession();
+    
     // --- Ngôn ngữ (i18n) ---
     const langSelector = document.getElementById("lang-selector");
     let currentLang = 'en';
+    window.getCurrentLang = () => currentLang;
 
     function updateLanguage() {
         currentLang = langSelector.value;
@@ -425,6 +676,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
     
+    window.updateLanguageGlobal = updateLanguage;
     langSelector.addEventListener("change", updateLanguage);
     updateLanguage(); 
 
@@ -518,7 +770,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         let tickersQueryStr = queryTickers.join(",");
         try {
-            let res = await fetch('/api/current-prices?tickers=' + tickersQueryStr);
+            let res = await apiFetch('/api/current-prices?tickers=' + tickersQueryStr);
             let prices = await res.json();
             
             Object.assign(cachedPrices, prices);
@@ -758,7 +1010,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch('/api/ai-advice', {
+            const response = await apiFetch('/api/ai-advice', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -814,6 +1066,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Hiện nút Download PDF
             document.getElementById('btn-export-pdf').style.display = 'inline-block';
+            checkUserSession();
 
         } catch (err) {
             console.error("AI Advice Error:", err);
@@ -912,7 +1165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const res = await fetch(`/api/check-manual-bctc?tickers=${tickers.join(',')}`);
+            const res = await apiFetch(`/api/check-manual-bctc?tickers=${tickers.join(',')}`);
             const data = await res.json();
             const matched = Object.keys(data);
             
@@ -957,7 +1210,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tfValue = tfSelect ? parseInt(tfSelect.value) : 252;
 
         Promise.all([
-            fetch('/api/run-simulation', {
+            apiFetch('/api/run-simulation', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang, timeframe_days: tfValue})
@@ -965,14 +1218,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!res.ok) throw new Error("Simulation API Error");
                 return res.json();
             }),
-            fetch(`/api/news?tickers=${tickersArray.join(',')}`).then(r => r.json()).catch(() => ({}))
+            apiFetch(`/api/news?tickers=${tickersArray.join(',')}`).then(r => r.json()).catch(() => ({}))
         ])
         .then(([simData, newsData]) => {
             simData.news_data = newsData;
             handleApiResponse(simData);
         })
         .catch(handleError)
-        .finally(() => { runBtn.textContent = I18N[currentLang]['btn_run']; runBtn.disabled = false; });
+        .finally(() => { runBtn.textContent = I18N[currentLang]['btn_run']; runBtn.disabled = false; checkUserSession(); });
     });
 
     // Execution Mode: Evaluator
@@ -996,7 +1249,7 @@ document.addEventListener("DOMContentLoaded", () => {
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
 
         Promise.all([
-            fetch('/api/evaluate-portfolio', {
+            apiFetch('/api/evaluate-portfolio', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({holdings: holdings, days: tf, lang: currentLang})
@@ -1004,14 +1257,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!res.ok) throw new Error("Evaluate API Error");
                 return res.json();
             }),
-            fetch(`/api/news?tickers=${Object.keys(holdings).join(',')}`).then(r => r.json()).catch(() => ({}))
+            apiFetch(`/api/news?tickers=${Object.keys(holdings).join(',')}`).then(r => r.json()).catch(() => ({}))
         ])
         .then(([simData, newsData]) => {
             simData.news_data = newsData;
             handleApiResponse(simData);
         })
         .catch(handleError)
-        .finally(() => { evalBtn.textContent = I18N[currentLang]['btn_eval']; evalBtn.disabled = false; });
+        .finally(() => { evalBtn.textContent = I18N[currentLang]['btn_eval']; evalBtn.disabled = false; checkUserSession(); });
     });
 
     // Stress Test Button
@@ -1043,7 +1296,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             finBtn.textContent = 'Fetching...';
             try {
-                const res = await fetch(`/api/financials/${ticker}?session_id=${currentSessionId}`);
+                const res = await apiFetch(`/api/financials/${ticker}?session_id=${currentSessionId}`);
                 const data = await res.json();
                 
                 if (data.error) throw new Error(data.error);
@@ -1067,81 +1320,73 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Donation Modal Handle ---
+    // --- Payment Paywall Logic ---
     const btnDonateSidebar = document.getElementById('btn-donate-sidebar');
     const qrModal = document.getElementById('qr-modal');
     const closeQr = document.getElementById('close-qr-btn');
     const qrImg = document.getElementById('vietqr-img');
     
-    // View containers inside Modal
     const donateSetupView = document.getElementById('donate-setup-view');
     const donateQrView = document.getElementById('donate-qr-view');
     const donateThanksView = document.getElementById('donate-thanks-view');
     
-    // Form elements
-    const customAmtContainer = document.getElementById('custom-amt-container');
-    const customAmtInput = document.getElementById('custom-amt-input');
     const btnGenQr = document.getElementById('btn-generate-qr');
-    const btnCustomAmt = document.getElementById('btn-custom-amt');
-    let selectedAmount = 5000;
+    let selectedAmount = 10000;
+    let pollingInterval = null;
 
     if (btnDonateSidebar) {
         btnDonateSidebar.addEventListener('click', () => {
+            if (!currentUser) {
+                alert(window.getCurrentLang() === 'en' ? 'Please Login first to purchase tokens!' : 'Vui lòng Đăng nhập trước khi nạp Token!');
+                openAuthModal();
+                return;
+            }
             qrModal.style.display = 'flex';
             donateSetupView.style.display = 'block';
             donateQrView.style.display = 'none';
             donateThanksView.style.display = 'none';
-            customAmtContainer.style.display = 'none';
-            selectedAmount = 5000; // Reset to default
+            selectedAmount = 10000;
             
-            // Highlight default button
             document.querySelectorAll('.donate-amt-btn').forEach(b => b.style.background = 'rgba(255,255,255,0.1)');
-            document.querySelector('.donate-amt-btn[data-amt="5000"]').style.background = 'rgba(245,158,11,0.5)';
-            btnCustomAmt.style.background = 'rgba(255,255,255,0.1)';
+            document.querySelector('.donate-amt-btn[data-amt="10000"]').style.background = 'rgba(245,158,11,0.5)';
         });
     }
 
     document.querySelectorAll('.donate-amt-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            selectedAmount = parseInt(e.target.getAttribute('data-amt'));
-            customAmtContainer.style.display = 'none';
-            
+            selectedAmount = parseInt(e.currentTarget.getAttribute('data-amt'));
             document.querySelectorAll('.donate-amt-btn').forEach(b => b.style.background = 'rgba(255,255,255,0.1)');
-            if(btnCustomAmt) btnCustomAmt.style.background = 'rgba(255,255,255,0.1)';
-            e.target.style.background = 'rgba(245,158,11,0.5)';
+            e.currentTarget.style.background = 'rgba(245,158,11,0.5)';
         });
     });
 
-    if (btnCustomAmt) {
-        btnCustomAmt.addEventListener('click', () => {
-            customAmtContainer.style.display = 'block';
-            selectedAmount = 0;
-            document.querySelectorAll('.donate-amt-btn').forEach(b => b.style.background = 'rgba(255,255,255,0.1)');
-            btnCustomAmt.style.background = 'rgba(245,158,11,0.5)';
-        });
-    }
-
     if (btnGenQr) {
-        btnGenQr.addEventListener('click', () => {
-            if (customAmtContainer.style.display === 'block') {
-                selectedAmount = parseInt(customAmtInput.value);
-                if (!selectedAmount || selectedAmount < 2000) {
-                    alert("Vui lòng nhập số tiền hợp lệ (Tối thiểu 2000đ)!");
-                    return;
-                }
+        btnGenQr.addEventListener('click', async () => {
+            btnGenQr.textContent = 'Đang tạo...';
+            btnGenQr.disabled = true;
+            try {
+                const res = await apiFetch('/api/payment/create-intent', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({amount: selectedAmount})
+                });
+                if (!res.ok) throw new Error('API Error');
+                const data = await res.json();
+                const code = data.payment_code;
+                
+                const qrUrl = `https://img.vietqr.io/image/VPB-1001213140604-compact2.jpg?amount=${selectedAmount}&addInfo=DNT%20${code}&accountName=DOAN%20NGUYEN%20TRI`;
+                qrImg.src = qrUrl;
+                
+                donateSetupView.style.display = 'none';
+                donateQrView.style.display = 'block';
+                
+                startPaymentPolling(code);
+            } catch (e) {
+                alert('Lỗi tạo mã thanh toán: ' + e.message);
+            } finally {
+                btnGenQr.textContent = 'Tạo mã QR';
+                btnGenQr.disabled = false;
             }
-            
-            // Generate VietQR Link
-            // STK: 1001213140604, Ngân hàng VPB (VPBank), DOAN NGUYEN TRI
-            const msg = `DNTLAB ${currentSessionId}`;
-            const qrUrl = `https://img.vietqr.io/image/VPB-1001213140604-compact2.jpg?amount=${selectedAmount}&addInfo=${msg}&accountName=DOAN%20NGUYEN%20TRI`;
-            qrImg.src = qrUrl;
-            
-            donateSetupView.style.display = 'none';
-            donateQrView.style.display = 'block';
-            
-            // Start Polling
-            startPaymentPolling();
         });
     }
 
@@ -1152,21 +1397,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    async function startPaymentPolling() {
+    async function startPaymentPolling(code) {
         if(pollingInterval) clearInterval(pollingInterval);
         
         pollingInterval = setInterval(async () => {
             try {
-                const res = await fetch(`/api/payment-status?session_id=${currentSessionId}`);
+                const res = await fetch(`/api/payment-status?payment_code=${code}`);
                 const data = await res.json();
                 
                 if(data.paid) {
                     clearInterval(pollingInterval);
                     donateQrView.style.display = 'none';
                     donateThanksView.style.display = 'block';
+                    checkUserSession(); // Reload tokens
                 }
             } catch(e) {}
-        }, 3000); // Mỗi 3 giây
+        }, 3000);
     }
 
     // --- AI Radar Screener Auto-Fetch ---
@@ -1176,7 +1422,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!radarStatus || !pillsContainer) return;
 
         try {
-            const res = await fetch('/api/ai-radar');
+            const res = await apiFetch('/api/ai-radar');
             if (!res.ok) throw new Error("Máy chủ Backend chưa sẵn sàng hoặc lỗi: " + res.status);
             const data = await res.json();
             

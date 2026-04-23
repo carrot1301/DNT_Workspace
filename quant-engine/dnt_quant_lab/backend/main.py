@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from core.auth_middleware import require_auth
+from core.token_manager import check_and_deduct_tokens
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
@@ -67,7 +69,10 @@ class SimulationRequest(BaseModel):
     timeframe_days: int = 252
 
 @app.post("/api/run-simulation")
-def get_simulation_data(req: SimulationRequest):
+def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
+    # Deduct token (1)
+    check_and_deduct_tokens(user.id, cost=2)
+    
     if len(req.tickers) < 2:
         return {"error": "Cần ít nhất 2 mã cổ phiếu để chạy tối ưu hóa danh mục."}
         
@@ -248,11 +253,14 @@ class AIAdviceRequest(BaseModel):
     lang: str = "vi"
 
 @app.post("/api/ai-advice")
-def get_ai_advice(req: AIAdviceRequest):
+def get_ai_advice(req: AIAdviceRequest, user = Depends(require_auth)):
     """
     Stream lời khuyên đầu tư từ Gemini AI dựa trên kết quả Monte Carlo.
     Sử dụng Server-Sent streaming để frontend nhận text từng chunk.
     """
+    # Deduct token (1)
+    check_and_deduct_tokens(user.id, cost=2)
+    
     data = {
         "monte_carlo": req.monte_carlo,
         "stress_test": req.stress_test,
@@ -278,7 +286,10 @@ class EvaluationRequest(BaseModel):
     lang: str = "vi"
 
 @app.post("/api/evaluate-portfolio")
-def evaluate_custom(req: EvaluationRequest):
+def evaluate_custom(req: EvaluationRequest, user = Depends(require_auth)):
+    # Deduct token (1)
+    check_and_deduct_tokens(user.id, cost=2)
+    
     tickers = list(req.holdings.keys())
     if len(tickers) == 0:
         return {"error": "Cần ít nhất 1 mã để định giá."}
@@ -369,36 +380,95 @@ def get_current_prices(tickers: str):
 # ── SePay & Báo Cáo Tài Chính (TCBS Integration) ──────────────────
 from fastapi import Request
 import requests
+import string
+import random
+from core.auth_middleware import require_auth
+from core.supabase_client import get_supabase
+
+class PaymentIntentRequest(BaseModel):
+    amount: int
+
+@app.post("/api/payment/create-intent")
+def create_payment_intent(req: PaymentIntentRequest, user = Depends(require_auth)):
+    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    supabase = get_supabase()
+    try:
+        supabase.table('transactions').insert({
+            'user_id': user.id,
+            'payment_code': code,
+            'amount': req.amount,
+            'status': 'pending'
+        }).execute()
+    except Exception as e:
+        print(f"Transaction DB Error: {e}")
+        payments_db[code] = {"user_id": user.id, "amount": req.amount, "status": "pending"}
+    return {"payment_code": code}
 
 @app.post("/hooks/sepay-payment")
 async def sepay_webhook(req: Request):
-    """
-    Webhook nhận thông báo khi có giao dịch mới (SePay -> VPBank).
-    - Lấy nội dung chuyển khoản (Ví dụ: DNTLAB 123456)
-    - So khớp với hóa đơn ảo tạm thời trên hệ thống
-    """
     try:
         data = await req.json()
         content = str(data.get("content", "")).upper()
         amount = int(data.get("transferAmount", 0))
         
-        # Nếu nhận >= 5000đ và có chữ DNTLAB trong nội dung CK
-        if amount >= 5000 and "DNTLAB" in content:
-            parts = content.split("DNTLAB")
+        if "DNT" in content:
+            parts = content.replace("DNTLAB", "DNT").split("DNT")
             if len(parts) > 1:
-                session_id = parts[1].strip().split()[0]
-                payments_db[session_id] = True
-                
+                code_str = parts[1].strip()
+                import re
+                match = re.search(r'[A-Z0-9]{6}', code_str)
+                if match:
+                    code = match.group(0)
+                    supabase = get_supabase()
+                    user_id = None
+                    
+                    try:
+                        res = supabase.table('transactions').select('*').eq('payment_code', code).eq('status', 'pending').execute()
+                        if res.data and len(res.data) > 0:
+                            tx = res.data[0]
+                            user_id = tx['user_id']
+                            supabase.table('transactions').update({'status': 'paid'}).eq('id', tx['id']).execute()
+                    except Exception as e:
+                        print(f"DB Webhook Error: {e}")
+                    
+                    if not user_id and code in payments_db and payments_db[code]['status'] == 'pending':
+                        user_id = payments_db[code]['user_id']
+                        payments_db[code]['status'] = 'paid'
+                        
+                    if user_id:
+                        tokens = 0
+                        if amount >= 50000:
+                            tokens = 80
+                        elif amount >= 20000:
+                            tokens = 25
+                        elif amount >= 10000:
+                            tokens = 10
+                        
+                        if tokens > 0:
+                            try:
+                                prof_res = supabase.table('profiles').select('paid_tokens').eq('id', user_id).single().execute()
+                                current_paid = prof_res.data.get('paid_tokens', 0)
+                                supabase.table('profiles').update({'paid_tokens': current_paid + tokens}).eq('id', user_id).execute()
+                            except Exception as e:
+                                print(f"Update Tokens Error: {e}")
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-
 @app.get("/api/payment-status")
-def get_payment_status(session_id: str):
-    """Client polling API này để xem trạng thái hóa đơn"""
-    is_paid = payments_db.get(session_id, False)
-    return {"paid": is_paid}
+def get_payment_status(payment_code: str):
+    supabase = get_supabase()
+    try:
+        res = supabase.table('transactions').select('status').eq('payment_code', payment_code).execute()
+        if res.data and len(res.data) > 0 and res.data[0].get('status') == 'paid':
+            return {"paid": True}
+    except Exception:
+        pass
+        
+    info = payments_db.get(payment_code, {})
+    if info.get('status') == 'paid':
+        return {"paid": True}
+    return {"paid": False}
 
 def fetch_financials_internal(ticker: str):
     ticker = ticker.upper()

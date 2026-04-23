@@ -15,6 +15,8 @@
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
     <!-- Html2Pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
 
@@ -121,8 +123,10 @@
                 <option value="en" selected style="background: #111;">🇺🇸 EN</option>
                 <option value="vi" style="background: #111;">🇻🇳 VI</option>
             </select>
-            <span class="icon-link">👤</span>
-            <button class="btn-tv-blue" onclick="location.href='index.html'">Thoát</button>
+            <span class="icon-link" id="user-profile-icon" style="display: none; cursor: pointer; color: #00FFAA;" title="Profile">👤</span>
+            <span id="user-tokens-display" style="display: none; color: #00FFAA; font-weight: bold; font-size: 0.9rem; border: 1px solid rgba(0,255,170,0.3); padding: 4px 10px; border-radius: 20px; background: rgba(0,255,170,0.1);"></span>
+            <button class="btn-tv-blue" id="auth-btn" onclick="openAuthModal()" data-i18n="nav_login">Đăng nhập</button>
+            <button class="btn-tv-blue" id="logout-btn" style="display: none; background: rgba(255,59,48,0.1); border-color: #FF3B30; color: #FF3B30;" onclick="handleLogout()" data-i18n="nav_logout">Thoát</button>
         </div>
     </header>
 
@@ -630,6 +634,45 @@
             </div>
             <div id="ta-modal-body">
                 <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" style="display: none; position: fixed; z-index: 10000; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="glass-panel" style="background: #111827; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; border: 1px solid rgba(0, 255, 170, 0.3); box-shadow: 0 0 20px rgba(0, 255, 170, 0.1); position: relative;">
+            <button onclick="closeAuthModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <h3 id="auth-title" style="color: #00FFAA; margin-top: 0; text-align: center;" data-i18n="auth_title_login">Đăng nhập hệ thống</h3>
+            
+            <div id="auth-msg" style="color: #F59E0B; font-size: 0.85rem; margin-bottom: 15px; text-align: center; display: none;"></div>
+            
+            <div style="margin-bottom: 15px;">
+                <input type="email" id="auth-email" class="glass-input" placeholder="Email" data-i18n-ph="auth_ph_email" style="width: 100%; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <input type="password" id="auth-password" class="glass-input" placeholder="Mật khẩu" data-i18n-ph="auth_ph_pw" style="width: 100%; box-sizing: border-box;" oninput="checkPasswordStrength()">
+            </div>
+            
+            <div id="signup-fields" style="display: none;">
+                <div style="margin-bottom: 5px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                    <div id="pw-strength-bar" style="width: 0%; height: 100%; background: #FF3B30; transition: width 0.3s, background 0.3s;"></div>
+                </div>
+                <div id="pw-strength-text" style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 15px; text-align: right;" data-i18n="auth_pw_strength">Độ mạnh: Chưa nhập</div>
+                
+                <div style="margin-bottom: 15px;">
+                    <input type="password" id="auth-confirm-password" class="glass-input" placeholder="Xác nhận Mật khẩu" data-i18n-ph="auth_ph_confirm" style="width: 100%; box-sizing: border-box;">
+                </div>
+                
+                <div style="font-size: 0.75rem; color: #F59E0B; margin-bottom: 15px; text-align: justify; line-height: 1.4;" data-i18n="auth_pw_note">
+                    ⚠️ Mật khẩu từ 8-36 ký tự, gồm: chữ hoa, chữ thường, số và ký tự đặc biệt. Vui lòng ghi nhớ mật khẩu!
+                </div>
+            </div>
+            
+            <button id="auth-submit-btn" class="btn-tv-blue" style="width: 100%; margin-bottom: 15px; padding: 10px; font-size: 1rem;" onclick="handleAuth()" data-i18n="auth_btn_login">Đăng nhập</button>
+            
+            <div style="text-align: center; font-size: 0.85rem; color: #94a3b8;">
+                <span id="auth-switch-text" data-i18n="auth_switch_to_signup">Chưa có tài khoản?</span>
+                <a href="#" id="auth-switch-link" style="color: #00B8FF; text-decoration: none; margin-left: 5px; font-weight: bold;" onclick="switchAuthMode()" data-i18n="auth_switch_link_signup">Đăng ký ngay</a>
             </div>
         </div>
     </div>
