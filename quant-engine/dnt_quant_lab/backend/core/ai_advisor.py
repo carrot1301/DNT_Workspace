@@ -37,15 +37,15 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     # Lấy thông tin thời gian (áp dụng chung)
     days = mc.get("timeframe_days", 252) # Mặc định 252 (1 năm)
     timeframe_map = {
-        21: "1 tháng", 
-        63: "3 tháng", 
-        126: "6 tháng", 
-        189: "9 tháng",
-        252: "1 năm",
-        504: "2 năm",
-        756: "3 năm"
+        21: "1 tháng" if lang == "vi" else "1 month", 
+        63: "3 tháng" if lang == "vi" else "3 months", 
+        126: "6 tháng" if lang == "vi" else "6 months", 
+        189: "9 tháng" if lang == "vi" else "9 months",
+        252: "1 năm" if lang == "vi" else "1 year",
+        504: "2 năm" if lang == "vi" else "2 years",
+        756: "3 năm" if lang == "vi" else "3 years"
     }
-    timeframe_note = timeframe_map.get(days, f"{days} ngày giao dịch")
+    timeframe_note = timeframe_map.get(days, f"{days} ngày giao dịch" if lang == "vi" else f"{days} trading days")
 
     if is_optimizer:
         ms = mc["max_sharpe"]
@@ -94,10 +94,16 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     # --- Tóm tắt Fundamentals (BCTC) ---
     fund_section = ""
     if fundamentals_data:
-        fund_section = " **SỨC KHỎE TÀI CHÍNH (Từ BCTC):**\n"
-        for t, fd in fundamentals_data.items():
-            fund_section += f"- {t}: Ngành {fd.get('industry', '--')} | P/E: {fd.get('pe', '--')} | P/B: {fd.get('pb', '--')} | Biên ROE: {fd.get('roe', '--')}% | Nợ/Vốn CSH: {fd.get('debt_on_equity', '--')} Lần\n"
-        fund_section += "\n*Nhiệm vụ đặc biệt: Hãy đối chiếu tỉ trọng tối ưu phía trên với sức khỏe cơ bản ở đây. Cảnh báo rủi ro nếu thuật toán MVO dồn tỉ trọng quá lớn vào mã có ROE thấp, P/E quá cao hoặc dính nợ rủi ro.*"
+        if lang == "vi":
+            fund_section = " **SỨC KHỎE TÀI CHÍNH (Từ BCTC):**\n"
+            for t, fd in fundamentals_data.items():
+                fund_section += f"- {t}: Ngành {fd.get('industry', '--')} | P/E: {fd.get('pe', '--')} | P/B: {fd.get('pb', '--')} | Biên ROE: {fd.get('roe', '--')}% | Nợ/Vốn CSH: {fd.get('debt_on_equity', '--')} Lần\n"
+            fund_section += "\n*Nhiệm vụ đặc biệt: Hãy đối chiếu tỉ trọng tối ưu phía trên với sức khỏe cơ bản ở đây. Cảnh báo rủi ro nếu thuật toán MVO dồn tỉ trọng quá lớn vào mã có ROE thấp, P/E quá cao hoặc dính nợ rủi ro.*"
+        else:
+            fund_section = " **FINANCIAL HEALTH (From Statements):**\n"
+            for t, fd in fundamentals_data.items():
+                fund_section += f"- {t}: Industry {fd.get('industry', '--')} | P/E: {fd.get('pe', '--')} | P/B: {fd.get('pb', '--')} | ROE Margin: {fd.get('roe', '--')}% | Debt/Equity: {fd.get('debt_on_equity', '--')}x\n"
+            fund_section += "\n*Special task: Cross-check the optimal allocation above with this fundamental health. Warn of risks if MVO algorithm allocates heavily to stocks with low ROE, very high P/E, or risky debt.*"
 
     # Lấy thêm list manual BCTC (RAG Mode)
     manual_bctc_tickers = data.get("manual_bctc_tickers", [])
@@ -150,19 +156,25 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
     if ta_data:
         if lang == "vi":
             ta_section = "\n**PHÂN TÍCH KỸ THUẬT (TECHNICAL ANALYSIS - Dài hạn & Ngắn hạn):**\n"
-        else:
-            ta_section = "\n**TECHNICAL ANALYSIS:**\n"
-        for t, signal_info in ta_data.items():
-            ta_analysis = signal_info.get("ta_analysis")
-            if ta_analysis and "summary" in ta_analysis:
-                summary = ta_analysis["summary"]
-                ta_section += f" - {t}: Tổng quan ({summary['overall_signal']}) | Score: {summary['score']:.2f}\n"
-                ta_section += f"   + Trend: SMA20={ta_analysis['trend'].get('SMA20', '')}, SMA50={ta_analysis['trend'].get('SMA50', '')}, SMA200={ta_analysis['trend'].get('SMA200', '')}\n"
-                ta_section += f"   + RSI: {ta_analysis['oscillators'].get('RSI', '')}\n"
-                ta_section += f"   + MACD Line: {ta_analysis['trend'].get('MACD', {}).get('line', '')}\n"
-        if lang == "vi":
+            for t, signal_info in ta_data.items():
+                ta_analysis = signal_info.get("ta_analysis")
+                if ta_analysis and "summary" in ta_analysis:
+                    summary = ta_analysis["summary"]
+                    ta_section += f" - {t}: Tổng quan ({summary['overall_signal']}) | Score: {summary['score']:.2f}\n"
+                    ta_section += f"   + Trend: SMA20={ta_analysis['trend'].get('SMA20', '')}, SMA50={ta_analysis['trend'].get('SMA50', '')}, SMA200={ta_analysis['trend'].get('SMA200', '')}\n"
+                    ta_section += f"   + RSI: {ta_analysis['oscillators'].get('RSI', '')}\n"
+                    ta_section += f"   + MACD Line: {ta_analysis['trend'].get('MACD', {}).get('line', '')}\n"
             ta_section += "\n*Nhiệm vụ: Kết hợp TA để đưa ra góc nhìn tham khảo thời điểm vào/ra lệnh ngắn hạn so với chiến lược dài hạn.*"
         else:
+            ta_section = "\n**TECHNICAL ANALYSIS:**\n"
+            for t, signal_info in ta_data.items():
+                ta_analysis = signal_info.get("ta_analysis")
+                if ta_analysis and "summary" in ta_analysis:
+                    summary = ta_analysis["summary"]
+                    ta_section += f" - {t}: Overview ({summary['overall_signal']}) | Score: {summary['score']:.2f}\n"
+                    ta_section += f"   + Trend: SMA20={ta_analysis['trend'].get('SMA20', '')}, SMA50={ta_analysis['trend'].get('SMA50', '')}, SMA200={ta_analysis['trend'].get('SMA200', '')}\n"
+                    ta_section += f"   + RSI: {ta_analysis['oscillators'].get('RSI', '')}\n"
+                    ta_section += f"   + MACD Line: {ta_analysis['trend'].get('MACD', {}).get('line', '')}\n"
             ta_section += "\n*Task: Combine TA signals to advise on short-term entry/exit points alongside the long-term strategy.*"
 
     # --- Format phân bổ tỉ trọng ---
@@ -182,37 +194,62 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
         weights_lines = "\n".join(
             f"    • {t}: {w * 100:.1f}%" for t, w in sorted_w
         )
-        weights_section = f"\n**PHÂN BỔ TỐI ƯU (Max Sharpe):**{b_note}\n{weights_lines}"
+        if lang == "vi":
+            weights_section = f"\n**PHÂN BỔ TỐI ƯU (Max Sharpe):**{b_note}\n{weights_lines}"
+        else:
+            weights_section = f"\n**OPTIMAL ALLOCATION (Max Sharpe):**{b_note}\n{weights_lines}"
 
     # --- VaR interpretation ---
     if var_loss >= 0:
-        var_interpretation = (
-            f"+{_format_vnd(var_loss)} "
-            f"(ngay cả kịch bản xấu nhất 5%, danh mục ước tính vẫn có lãi)"
-        )
+        if lang == "vi":
+            var_interpretation = (
+                f"+{_format_vnd(var_loss)} "
+                f"(ngay cả kịch bản xấu nhất 5%, danh mục ước tính vẫn có lãi)"
+            )
+        else:
+            var_interpretation = (
+                f"+{_format_vnd(var_loss)} "
+                f"(even in the worst 5% scenario, the portfolio is estimated to be profitable)"
+            )
     else:
-        var_interpretation = (
-            f"{_format_vnd(var_loss)} "
-            f"(mức lỗ tối đa ước tính ở xác suất 95%)"
-        )
+        if lang == "vi":
+            var_interpretation = (
+                f"{_format_vnd(var_loss)} "
+                f"(mức lỗ tối đa ước tính ở xác suất 95%)"
+            )
+        else:
+            var_interpretation = (
+                f"{_format_vnd(var_loss)} "
+                f"(maximum estimated loss at 95% probability)"
+            )
 
     # --- Sharpe assessment ---
     sharpe_note = ""
     if sharpe is not None:
-        if sharpe > 1.5:
-            sharpe_note = f"{sharpe:.2f}  (Xuất sắc)"
-        elif sharpe > 1.0:
-            sharpe_note = f"{sharpe:.2f}  (Tốt)"
-        elif sharpe > 0.5:
-            sharpe_note = f"{sharpe:.2f}  (Trung bình)"
+        if lang == "vi":
+            if sharpe > 1.5:
+                sharpe_note = f"{sharpe:.2f}  (Xuất sắc)"
+            elif sharpe > 1.0:
+                sharpe_note = f"{sharpe:.2f}  (Tốt)"
+            elif sharpe > 0.5:
+                sharpe_note = f"{sharpe:.2f}  (Trung bình)"
+            else:
+                sharpe_note = f"{sharpe:.2f}  (Kém)"
         else:
-            sharpe_note = f"{sharpe:.2f}  (Kém)"
+            if sharpe > 1.5:
+                sharpe_note = f"{sharpe:.2f}  (Excellent)"
+            elif sharpe > 1.0:
+                sharpe_note = f"{sharpe:.2f}  (Good)"
+            elif sharpe > 0.5:
+                sharpe_note = f"{sharpe:.2f}  (Average)"
+            else:
+                sharpe_note = f"{sharpe:.2f}  (Poor)"
 
     # --- Build the prompt string based on language ---
     if lang == "en":
         prompt = f"""You are a professional quantitative data analyst with over 10 years of experience in the Vietnam stock market (HOSE and HNX). Your tone is professional, direct, data-driven, and you never promise guaranteed returns. You provide insights, not financial advice.
 
-STRICT REQUIREMENT: DO NOT use any emojis or icons in your response. Output as a professional text-based analytical report, using bold text for emphasis where necessary.
+STRICT REQUIREMENT: DO NOT use any emojis or icons in your response. Output as a professional text-based analytical report, using bold text for emphasis where necessary. ALL YOUR OUTPUT MUST BE IN ENGLISH ONLY. Do not mix languages.
 
 {mdd_warning_en}
 {overfit_warning_en}
@@ -236,7 +273,7 @@ Below are the full results of a Monte Carlo quantitative analysis (10,000 random
 **STRESS TEST — VN-Index drops -{crash_pct:.0f}%:**
 - Portfolio Beta: {beta:.2f}
 - Estimated Loss: {_format_vnd(stress_loss)}
-{weights_section.replace("PHÂN BỔ TỐI ƯU", "OPTIMAL ALLOCATION")}
+{weights_section}
 {fund_section}
 {ta_section}
 {manual_bctc_section}
@@ -266,7 +303,7 @@ Based on the simulation results and fundamental data, provide data-driven insigh
     else:
         prompt = f"""Bạn là một chuyên gia phân tích dữ liệu định lượng với hơn 10 năm kinh nghiệm tại thị trường chứng khoán Việt Nam (HOSE và HNX). Phong cách của bạn: chuyên nghiệp, khách quan, dùng số liệu cụ thể để lập luận, tuyệt đối không hô hào hay đảm bảo lợi nhuận. Bạn chỉ cung cấp góc nhìn phân tích, không phải tư vấn tài chính.
 
-YÊU CẦU NGHIÊM NGẶT: TUYỆT ĐỐI KHÔNG sử dụng bất kỳ biểu tượng cảm xúc (emoji) hay icon nào trong câu trả lời của bạn. Trình bày dưới dạng văn bản báo cáo phân tích chuyên nghiệp, chỉ định dạng in đậm để nhấn mạnh các ý quan trọng.
+YÊU CẦU NGHIÊM NGẶT: TUYỆT ĐỐI KHÔNG sử dụng bất kỳ biểu tượng cảm xúc (emoji) hay icon nào trong câu trả lời của bạn. Trình bày dưới dạng văn bản báo cáo phân tích chuyên nghiệp, chỉ định dạng in đậm để nhấn mạnh các ý quan trọng. TRẢ LỜI HOÀN TOÀN BẰNG TIẾNG VIỆT, KHÔNG ĐƯỢC LẪN LỘN NGÔN NGỮ.
 
 {mdd_warning_vi}
 {overfit_warning_vi}
