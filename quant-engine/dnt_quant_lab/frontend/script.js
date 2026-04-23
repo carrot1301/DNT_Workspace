@@ -1457,7 +1457,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({amount: selectedAmount})
                 });
-                if (!res.ok) throw new Error('API Error');
+                if (!res.ok) {
+                    let errTxt = await res.text();
+                    if (errTxt.length > 150) errTxt = errTxt.substring(0, 150) + '...';
+                    throw new Error(`HTTP ${res.status}: ${errTxt}`);
+                }
                 const data = await res.json();
                 const code = data.payment_code;
                 
