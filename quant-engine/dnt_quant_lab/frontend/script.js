@@ -141,7 +141,15 @@ async function handleAuth() {
     }
     
     if (error) {
-        msgEl.innerText = 'Lỗi: ' + error.message;
+        let errorMsg = error.message;
+        if (errorMsg.includes('Email not confirmed')) {
+            errorMsg = dict['auth_err_unconfirmed'] || 'Vui lòng kiểm tra hộp thư và Xác nhận Email trước khi đăng nhập!';
+        } else if (errorMsg.includes('Invalid login credentials')) {
+            errorMsg = dict['auth_err_invalid_creds'] || 'Sai Email hoặc Mật khẩu!';
+        } else if (errorMsg.includes('User already registered')) {
+            errorMsg = dict['auth_err_already_registered'] || 'Email này đã được đăng ký!';
+        }
+        msgEl.innerText = 'Lỗi: ' + errorMsg;
         msgEl.style.color = '#FF3B30';
     } else {
         closeAuthModal();
@@ -239,8 +247,11 @@ const I18N = {
         'auth_err_empty': 'Please enter all fields!',
         'auth_err_pw_match': 'Passwords do not match!',
         'auth_err_pw_weak': 'Password does not meet the requirements!',
+        'auth_err_unconfirmed': 'Please check your inbox and verify your email before logging in!',
+        'auth_err_invalid_creds': 'Invalid Email or Password!',
+        'auth_err_already_registered': 'This email is already registered!',
         'auth_msg_processing': 'Processing...',
-        'auth_msg_success': 'Registration successful! Please login.',
+        'auth_msg_success': 'Registration successful! Please check your email to verify your account.',
         'nav_opt': 'Portfolio Optimizer',
         'nav_eval': 'Portfolio Evaluator',
         'params_title': 'Investment Parameters',
@@ -354,9 +365,12 @@ const I18N = {
         'auth_switch_link_login': 'Đăng nhập',
         'auth_err_empty': 'Vui lòng nhập đầy đủ thông tin!',
         'auth_err_pw_match': 'Mật khẩu xác nhận không khớp!',
-        'auth_err_pw_weak': 'Mật khẩu chưa đủ mạnh!',
+        'auth_err_pw_weak': 'Mật khẩu chưa đạt yêu cầu độ mạnh!',
+        'auth_err_unconfirmed': 'Vui lòng kiểm tra hộp thư và Xác nhận Email trước khi đăng nhập!',
+        'auth_err_invalid_creds': 'Sai Email hoặc Mật khẩu!',
+        'auth_err_already_registered': 'Email này đã được đăng ký!',
         'auth_msg_processing': 'Đang xử lý...',
-        'auth_msg_success': 'Đăng ký thành công! Vui lòng đăng nhập.',
+        'auth_msg_success': 'Đăng ký thành công! Vui lòng kiểm tra Email để xác nhận tài khoản.',
         'nav_opt': 'Tối ưu hóa Danh mục',
         'nav_eval': 'Đánh giá Danh mục',
         'params_title': 'Thông số đầu vào',
