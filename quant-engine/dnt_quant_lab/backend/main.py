@@ -392,16 +392,17 @@ class PaymentIntentRequest(BaseModel):
 def create_payment_intent(req: PaymentIntentRequest, user = Depends(require_auth)):
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     supabase = get_supabase()
+    user_id = user.id if hasattr(user, 'id') else user.get('id')
     try:
         supabase.table('transactions').insert({
-            'user_id': user.id,
+            'user_id': user_id,
             'payment_code': code,
             'amount': req.amount,
             'status': 'pending'
         }).execute()
     except Exception as e:
         print(f"Transaction DB Error: {e}")
-        payments_db[code] = {"user_id": user.id, "amount": req.amount, "status": "pending"}
+        payments_db[code] = {"user_id": user_id, "amount": req.amount, "status": "pending"}
     return {"payment_code": code}
 
 @app.post("/hooks/sepay-payment")
