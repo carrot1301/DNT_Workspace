@@ -19,7 +19,10 @@ async def get_current_user(authorization: str = Header(None)):
         return None
     except Exception as e:
         print(f"Auth verification error: {e}")
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Lỗi xác thực Token: {str(e)}"
+        )
 
 async def require_auth(authorization: str = Header(None)):
     """
