@@ -1,0 +1,50 @@
+/* === HOME — Dark Premium === */
+:root {
+  --bg-primary:       #0A0A0F;   /* Đen tuyệt đối */
+  --bg-secondary:     #0F0F1A;   /* Đen xanh nhẹ */
+  --bg-card:          #13131F;   /* Card nền */
+  --bg-glass:         rgba(0, 255, 170, 0.06); /* Glassmorphism xanh lá */
+  
+  --purple-core:      #05F29B;   /* Xanh lá chủ đạo */
+  --purple-glow:      #66FFC2;   /* Xanh lá siêu nhẹ */
+  --purple-soft:      #00C279;   /* Xanh lá nhạt */
+  --purple-border:    rgba(0, 255, 170, 0.25);
+  
+  --gold-primary:     #00B8FF;   /* Xanh dương highlight */
+  --gold-light:       #66D9FF;   /* Xanh dương nhạt */
+  --gold-glow:        rgba(0, 184, 255, 0.3);
+  
+  --text-primary:     #F8FAFC;   /* Trắng tinh */
+  --text-secondary:   #94A3B8;   /* Xám nhạt */
+  --text-muted:       #475569;   /* Xám tối */
+  
+  /* === INNER PAGES — Light Clean === */
+  --inner-bg:         #FFFFFF;
+  --inner-bg-alt:     #F0FFF7;
+  --inner-accent:     #05F29B;   /* Xanh lá tinh gọn */
+  --inner-border:     #E5E7F0;
+  --inner-text:       #1E1B4B;
+  
+  /* === STATUS COLORS (Bảng dữ liệu) === */
+  --status-very-pos:  #10B981;   /* RẤT TÍCH CỰC */
+  --status-pos:       #34D399;   /* TÍCH CỰC */
+  --status-ok:        #60A5FA;   /* KHẢ QUAN */
+  --status-neutral:   #94A3B8;   /* TRUNG LẬP */
+  --status-neg-light: #FBBF24;   /* KO TÍCH CỰC */
+  --status-neg:       #F87171;   /* TIÊU CỰC */
+
+  /* === TYPOGRAPHY === */
+  --font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Poppins', sans-serif;
+  
+  --font-hero:    clamp(2.5rem, 6vw, 5rem);    /* H1 Hero */
+  --font-h2:      clamp(1.8rem, 3.5vw, 2.8rem);
+  --font-h3:      clamp(1.2rem, 2vw, 1.5rem);
+  --font-body:    1rem;
+  --font-small:   0.875rem;
+  --font-xs:      0.75rem;
+  
+  --weight-black:  900;
+  --weight-bold:   700;
+  --weight-medium: 500;
+  --weight-normal: 400;
+}

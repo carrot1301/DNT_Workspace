@@ -1,6 +1,6 @@
 const I18N = {
     'en': {
-        'subtitle': 'AI Investment Advisor',
+        'subtitle': 'AI Quant Assistant',
         'nav_opt': 'Portfolio Optimizer',
         'nav_eval': 'Portfolio Evaluator',
         'params_title': 'Investment Parameters',
@@ -80,7 +80,7 @@ const I18N = {
         'btn_close_qr': 'Cancel / Close',
         'polling_text': 'Waiting for payment (Polling)...',
         'btn_export_pdf': '⬇️ Download PDF',
-        'pdf_title': 'VIP INVESTMENT ADVISORY REPORT',
+        'pdf_title': 'VIP QUANTITATIVE ANALYSIS REPORT',
         'use_bctc_cb': 'Include RAG Document in Prompt (Costs AI ~15s)',
         'sig_col_ticker': 'Ticker',
         'sig_col_signal': 'Signal',
@@ -89,10 +89,10 @@ const I18N = {
         'btn_vps_cta': 'Open VPS Trading ↗',
         'signals_title': 'Real-Time Trading Signals',
         'signals_desc': 'Technical Analysis (SMA Crossover) & Direct Broker Integration.',
-        'use_ai_report': 'Enable AI Advisor Report (Consumes Token)'
+        'use_ai_report': 'Enable AI Analysis Report (Consumes Token)'
     },
     'vi': {
-        'subtitle': 'Trợ lý Đầu tư AI',
+        'subtitle': 'Trợ lý Dữ liệu AI',
         'nav_opt': 'Tối ưu hóa Danh mục',
         'nav_eval': 'Đánh giá Danh mục',
         'params_title': 'Thông số đầu vào',
@@ -172,7 +172,7 @@ const I18N = {
         'btn_close_qr': 'Hủy / Đóng',
         'polling_text': 'Đang chờ nhận thanh toán (Polling)...',
         'btn_export_pdf': '⬇️ Tải PDF',
-        'pdf_title': 'BÁO CÁO TƯ VẤN ĐẦU TƯ VIP',
+        'pdf_title': 'BÁO CÁO PHÂN TÍCH QUANTRIP V.I.P',
         'use_bctc_cb': 'Đính kèm vào Prompt (AI tốn thêm ~15s)',
         'sig_col_ticker': 'Mã CP',
         'sig_col_signal': 'Tín Hiệu',

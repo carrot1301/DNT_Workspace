@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Poppins:wght@400;500;700;900&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.light-mode {
+  background-color: var(--inner-bg);
+  color: var(--inner-text);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--weight-black);
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: var(--font-hero);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: var(--font-h2);
+}
+
+h3 {
+  font-size: var(--font-h3);
+}
+
+p {
+  font-size: var(--font-body);
+  color: var(--text-secondary);
+}
+
+.light-mode p {
+  color: var(--text-muted);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--purple-soft);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--purple-core);
+}
+
+::selection {
+  background: var(--purple-core);
+  color: #fff;
+}
