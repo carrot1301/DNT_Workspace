@@ -302,6 +302,15 @@ def get_sentiment_radar(tickers: str, lang: str = "vi"):
     sentiment = analyze_sentiment(news, lang)
     return sanitize_floats(sentiment)
 
+class CopilotPublicRequest(BaseModel):
+    message: str
+    lang: str = "vi"
+
+@app.post("/api/copilot-public")
+def get_copilot_public(req: CopilotPublicRequest):
+    from core.ai_advisor import copilot_chat_public
+    return StreamingResponse(copilot_chat_public(req.message, req.lang), media_type="text/event-stream")
+
 @app.post("/api/copilot-chat")
 def get_copilot_chat(req: CopilotRequest, user = Depends(require_auth)):
     from core.ai_advisor import copilot_chat

@@ -490,3 +490,73 @@ Tuyệt đối không dùng các từ khuyến nghị.
     except Exception as e:
         print(f"Sentiment Analysis Error: {e}")
         return {t: 0.5 for t in news_data.keys()}
+
+def copilot_chat_public(message: str, lang: str = "vi"):
+    """
+    Public Copilot for Landing Page — no auth, no simulation context.
+    Focuses on introducing DNT Quant Lab features.
+    """
+    model = _get_model()
+    if model is None:
+        yield "API chưa sẵn sàng." if lang == "vi" else "API not ready."
+        return
+
+    if lang == "vi":
+        system_prompt = """Bạn là "DNT Quant Copilot" — trợ lý AI trên trang chủ của nền tảng DNT Quant Lab.
+Vai trò: Giới thiệu và giải đáp thắc mắc cho khách truy cập về các tính năng nền tảng.
+
+TÍNH NĂNG CHÍNH CỦA DNT QUANT LAB:
+- Mô phỏng Monte Carlo 10,000 kịch bản tối ưu hóa danh mục (Max Sharpe, Min Variance)
+- Stress Test với kịch bản Thiên Nga Đen (VN-INDEX sụt 5%)
+- Phân tích AI: Gemini đọc Báo Cáo Tài Chính tự động
+- Hệ thống Tín hiệu kỹ thuật: RSI, Moving Averages, Breakout
+- Kiểm thử chiến lược quá khứ (Backtrader Engine)
+- Cỗ Máy Thời Gian (Backtest Time-Machine)
+- AI Sentiment Radar phân tích tâm lý thị trường
+- Tùy Biến Rủi Ro (Custom Constraints)
+- Hệ thống đa ngôn ngữ (Tiếng Việt & English)
+
+QUY TẮC:
+- Trả lời ngắn gọn (3-5 câu), thân thiện, chuyên nghiệp.
+- TUYỆT ĐỐI KHÔNG dùng từ "khuyến nghị", "nên mua", "nên bán" hay bất kỳ từ mang tính tư vấn đầu tư.
+- Đây là công cụ phân tích dữ liệu, KHÔNG phải dịch vụ tư vấn tài chính.
+- Khuyến khích khách bấm vào Dashboard để trải nghiệm.
+"""
+    else:
+        system_prompt = """You are "DNT Quant Copilot" — the AI assistant on the DNT Quant Lab landing page.
+Role: Introduce and answer visitor questions about the platform's features.
+
+KEY FEATURES:
+- Monte Carlo Simulation (10,000 scenarios) for portfolio optimization (Max Sharpe, Min Variance)
+- Stress Test with Black Swan scenarios (VN-INDEX -5%)
+- AI Analysis: Gemini auto-reads Financial Statements
+- Technical Signal System: RSI, Moving Averages, Breakout
+- Historical Strategy Testing (Backtrader Engine)
+- Time Machine (Backtest from past to present)
+- AI Sentiment Radar for market mood analysis
+- Custom Risk Constraints
+- Bilingual system (Vietnamese & English)
+
+RULES:
+- Answer briefly (3-5 sentences), friendly, professional.
+- NEVER use words like "recommend", "should buy", "should sell" or any investment advisory language.
+- This is a data analysis tool, NOT a financial advisory service.
+- Encourage visitors to open the Dashboard.
+"""
+
+    try:
+        response = model.generate_content(
+            [system_prompt, f"User: {message}"],
+            stream=True,
+            generation_config=genai.types.GenerationConfig(max_output_tokens=300, temperature=0.7)
+        )
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            msg = "Hệ thống AI đang quá tải. Vui lòng thử lại sau." if lang == "vi" else "AI system is overloaded. Please try again later."
+            yield msg
+        else:
+            yield f"Lỗi: {error_msg}"
