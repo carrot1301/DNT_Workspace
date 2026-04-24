@@ -368,12 +368,7 @@
                             <option value="756" data-i18n="tf_3y">3 năm (756 Ngày)</option>
                         </select>
                     </div>
-                    <!-- Backtest Time Machine -->
-                    <div class="input-group" style="margin-top: 15px;">
-                        <label data-i18n="label_backtest">Cỗ Máy Thời Gian (Backtest Date)</label>
-                        <input type="date" id="opt-backtest-date" class="glass-input">
-                        <p style="font-size: 0.7rem; color: #64748B; margin-top: 5px;" data-i18n="backtest_desc">Để trống để chạy với dữ liệu tới hiện tại. Nếu chọn ngày quá khứ, AI sẽ tối ưu dựa trên dữ liệu tới ngày đó, và kiểm thử hiệu suất từ đó đến nay.</p>
-                    </div>
+
                     <div style="display: flex; gap: 10px; margin-top: 1rem;">
                         <button class="action-btn" id="run-btn" data-i18n="btn_run" style="flex: 1; margin-top: 0;">Run
                             Simulation</button>
@@ -436,36 +431,46 @@
                         <span data-i18n="use_ai_report">Bật Trợ Lý AI Phân Tích (Tốn Token)</span>
                     </label>
                 </div>
-                
-                <!-- AI Persona Selector -->
-                <div id="ai-persona-container" style="margin-bottom: 15px; padding: 0 5px;">
-                    <label style="font-size: 0.75rem; color: #94A3B8; display: block; margin-bottom: 5px;" data-i18n="persona_label">Hệ tư tưởng AI (Persona)</label>
-                    <select id="ai-persona-select" class="glass-input" style="padding: 6px; font-size: 0.8rem; background: rgba(0,0,0,0.5);">
-                        <option value="value" data-i18n="persona_value">Đầu tư Giá trị (Cơ bản)</option>
-                        <option value="speculator" data-i18n="persona_speculator">Đầu Cơ (Dòng tiền)</option>
-                        <option value="quant" data-i18n="persona_quant" selected>Thuần Định Lượng (Xác suất)</option>
-                    </select>
-                </div>
 
-                <!-- Custom Constraints (Advanced) -->
-                <div id="advanced-constraints-container" style="margin-bottom: 15px; padding: 10px; background: rgba(0,255,170,0.05); border-radius: 8px; border: 1px solid rgba(0,255,170,0.1);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="document.getElementById('adv-constraints-body').style.display = document.getElementById('adv-constraints-body').style.display === 'none' ? 'block' : 'none'; this.children[1].textContent = document.getElementById('adv-constraints-body').style.display === 'none' ? '▼' : '▲';">
-                        <span style="font-size: 0.8rem; font-weight: bold; color: #00FFAA;" data-i18n="adv_constraints_title">⚙️ Tùy Biến Rủi Ro (Nâng cao)</span>
-                        <span style="color: #94A3B8; font-size: 0.8rem;">▼</span>
+                <!-- ═══ ADVANCED SETTINGS (Collapsible) ═══ -->
+                <div style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="const body = document.getElementById('adv-settings-body'); body.style.display = body.style.display === 'none' ? 'block' : 'none'; this.querySelector('.adv-arrow').textContent = body.style.display === 'none' ? '▼' : '▲';">
+                        <span style="font-size: 0.8rem; font-weight: bold; color: #94A3B8;">⚙️ <span data-i18n="adv_settings_title">Cài đặt Nâng cao</span></span>
+                        <span class="adv-arrow" style="color: #94A3B8; font-size: 0.8rem;">▼</span>
                     </div>
                     
-                    <div id="adv-constraints-body" style="display: none; margin-top: 10px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div>
-                                <label style="font-size: 0.75rem; color: #94A3B8;" data-i18n="const_min_weight">Tỷ trọng Tối thiểu (%)</label>
-                                <input type="number" id="opt-min-weight" class="glass-input" value="5" min="0" max="100" style="width: 100%; padding: 5px; font-size: 0.85rem; text-align: center; margin-top: 5px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 0.75rem; color: #94A3B8;" data-i18n="const_max_weight">Tỷ trọng Tối đa (%)</label>
-                                <input type="number" id="opt-max-weight" class="glass-input" value="40" min="1" max="100" style="width: 100%; padding: 5px; font-size: 0.85rem; text-align: center; margin-top: 5px;">
+                    <div id="adv-settings-body" style="display: none; margin-top: 12px;">
+                        <!-- AI Persona -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.75rem; color: #94A3B8; display: block; margin-bottom: 5px;" data-i18n="persona_label">Hệ tư tưởng AI (Persona)</label>
+                            <select id="ai-persona-select" class="glass-input" style="padding: 6px; font-size: 0.8rem; background: rgba(0,0,0,0.5);">
+                                <option value="value" data-i18n="persona_value">Đầu tư Giá trị (Cơ bản)</option>
+                                <option value="speculator" data-i18n="persona_speculator">Đầu Cơ (Dòng tiền)</option>
+                                <option value="quant" data-i18n="persona_quant" selected>Thuần Định Lượng (Xác suất)</option>
+                            </select>
+                        </div>
+
+                        <!-- Backtest Time Machine -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.75rem; color: #94A3B8; display: block; margin-bottom: 5px;" data-i18n="label_backtest">⏳ Cỗ Máy Thời Gian</label>
+                            <input type="date" id="opt-backtest-date" class="glass-input" style="font-size: 0.8rem; padding: 6px;">
+                            <p style="font-size: 0.65rem; color: #475569; margin: 4px 0 0 0;" data-i18n="backtest_desc">Để trống = hiện tại. Chọn ngày quá khứ để kiểm thử.</p>
+                        </div>
+
+                        <!-- Custom Constraints -->
+                        <div>
+                            <label style="font-size: 0.75rem; color: #00FFAA; display: block; margin-bottom: 5px;" data-i18n="adv_constraints_title">⚙️ Tùy Biến Rủi Ro</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <div>
+                                    <label style="font-size: 0.65rem; color: #64748B;" data-i18n="const_min_weight">Min (%)</label>
+                                    <input type="number" id="opt-min-weight" class="glass-input" value="5" min="0" max="100" style="width: 100%; padding: 5px; font-size: 0.8rem; text-align: center; margin-top: 3px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.65rem; color: #64748B;" data-i18n="const_max_weight">Max (%)</label>
+                                    <input type="number" id="opt-max-weight" class="glass-input" value="40" min="1" max="100" style="width: 100%; padding: 5px; font-size: 0.8rem; text-align: center; margin-top: 3px;">
+                                </div>
                             </div>
                         </div>
-                        <p style="font-size: 0.7rem; color: #64748B; margin: 8px 0 0 0; text-align: justify;" data-i18n="const_desc">Thiết lập giới hạn mua cho từng cổ phiếu để phân bổ rủi ro an toàn hơn.</p>
                     </div>
                 </div>
 
