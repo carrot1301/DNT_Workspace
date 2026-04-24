@@ -1025,16 +1025,10 @@ document.addEventListener("DOMContentLoaded", () => {
         } : { note: "User haven't run any simulation yet." };
         
         try {
-            let token = "";
-            if (window.supabaseClient) {
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
-                if (session) token = session.access_token;
-            }
-            const res = await fetch('/api/copilot-chat', {
+            const res = await apiFetch('/api/copilot-chat', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : ''
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     message: msg,
