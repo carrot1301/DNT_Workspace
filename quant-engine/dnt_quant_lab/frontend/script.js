@@ -1025,7 +1025,11 @@ document.addEventListener("DOMContentLoaded", () => {
         } : { note: "User haven't run any simulation yet." };
         
         try {
-            const token = localStorage.getItem('dnt_auth_token');
+            let token = "";
+            if (window.supabaseClient) {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                if (session) token = session.access_token;
+            }
             const res = await fetch('/api/copilot-chat', {
                 method: 'POST',
                 headers: { 
