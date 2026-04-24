@@ -373,27 +373,92 @@
         /* Guide Section */
         .guide-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            position: relative;
+        }
+        @media (min-width: 992px) {
+            .guide-grid::before {
+                content: "";
+                position: absolute;
+                top: 60px;
+                left: 15%;
+                right: 15%;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, rgba(0, 255, 170, 0.2), transparent);
+                z-index: 0;
+            }
         }
         .guide-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 2rem;
+            border-radius: 20px;
+            padding: 3rem 2rem;
             text-align: center;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
-            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .guide-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(0, 255, 170, 0.05) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 0;
         }
         .guide-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 255, 170, 0.1);
-            border-color: rgba(0, 255, 170, 0.3);
+            transform: translateY(-10px);
+            border-color: rgba(0, 255, 170, 0.4);
+            box-shadow: 0 20px 40px -10px rgba(0, 255, 170, 0.15);
         }
-        .guide-icon {
-            font-size: 3rem;
+        .guide-card:hover::before {
+            opacity: 1;
+        }
+        .guide-step-number {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.5rem auto;
+            background: rgba(0, 255, 170, 0.1);
+            border: 1px solid rgba(0, 255, 170, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--neon-green, #00ffaa);
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.1);
+            position: relative;
+            z-index: 2;
+            transition: all 0.4s ease;
+        }
+        .guide-card:hover .guide-step-number {
+            background: var(--neon-green, #00ffaa);
+            color: #0b0f19;
+            box-shadow: 0 0 30px rgba(0, 255, 170, 0.6);
+            transform: scale(1.1);
+        }
+        .guide-title {
+            color: white;
+            font-size: 1.3rem;
             margin-bottom: 1rem;
-            display: inline-block;
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+        }
+        .guide-desc {
+            color: #94A3B8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            position: relative;
+            z-index: 2;
         }
 
         /* Origin Story */
@@ -642,19 +707,19 @@
         
         <div class="guide-grid">
             <div class="guide-card">
-                <span class="guide-icon">1️⃣</span>
-                <h3 style="color: white; margin-bottom: 15px;" data-i18n="lp_guide_step1_title">Thiết lập danh mục</h3>
-                <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.5;" data-i18n="lp_guide_step1_desc">Nhập các mã cổ phiếu bạn đang nắm giữ hoặc quan tâm cùng với số vốn ban đầu. Hệ thống sẽ tự động lấy dữ liệu thị trường mới nhất.</p>
+                <div class="guide-step-number">01</div>
+                <h3 class="guide-title" data-i18n="lp_guide_step1_title">Thiết lập danh mục</h3>
+                <p class="guide-desc" data-i18n="lp_guide_step1_desc">Nhập các mã cổ phiếu bạn đang nắm giữ hoặc quan tâm cùng với số vốn ban đầu. Hệ thống sẽ tự động lấy dữ liệu thị trường mới nhất.</p>
             </div>
             <div class="guide-card">
-                <span class="guide-icon">2️⃣</span>
-                <h3 style="color: white; margin-bottom: 15px;" data-i18n="lp_guide_step2_title">Phân tích & Tối ưu</h3>
-                <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.5;" data-i18n="lp_guide_step2_desc">Sử dụng thuật toán Monte Carlo và Markowitz để tìm ra tỷ trọng phân bổ tối ưu nhất, đạt điểm Sharpe cao nhất cho danh mục.</p>
+                <div class="guide-step-number">02</div>
+                <h3 class="guide-title" data-i18n="lp_guide_step2_title">Phân tích & Tối ưu</h3>
+                <p class="guide-desc" data-i18n="lp_guide_step2_desc">Sử dụng thuật toán Monte Carlo và Markowitz để tìm ra tỷ trọng phân bổ tối ưu nhất, đạt điểm Sharpe cao nhất cho danh mục.</p>
             </div>
             <div class="guide-card">
-                <span class="guide-icon">3️⃣</span>
-                <h3 style="color: white; margin-bottom: 15px;" data-i18n="lp_guide_step3_title">Theo dõi tín hiệu AI</h3>
-                <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.5;" data-i18n="lp_guide_step3_desc">Nhận cảnh báo mua/bán từ mô hình Technical Analysis và lời khuyên chuyên sâu từ trợ lý AI đọc báo cáo tài chính.</p>
+                <div class="guide-step-number">03</div>
+                <h3 class="guide-title" data-i18n="lp_guide_step3_title">Theo dõi tín hiệu AI</h3>
+                <p class="guide-desc" data-i18n="lp_guide_step3_desc">Nhận cảnh báo mua/bán từ mô hình Technical Analysis và lời khuyên chuyên sâu từ trợ lý AI đọc báo cáo tài chính.</p>
             </div>
         </div>
     </section>
