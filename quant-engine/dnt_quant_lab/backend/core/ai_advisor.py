@@ -454,8 +454,11 @@ Câu hỏi: {message}
         ]
         response = model.generate_content(sys_prompt, stream=True, safety_settings=safety_settings)
         for chunk in response:
-            if hasattr(chunk, 'text') and chunk.text:
-                yield chunk.text
+            try:
+                if hasattr(chunk, 'text') and chunk.text:
+                    yield chunk.text
+            except (ValueError, AttributeError):
+                continue
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "quota" in error_msg.lower():
@@ -566,12 +569,15 @@ RULES:
         response = model.generate_content(
             [system_prompt, f"User: {message}"],
             stream=True,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=300, temperature=0.7),
+            generation_config=genai.types.GenerationConfig(max_output_tokens=800, temperature=0.7),
             safety_settings=safety_settings
         )
         for chunk in response:
-            if hasattr(chunk, 'text') and chunk.text:
-                yield chunk.text
+            try:
+                if hasattr(chunk, 'text') and chunk.text:
+                    yield chunk.text
+            except (ValueError, AttributeError):
+                continue
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "quota" in error_msg.lower():
