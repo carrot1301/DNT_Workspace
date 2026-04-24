@@ -7,6 +7,15 @@ let supabaseClient = null;
 
 if (window.supabase) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+            setTimeout(() => {
+                const modal = document.getElementById('change-pw-modal');
+                if (modal) modal.style.display = 'flex';
+            }, 500);
+        }
+    });
 }
 
 let currentUser = null;
@@ -20,6 +29,37 @@ function openAuthModal() {
 
 function closeAuthModal() {
     document.getElementById('auth-modal').style.display = 'none';
+    if (authMode === 'forgot') {
+        authMode = 'login'; // Reset back to login mode if closed
+    }
+}
+
+function togglePasswordVisibility(inputId, iconElement) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        iconElement.textContent = '👁️‍🗨️';
+        iconElement.style.color = '#00FFAA';
+    } else {
+        input.type = 'password';
+        iconElement.textContent = '👁️';
+        iconElement.style.color = '#94a3b8';
+    }
+}
+
+function showForgotPassword() {
+    authMode = 'forgot';
+    document.getElementById('auth-msg').style.display = 'none';
+    document.getElementById('password-container').style.display = 'none';
+    document.getElementById('signup-fields').style.display = 'none';
+    document.getElementById('forgot-pw-container').style.display = 'none';
+    
+    document.getElementById('auth-title').setAttribute('data-i18n', 'auth_forgot_title');
+    document.getElementById('auth-submit-btn').setAttribute('data-i18n', 'auth_forgot_btn');
+    document.getElementById('auth-switch-text').setAttribute('data-i18n', 'auth_forgot_back');
+    document.getElementById('auth-switch-link').setAttribute('data-i18n', 'auth_switch_link_login');
+    
+    if (window.updateLanguageGlobal) window.updateLanguageGlobal();
 }
 
 function checkPasswordStrength() {
@@ -65,8 +105,14 @@ function checkPasswordStrength() {
 }
 
 function switchAuthMode() {
-    authMode = authMode === 'login' ? 'signup' : 'login';
+    if (authMode === 'forgot') {
+        authMode = 'login';
+    } else {
+        authMode = authMode === 'login' ? 'signup' : 'login';
+    }
     document.getElementById('auth-msg').style.display = 'none';
+    document.getElementById('password-container').style.display = 'block';
+    document.getElementById('forgot-pw-container').style.display = authMode === 'login' ? 'block' : 'none';
     document.getElementById('signup-fields').style.display = authMode === 'login' ? 'none' : 'block';
     
     document.getElementById('auth-title').setAttribute('data-i18n', authMode === 'login' ? 'auth_title_login' : 'auth_title_signup');
@@ -108,9 +154,15 @@ async function handleAuth() {
             msgEl.style.display = 'block';
             return;
         }
-    } else {
+    } else if (authMode === 'login') {
         if (!email || !password) {
             msgEl.innerText = dict['auth_err_empty'];
+            msgEl.style.display = 'block';
+            return;
+        }
+    } else if (authMode === 'forgot') {
+        if (!email) {
+            msgEl.innerText = 'Vui lòng nhập Email!';
             msgEl.style.display = 'block';
             return;
         }
@@ -132,9 +184,19 @@ async function handleAuth() {
                 setTimeout(() => { switchAuthMode(); }, 1500);
                 return;
             }
-        } else {
+        } else if (authMode === 'login') {
             const { data, error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
             error = err;
+        } else if (authMode === 'forgot') {
+            const { error: err } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname
+            });
+            error = err;
+            if (!error) {
+                msgEl.innerText = 'Đã gửi liên kết khôi phục! Vui lòng kiểm tra hộp thư (cả thư rác).';
+                msgEl.style.color = '#00FFAA';
+                return;
+            }
         }
     } catch(e) {
         error = e;
@@ -202,7 +264,7 @@ function updateAuthUI() {
         
         if (userProfile && tokensDisplay) {
             tokensDisplay.style.display = 'inline-block';
-            tokensDisplay.innerHTML = `💎 Free: ${userProfile.free_credits} | 🪙 Paid: ${userProfile.paid_tokens}`;
+            tokensDisplay.innerHTML = `💎 <span class="hide-mobile">Free: </span>${userProfile.free_credits} | 🪙 <span class="hide-mobile">Paid: </span>${userProfile.paid_tokens}`;
         }
     } else {
         if(overlay) overlay.style.display = 'flex';
@@ -326,8 +388,8 @@ const I18N = {
         'label_capital': 'Initial Capital (VND)',
         'ph_capital': 'e.g. 1,000,000,000',
         'label_return': 'Target Return (%)',
-        'btn_run': 'Run Simulation',
-        'btn_eval': 'Evaluate Portfolio 🔍',
+        'btn_run': 'Run Simulation (-2 Tokens)',
+        'btn_eval': 'Evaluate Portfolio 🔍 (-2 Tokens)',
         'btn_stress': '🔥 Stress Test',
         'btn_add_stock': '+ Add Stock',
         'label_timeframe': 'Timeframe',
@@ -405,7 +467,21 @@ const I18N = {
         'btn_vps_cta': 'Open VPS Trading ↗',
         'signals_title': 'Real-Time Trading Signals',
         'signals_desc': 'Technical Analysis (SMA Crossover) & Direct Broker Integration.',
-        'use_ai_report': 'Enable AI Analysis Report (Consumes Token)'
+        'use_ai_report': 'Enable AI Analysis Report (+2 Tokens)',
+        'auth_forgot_pw': 'Forgot password?',
+        'auth_forgot_title': 'Reset Password',
+        'auth_forgot_btn': 'Send Recovery Link',
+        'auth_forgot_back': 'Remembered password?',
+        'ai_radar_hint': 'Suggestions today',
+        'ai_radar_scanning': 'Scanning VN30...',
+        'ai_radar_updated': 'Updated (VN30)',
+        'ai_radar_not_found': 'Not found',
+        'ai_radar_err': 'Connection Error',
+        'ai_radar_add_all': '💯 Add ALL',
+        'rag_badge': '✨ [BETA] AI ASSISTED DOCS (RAG)',
+        'rag_found': 'Found deep-dive financial analysis database for:',
+        'sig_col_price': 'Current Price',
+        'btn_ta_detail': 'TA Details'
     },
     'vi': {
         'nav_login': 'Đăng nhập',
@@ -448,8 +524,8 @@ const I18N = {
         'label_capital': 'Vốn ban đầu (VNĐ)',
         'ph_capital': 'Ví dụ: 1.000.000.000',
         'label_return': 'Lợi nhuận kỳ vọng (%)',
-        'btn_run': '🚀 Chạy mô phỏng',
-        'btn_eval': '🔍 Đánh giá Danh mục',
+        'btn_run': '🚀 Chạy mô phỏng (-2 Token)',
+        'btn_eval': '🔍 Đánh giá Danh mục (-2 Token)',
         'btn_stress': '🔥 Stress Test',
         'btn_add_stock': '+ Thêm mã',
         'label_timeframe': 'Kỳ hạn',
@@ -527,7 +603,21 @@ const I18N = {
         'btn_vps_cta': 'Mở VPS Đặt Lệnh ↗',
         'signals_title': 'Tín Hiệu Giao Dịch Thời Gian Thực',
         'signals_desc': 'Tín hiệu Phân tích Kỹ thuật (SMA Crossover) & Đặt lệnh mua bán liên thông VPS.',
-        'use_ai_report': 'Bật Trợ Lý AI Phân Tích (Tốn Token)'
+        'use_ai_report': 'Bật Trợ Lý AI Phân Tích (Tốn thêm 2 Token)',
+        'auth_forgot_pw': 'Quên mật khẩu?',
+        'auth_forgot_title': 'Khôi phục mật khẩu',
+        'auth_forgot_btn': 'Gửi liên kết khôi phục',
+        'auth_forgot_back': 'Đã nhớ mật khẩu?',
+        'ai_radar_hint': 'Gợi ý hôm nay',
+        'ai_radar_scanning': 'Đang quét VN30...',
+        'ai_radar_updated': 'Đã cập nhật (VN30)',
+        'ai_radar_not_found': 'Không tìm thấy',
+        'ai_radar_err': 'Lỗi kết nối AI',
+        'ai_radar_add_all': '💯 Thêm TẤT CẢ',
+        'rag_badge': '✨ [BETA] TÀI LIỆU AI CỐ TRỢ (RAG)',
+        'rag_found': 'Phát hiện kho dữ liệu có sẵn BCTC phân tích chuyên sâu cho:',
+        'sig_col_price': 'Giá Hiện Hành',
+        'btn_ta_detail': 'Chi tiết TA'
     }
 };
 
@@ -759,7 +849,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // --- Ngôn ngữ (i18n) ---
     const langSelector = document.getElementById("lang-selector");
-    let currentLang = 'en';
+    let currentLang = 'vi';
     window.getCurrentLang = () => currentLang;
 
     function updateLanguage() {
@@ -982,7 +1072,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     let taBtn = '';
                     if (sig.ta_analysis && !sig.ta_analysis.error) {
-                         taBtn = `<button onclick="openTAModal('${ticker}')" style="margin-top: 5px; padding: 4px 8px; font-size: 0.75rem; background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: white; border-radius: 4px; cursor: pointer;">Chi tiết TA</button>`;
+                         const taDetailText = I18N[currentLang]['btn_ta_detail'] || 'Chi tiết TA';
+                         taBtn = `<button onclick="openTAModal('${ticker}')" style="margin-top: 5px; padding: 4px 8px; font-size: 0.75rem; background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: white; border-radius: 4px; cursor: pointer;">${taDetailText}</button>`;
                     }
 
                     signalsTbody.innerHTML += `
@@ -1289,6 +1380,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }, true);
 
 
+    function showTokenDeduction(buttonElement, cost) {
+        if (!currentUser) return;
+        
+        const rect = buttonElement.getBoundingClientRect();
+        const floating = document.createElement("div");
+        floating.className = "token-float";
+        floating.textContent = `-${cost} Token${cost > 1 ? 's' : ''}`;
+        
+        floating.style.left = `${rect.left + rect.width / 2 - 40}px`;
+        floating.style.top = `${rect.top + window.scrollY - 20}px`;
+        
+        document.body.appendChild(floating);
+        
+        setTimeout(() => {
+            floating.remove();
+        }, 1000);
+    }
+
     // Execution Mode: Optimizer
     runBtn.addEventListener("click", () => {
         const rawCap = document.getElementById("capital-input").value.replace(/\./g, "");
@@ -1300,6 +1409,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isNaN(capInput) || isNaN(retInput) || tickersArray.length < 2) {
             alert(I18N[currentLang]['err_input']); return;
         }
+
+        let totalCost = 2;
+        const aiCheckbox = document.getElementById("generate-ai-report-checkbox");
+        if (aiCheckbox && aiCheckbox.checked) totalCost += 2;
+        showTokenDeduction(runBtn, totalCost);
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
 
@@ -1340,6 +1454,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (Object.keys(holdings).length === 0) {
             alert(I18N[currentLang]['err_input']); return;
         }
+
+        let totalCost = 2;
+        const aiCheckbox = document.getElementById("generate-ai-report-checkbox");
+        if (aiCheckbox && aiCheckbox.checked) totalCost += 2;
+        showTokenDeduction(evalBtn, totalCost);
 
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
 
@@ -1521,20 +1640,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const res = await apiFetch('/api/ai-radar');
-            if (!res.ok) throw new Error("Máy chủ Backend chưa sẵn sàng hoặc lỗi: " + res.status);
+            if (!res.ok) throw new Error("Backend error: " + res.status);
             const data = await res.json();
             
-            radarStatus.textContent = "Đã cập nhật (VN30)";
+            radarStatus.setAttribute('data-i18n', 'ai_radar_updated');
+            radarStatus.textContent = I18N[currentLang]['ai_radar_updated'] || "Đã cập nhật (VN30)";
             radarStatus.classList.remove("loading-dots");
             radarStatus.style.color = "#00FFAA";
             pillsContainer.innerHTML = "";
 
             if (data && data.length > 0) {
-                // Thêm 1 nút chọn tất cả
                 let allTickers = data.map(i => i.ticker).join(", ");
                 const allPill = document.createElement("button");
                 allPill.className = "radar-pill radar-pill-all";
-                allPill.innerHTML = `💯 Thêm TẤT CẢ (${data.length} mã)`;
+                
+                // Set inner HTML using current language
+                const addAllText = I18N[currentLang]['ai_radar_add_all'] || '💯 Thêm TẤT CẢ';
+                const suffix = currentLang === 'en' ? 'tickers' : 'mã';
+                allPill.innerHTML = `<span data-i18n="ai_radar_add_all">${addAllText}</span> (${data.length} ${suffix})`;
+                
                 allPill.style.cssText = "background: rgba(0, 255, 170, 0.1); border: 1px solid rgba(0, 255, 170, 0.5); color: #00FFAA; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-right: 5px; transition: all 0.2s;";
                 allPill.onclick = (e) => {
                     e.preventDefault();
@@ -1567,11 +1691,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     pillsContainer.appendChild(pill);
                 });
             } else {
-                radarStatus.textContent = "Không tìm thấy";
+                radarStatus.setAttribute('data-i18n', 'ai_radar_not_found');
+                radarStatus.textContent = I18N[currentLang]['ai_radar_not_found'] || "Không tìm thấy";
             }
         } catch (e) {
             console.error("AI Radar Fetch Error:", e);
-            radarStatus.textContent = "Lỗi kết nối AI";
+            radarStatus.setAttribute('data-i18n', 'ai_radar_err');
+            radarStatus.textContent = I18N[currentLang]['ai_radar_err'] || "Lỗi kết nối AI";
             radarStatus.style.color = "var(--neon-alert)";
         }
     }

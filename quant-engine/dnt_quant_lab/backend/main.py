@@ -158,7 +158,7 @@ def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
     bt_chart_json = json.loads(bt_fig.to_json()) if bt_data['dates'] else None
     
     # Real-time Signals
-    signals_data = compute_signals(req.tickers, ms_weights, req.capital)
+    signals_data = compute_signals(req.tickers, ms_weights, req.capital, lang=req.lang)
     
     # Advanced Metrics & Raw Prices
     port_ret_selected = port_ret[list(ms_weights.keys())]
@@ -362,7 +362,7 @@ def evaluate_custom(req: EvaluationRequest, user = Depends(require_auth)):
         "advanced_metrics": adv_metrics,
         "raw_prices": current_prices,
         "last_updated_date": last_updated_date,
-        "trading_signals": compute_signals(tickers, weights, total_capital)
+        "trading_signals": compute_signals(tickers, weights, total_capital, lang=req.lang)
     })
 
 @app.get("/api/current-prices")

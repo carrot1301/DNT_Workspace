@@ -560,3 +560,19 @@ select.glass-input option:checked {
         grid-template-columns: 1fr;
     }
 }
+
+/* Token Deduction Animation */
+@keyframes floatUpFade {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(1.2); }
+}
+.token-float {
+    position: absolute;
+    color: var(--neon-alert, #ff5f56);
+    font-weight: bold;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 10000;
+    animation: floatUpFade 1s ease-out forwards;
+    text-shadow: 0 0 10px rgba(255, 85, 85, 0.6);
+}

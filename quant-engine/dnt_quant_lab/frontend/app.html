@@ -101,6 +101,68 @@
             top: 72px;
             overflow-y: auto;
         }
+
+        @media (max-width: 768px) {
+            .tv-header {
+                position: sticky;
+                top: 0;
+                flex-wrap: wrap;
+                height: auto;
+                padding: 10px 15px;
+                gap: 10px;
+            }
+            .tv-left {
+                flex: 1;
+                gap: 10px;
+            }
+            .tv-right {
+                flex: 1;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+            .tv-nav {
+                width: 100%;
+                order: 3;
+                justify-content: flex-start;
+                gap: 15px;
+                overflow-x: auto;
+                padding-bottom: 5px;
+            }
+            .tv-nav li {
+                white-space: nowrap;
+            }
+            .tv-nav a {
+                font-size: 0.85rem;
+            }
+            .tv-nav::-webkit-scrollbar {
+                display: none; /* Hide scrollbar for clean look */
+            }
+            .dashboard-container {
+                margin-top: 0; /* Let sticky header push content down naturally */
+            }
+            .sidebar {
+                position: static;
+                height: auto;
+                top: auto;
+                margin-bottom: 20px;
+            }
+            .hide-mobile {
+                display: none !important;
+            }
+            #user-tokens-display {
+                white-space: nowrap;
+            }
+            .dnt-logo-text {
+                font-size: 1.1rem !important;
+            }
+            .btn-tv-blue {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            #lang-selector {
+                padding: 4px 5px !important;
+            }
+        }
     </style>
 </head>
 
@@ -120,12 +182,12 @@
         <div class="tv-right">
             <select id="lang-selector"
                 style="padding: 4px 10px; font-size: 0.8rem; background: transparent; border: none; cursor: pointer; color: white; outline: none;">
-                <option value="en" selected style="background: #111;">🇺🇸 EN</option>
-                <option value="vi" style="background: #111;">🇻🇳 VI</option>
+                <option value="vi" selected style="background: #111;">🇻🇳 VI</option>
+                <option value="en" style="background: #111;">🇺🇸 EN</option>
             </select>
             <div id="user-profile-container" style="display: none; position: relative; cursor: pointer; align-items: center; gap: 8px;" onclick="toggleProfileDropdown(event)">
                 <span class="icon-link" style="color: #00FFAA;" title="Profile">👤</span>
-                <span id="user-email-display" style="color: white; font-size: 0.9rem; font-weight: 500;"></span>
+                <span id="user-email-display" class="hide-mobile" style="color: white; font-size: 0.9rem; font-weight: 500;"></span>
                 <div id="user-profile-dropdown" class="glass-panel" style="display: none; position: absolute; top: 100%; right: 0; min-width: 200px; padding: 10px; border-radius: 8px; z-index: 1001; margin-top: 15px; border: 1px solid rgba(0, 255, 170, 0.3); flex-direction: column; gap: 5px;">
                     <button onclick="openChangePasswordModal()" style="width: 100%; text-align: left; background: transparent; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
                         <span data-i18n="nav_change_pw">Đổi mật khẩu</span>
@@ -171,9 +233,9 @@
                         <div id="ai-radar-container" style="margin-bottom: 8px; font-size: 0.8rem; color: #94A3B8;">
                             <div
                                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
-                                <span>💡 <strong style="color: #00FFAA;">AI Radar:</strong> Gợi ý hôm nay</span>
+                                <span>💡 <strong style="color: #00FFAA;">AI Radar:</strong> <span data-i18n="ai_radar_hint">Gợi ý hôm nay</span></span>
                                 <span id="ai-radar-status" style="font-size: 0.7rem; color: #F59E0B;"
-                                    class="loading-dots">Đang quét VN30...</span>
+                                    class="loading-dots" data-i18n="ai_radar_scanning">Đang quét VN30...</span>
                             </div>
                             <div id="ai-radar-pills" style="display: flex; flex-wrap: wrap; gap: 5px;">
                                 <!-- JS will inject pills here -->
@@ -269,10 +331,8 @@
                 <!-- Global Manual BCTC Alert for Optimizer/Evaluator -->
                 <div id="manual-bctc-alert"
                     style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; background: rgba(0, 255, 170, 0.05); border: 1px solid rgba(0, 255, 170, 0.4); box-shadow: 0 0 10px rgba(0, 255, 170, 0.1);">
-                    <div style="font-size: 0.8rem; color: #00ffaa; font-weight: bold; margin-bottom: 5px;">✨ [BETA] TÀI
-                        LIỆU AI CỐ TRỢ (RAG)</div>
-                    <p id="bctc-alert-msg" style="font-size: 0.75rem; margin-top: 0; color: #d1d5db;">Phát hiện kho dữ
-                        liệu có sẵn BCTC phân tích chuyên sâu cho: <strong id="bctc-alert-tickers"
+                    <div style="font-size: 0.8rem; color: #00ffaa; font-weight: bold; margin-bottom: 5px;" data-i18n="rag_badge">✨ [BETA] TÀI LIỆU AI CỐ TRỢ (RAG)</div>
+                    <p id="bctc-alert-msg" style="font-size: 0.75rem; margin-top: 0; color: #d1d5db;"><span data-i18n="rag_found">Phát hiện kho dữ liệu có sẵn BCTC phân tích chuyên sâu cho:</span> <strong id="bctc-alert-tickers"
                             style="color: white;">--</strong>.</p>
                     <label
                         style="font-size: 0.75rem; color: white; display: flex; align-items: center; cursor: pointer;">
@@ -406,8 +466,8 @@
                                 <thead>
                                     <tr
                                         style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.9rem;">
-                                        <th style="padding: 8px;">Mã CP</th>
-                                        <th style="padding: 8px;">Giá Hiện Hành</th>
+                                        <th style="padding: 8px;" data-i18n="sig_col_ticker">Mã CP</th>
+                                        <th style="padding: 8px;" data-i18n="sig_col_price">Giá Hiện Hành</th>
                                     </tr>
                                 </thead>
                                 <tbody id="raw-prices-tbody" style="font-size: 0.95rem;">
@@ -675,8 +735,13 @@
             <div style="margin-bottom: 15px;">
                 <input type="email" id="auth-email" class="glass-input" placeholder="Email" data-i18n-ph="auth_ph_email" style="width: 100%; box-sizing: border-box;">
             </div>
-            <div style="margin-bottom: 15px;">
-                <input type="password" id="auth-password" class="glass-input" placeholder="Mật khẩu" data-i18n-ph="auth_ph_pw" style="width: 100%; box-sizing: border-box;" oninput="checkPasswordStrength()">
+            <div id="password-container" style="margin-bottom: 15px; position: relative;">
+                <input type="password" id="auth-password" class="glass-input" placeholder="Mật khẩu" data-i18n-ph="auth_ph_pw" style="width: 100%; box-sizing: border-box; padding-right: 40px;" oninput="checkPasswordStrength()">
+                <span style="position: absolute; right: 12px; top: 10px; cursor: pointer; color: #94a3b8; font-size: 1.1rem;" onclick="togglePasswordVisibility('auth-password', this)" title="Hiện/Ẩn">👁️</span>
+            </div>
+            
+            <div id="forgot-pw-container" style="text-align: right; margin-bottom: 15px; margin-top: -10px;">
+                <a href="#" style="color: #94a3b8; font-size: 0.8rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#00FFAA'" onmouseout="this.style.color='#94a3b8'" onclick="showForgotPassword()" data-i18n="auth_forgot_pw">Quên mật khẩu?</a>
             </div>
             
             <div id="signup-fields" style="display: none;">
@@ -685,8 +750,9 @@
                 </div>
                 <div id="pw-strength-text" style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 15px; text-align: right;" data-i18n="auth_pw_strength">Độ mạnh: Chưa nhập</div>
                 
-                <div style="margin-bottom: 15px;">
-                    <input type="password" id="auth-confirm-password" class="glass-input" placeholder="Xác nhận Mật khẩu" data-i18n-ph="auth_ph_confirm" style="width: 100%; box-sizing: border-box;">
+                <div style="margin-bottom: 15px; position: relative;">
+                    <input type="password" id="auth-confirm-password" class="glass-input" placeholder="Xác nhận Mật khẩu" data-i18n-ph="auth_ph_confirm" style="width: 100%; box-sizing: border-box; padding-right: 40px;">
+                    <span style="position: absolute; right: 12px; top: 10px; cursor: pointer; color: #94a3b8; font-size: 1.1rem;" onclick="togglePasswordVisibility('auth-confirm-password', this)" title="Hiện/Ẩn">👁️</span>
                 </div>
                 
                 <div style="font-size: 0.75rem; color: #F59E0B; margin-bottom: 15px; text-align: justify; line-height: 1.4;" data-i18n="auth_pw_note">

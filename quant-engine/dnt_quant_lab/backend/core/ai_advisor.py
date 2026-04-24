@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -246,6 +247,9 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
                 sharpe_note = f"{sharpe:.2f}  (Poor)"
 
     # --- Build the prompt string based on language ---
+    current_date_en = datetime.datetime.now().strftime("%B %d, %Y")
+    current_date_vi = datetime.datetime.now().strftime("%d/%m/%Y")
+    
     if lang == "en":
         prompt = f"""You are a professional quantitative data analyst with over 10 years of experience in the Vietnam stock market (HOSE and HNX). Your tone is professional, direct, data-driven, and you never promise guaranteed returns. You provide insights, not financial advice.
 
@@ -258,6 +262,7 @@ Below are the full results of a Monte Carlo quantitative analysis (10,000 random
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **ANALYSIS PARAMETERS:**
+- Date: {current_date_en}
 - Initial Capital: {_format_vnd(initial_capital)}
 - Projected Timeframe: {timeframe_note}
 - Model: Markowitz Modern Portfolio Theory + Monte Carlo Simulation
@@ -312,6 +317,7 @@ Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carl
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **THÔNG SỐ PHÂN TÍCH:**
+- Ngày phân tích: {current_date_vi}
 - Vốn đầu tư: {_format_vnd(initial_capital)}
 - Kỳ hạn dự phóng: {timeframe_note}
 - Mô hình: Markowitz Modern Portfolio Theory + Monte Carlo Simulation

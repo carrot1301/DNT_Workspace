@@ -2,7 +2,7 @@ import pandas as pd
 from core.data_engine import fetch_stock_data
 from core.ta_engine import compute_full_ta
 
-def compute_signals(tickers: list, weights: dict, capital: float) -> dict:
+def compute_signals(tickers: list, weights: dict, capital: float, lang: str = "vi") -> dict:
     """
     Phân tích Technical Analysis.
     Tính toán tín hiệu (Action) và khối lượng (Volume) khuyến nghị.
@@ -33,10 +33,13 @@ def compute_signals(tickers: list, weights: dict, capital: float) -> dict:
         if "summary" in ta_data:
             action = ta_data["summary"]["overall_signal"]
             score = ta_data["summary"]["score"]
-            detail = f"Điểm TA: {score:.2f} | Mua:{ta_data['summary']['overall_buy']} Bán:{ta_data['summary']['overall_sell']} N:{ta_data['summary']['ind_neutral']}"
+            if lang == "en":
+                detail = f"TA Score: {score:.2f} | Buy:{ta_data['summary']['overall_buy']} Sell:{ta_data['summary']['overall_sell']} N:{ta_data['summary']['ind_neutral']}"
+            else:
+                detail = f"Điểm TA: {score:.2f} | Mua:{ta_data['summary']['overall_buy']} Bán:{ta_data['summary']['overall_sell']} N:{ta_data['summary']['ind_neutral']}"
         else:
             action = "HOLD"
-            detail = "Lỗi xử lý TA"
+            detail = "TA Error" if lang == "en" else "Lỗi xử lý TA"
             
         # Tính toán khối lượng lô 100
         if current_price > 0:
