@@ -1397,6 +1397,26 @@ document.addEventListener("DOMContentLoaded", () => {
             floating.remove();
         }, 1000);
     }
+    function showQuantLoader(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const texts = {
+            'vi': { title: 'ĐANG XỬ LÝ DỮ LIỆU...', sub: 'Đang chạy thuật toán mô phỏng & phân tích danh mục.' },
+            'en': { title: 'PROCESSING DATA...', sub: 'Running algorithmic simulation & portfolio optimization.' }
+        };
+        
+        const t = texts[currentLang] || texts['vi'];
+        
+        container.innerHTML = `
+            <div class="ai-loader-container">
+                <div class="ai-loader-spinner"></div>
+                <div class="ai-loader-text">${t.title}</div>
+                <div class="ai-loader-subtext">${t.sub}</div>
+                <div class="ai-loader-progress"></div>
+            </div>
+        `;
+    }
 
     // Execution Mode: Optimizer
     runBtn.addEventListener("click", () => {
@@ -1416,6 +1436,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showTokenDeduction(runBtn, totalCost);
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
+        showQuantLoader('chart-container');
 
         const tfSelect = document.getElementById("opt-timeframe-select");
         const tfValue = tfSelect ? parseInt(tfSelect.value) : 252;
@@ -1461,6 +1482,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showTokenDeduction(evalBtn, totalCost);
 
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
+        showQuantLoader('chart-container');
 
         Promise.all([
             apiFetch('/api/evaluate-portfolio', {
