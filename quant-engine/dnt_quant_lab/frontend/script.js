@@ -962,7 +962,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </tr>
             `;
         });
-        });
         lbBody.innerHTML = html;
     }
 
