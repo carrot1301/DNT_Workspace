@@ -413,6 +413,8 @@ const I18N = {
         'err_wait': 'Waiting for Python Backend (FastAPI).<br>Run: uvicorn main:app --reload',
         'err_input': 'Alert: Please double check your numerical inputs!',
         'err_tokens': 'You do not have enough Tokens. Please top up!',
+        'loader_title': 'PROCESSING DATA...',
+        'loader_sub': 'Running algorithmic simulation & portfolio optimization.',
         'disclaimer_title': '⚠️ Disclaimer:',
         'ai_disclaimer': 'AI analysis is strictly based on historical data and the latest financial reports. It cannot forecast sudden or unprecedented future events. Past performance is no guarantee of future results.',
         'ci_text': '95% Prob. Range:',
@@ -550,6 +552,8 @@ const I18N = {
         'err_wait': 'Không thể kết nối Backend Python (FastAPI).<br>Chạy lệnh: uvicorn main:app --reload',
         'err_input': 'Vui lòng kiểm tra lại dữ liệu nhập — cần ít nhất 2 mã cổ phiếu hợp lệ!',
         'err_tokens': 'Bạn không đủ Token. Vui lòng nạp thêm!',
+        'loader_title': 'ĐANG XỬ LÝ DỮ LIỆU...',
+        'loader_sub': 'Đang chạy thuật toán mô phỏng & phân tích danh mục.',
         'disclaimer_title': '⚠️ Lưu ý quan trọng:',
         'ai_disclaimer': 'Kết quả phân tích chỉ dựa trên dữ liệu lịch sử và không phải là lời khuyên đầu tư. Hiệu suất trong quá khứ không đảm bảo cho kết quả tương lai. Nhà đầu tư tự chịu trách nhiệm về quyết định của mình.',
         'ci_text': 'Khoảng tin cậy 95%:',
@@ -1403,21 +1407,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById(containerId);
         if (!container) return;
         
-        const texts = {
-            'vi': { title: 'ĐANG XỬ LÝ DỮ LIỆU...', sub: 'Đang chạy thuật toán mô phỏng & phân tích danh mục.' },
-            'en': { title: 'PROCESSING DATA...', sub: 'Running algorithmic simulation & portfolio optimization.' }
-        };
-        
-        const t = texts[currentLang] || texts['vi'];
-        
         container.innerHTML = `
-            <div class="ai-loader-container">
+            <div class="ai-loader-container" id="ai-loader-element">
                 <div class="ai-loader-spinner"></div>
-                <div class="ai-loader-text">${t.title}</div>
-                <div class="ai-loader-subtext">${t.sub}</div>
+                <div class="ai-loader-text" data-i18n="loader_title">${I18N[currentLang]['loader_title']}</div>
+                <div class="ai-loader-subtext" data-i18n="loader_sub">${I18N[currentLang]['loader_sub']}</div>
                 <div class="ai-loader-progress"></div>
             </div>
         `;
+    }
+
+    function clearQuantLoader() {
+        const loader = document.getElementById('ai-loader-element');
+        if (loader) loader.remove();
     }
 
     // Execution Mode: Optimizer
@@ -1471,7 +1473,7 @@ document.addEventListener("DOMContentLoaded", () => {
             handleApiResponse(simData);
         })
         .catch(handleError)
-        .finally(() => { runBtn.textContent = I18N[currentLang]['btn_run']; runBtn.disabled = false; checkUserSession(); });
+        .finally(() => { clearQuantLoader(); runBtn.textContent = I18N[currentLang]['btn_run']; runBtn.disabled = false; checkUserSession(); });
     });
 
     // Execution Mode: Evaluator
@@ -1526,7 +1528,7 @@ document.addEventListener("DOMContentLoaded", () => {
             handleApiResponse(simData);
         })
         .catch(handleError)
-        .finally(() => { evalBtn.textContent = I18N[currentLang]['btn_eval']; evalBtn.disabled = false; checkUserSession(); });
+        .finally(() => { clearQuantLoader(); evalBtn.textContent = I18N[currentLang]['btn_eval']; evalBtn.disabled = false; checkUserSession(); });
     });
 
     // Stress Test Button
