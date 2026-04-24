@@ -418,6 +418,18 @@ const I18N = {
         'disclaimer_title': '⚠️ Disclaimer:',
         'ai_disclaimer': 'AI analysis is strictly based on historical data and the latest financial reports. It cannot forecast sudden or unprecedented future events. Past performance is no guarantee of future results.',
         'ci_text': '95% Prob. Range:',
+        'persona_label': 'AI Persona',
+        'persona_value': 'Value Investor (Fundamentals)',
+        'persona_speculator': 'Speculator (Momentum & Flow)',
+        'persona_quant': 'Pure Quant (Probability & Risk)',
+        'nav_leaderboard': '🏆 Leaderboard',
+        'lb_title': '🏆 Quant Leaderboard',
+        'lb_sub': 'Top simulated portfolios by weekly Sharpe Ratio',
+        'lb_rank': 'Rank',
+        'lb_user': 'User',
+        'lb_portfolio': 'Portfolio (Weights)',
+        'lb_sharpe': 'Sharpe',
+        'btn_export': '📸 Export Report',
         'stress_drop': 'Crash -5% VN-Index: ',
         'loading_api': 'Computing...',
         'ai_title': 'Gemini AI — Investment Insights',
@@ -557,6 +569,18 @@ const I18N = {
         'disclaimer_title': '⚠️ Lưu ý quan trọng:',
         'ai_disclaimer': 'Kết quả phân tích chỉ dựa trên dữ liệu lịch sử và không phải là lời khuyên đầu tư. Hiệu suất trong quá khứ không đảm bảo cho kết quả tương lai. Nhà đầu tư tự chịu trách nhiệm về quyết định của mình.',
         'ci_text': 'Khoảng tin cậy 95%:',
+        'persona_label': 'Hệ tư tưởng AI (Persona)',
+        'persona_value': 'Đầu tư Giá trị (Cơ bản)',
+        'persona_speculator': 'Đầu Cơ (Dòng tiền)',
+        'persona_quant': 'Thuần Định Lượng (Xác suất)',
+        'nav_leaderboard': '🏆 Bảng Xếp Hạng',
+        'lb_title': '🏆 Bảng Xếp Hạng Quant',
+        'lb_sub': 'Top các danh mục mô phỏng có Sharpe Ratio cao nhất tuần',
+        'lb_rank': 'Hạng',
+        'lb_user': 'Người dùng',
+        'lb_portfolio': 'Danh mục (Tỷ trọng)',
+        'lb_sharpe': 'Sharpe',
+        'btn_export': '📸 Xuất Báo Cáo',
         'stress_drop': 'VN-Index -5%: tổn thất ước tính ',
         'loading_api': 'Đang tính toán...',
         'ai_title': 'Gemini AI — Lời khuyên Đầu tư',
@@ -858,6 +882,28 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentLang = 'vi';
     window.getCurrentLang = () => currentLang;
 
+    function updateTickerTape() {
+        const tape = document.getElementById("ticker-tape-content");
+        if(!tape) return;
+        
+        const aiSignalText = currentLang === 'en' ? 'AI Signal: Uptrend confirmed for VCB' : 'Tín hiệu AI: Xác nhận xu hướng tăng cho VCB';
+        const aiEvalText = currentLang === 'en' ? 'AI Evaluation: HPG shows strong fundamentals' : 'Đánh giá AI: HPG có nền tảng cơ bản vững chắc';
+        const warningText = currentLang === 'en' ? 'AI Alert: High volatility detected in Real Estate sector' : 'Cảnh báo AI: Phát hiện biến động cao ở nhóm Bất động sản';
+
+        tape.innerHTML = `
+            <span class="ticker-item">VN-INDEX <span class="ticker-up">1,280.50 (+1.2%)</span></span>
+            <span class="ticker-item">FPT <span class="ticker-up">135.0 (+2.5%)</span></span>
+            <span class="ticker-item">MWG <span class="ticker-down">52.4 (-1.1%)</span></span>
+            <span class="ticker-item"><span class="ticker-ai">🤖 ${aiSignalText}</span></span>
+            <span class="ticker-item">VCB <span class="ticker-up">92.0 (+0.8%)</span></span>
+            <span class="ticker-item">HPG <span class="ticker-down">30.1 (-0.5%)</span></span>
+            <span class="ticker-item"><span class="ticker-ai">💡 ${aiEvalText}</span></span>
+            <span class="ticker-item">TCB <span class="ticker-up">48.2 (+1.5%)</span></span>
+            <span class="ticker-item">SSI <span class="ticker-up">38.5 (+2.1%)</span></span>
+            <span class="ticker-item"><span class="ticker-ai">⚠️ ${warningText}</span></span>
+        `;
+    }
+
     function updateLanguage() {
         currentLang = langSelector.value;
         const dict = I18N[currentLang];
@@ -869,11 +915,88 @@ document.addEventListener("DOMContentLoaded", () => {
             const key = el.getAttribute("data-i18n-ph");
             if (dict[key]) el.setAttribute("placeholder", dict[key]);
         });
+        updateTickerTape();
+        if (document.getElementById('leaderboard-modal').style.display === 'flex') {
+            renderLeaderboard();
+        }
     }
     
     window.updateLanguageGlobal = updateLanguage;
     langSelector.addEventListener("change", updateLanguage);
-    updateLanguage(); 
+    updateLanguage();
+
+    // --- Leaderboard Logic ---
+    function openLeaderboard() {
+        document.getElementById('leaderboard-modal').style.display = 'flex';
+        renderLeaderboard();
+    }
+    window.openLeaderboard = openLeaderboard;
+    
+    function closeLeaderboard() {
+        document.getElementById('leaderboard-modal').style.display = 'none';
+    }
+    window.closeLeaderboard = closeLeaderboard;
+    
+    function renderLeaderboard() {
+        const lbBody = document.getElementById('leaderboard-body');
+        if(!lbBody) return;
+        
+        const mockData = [
+            { rank: 1, user: 'alex***@gmail.com', port: 'FPT (40%), VCB (35%), HPG (25%)', sharpe: '2.84' },
+            { rank: 2, user: 'nguy***@dnt.com', port: 'MWG (50%), MBB (30%), SSI (20%)', sharpe: '2.51' },
+            { rank: 3, user: 'tran***@yahoo.com', port: 'VNM (60%), VIC (40%)', sharpe: '1.92' },
+            { rank: 4, user: 'phan***@gmail.com', port: 'TCB (45%), VHM (30%), REE (25%)', sharpe: '1.75' },
+            { rank: 5, user: 'leho***@outlook.com', port: 'VND (50%), SHB (50%)', sharpe: '1.42' }
+        ];
+        
+        let html = '';
+        mockData.forEach((item, index) => {
+            const rowColor = index === 0 ? 'rgba(0, 255, 170, 0.1)' : 'transparent';
+            const rankStyle = index === 0 ? 'color: #00FFAA; font-weight: bold; font-size: 1.2rem;' : '';
+            html += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); background: ${rowColor};">
+                    <td style="padding: 15px 10px; ${rankStyle}">${index === 0 ? '🏆 1' : item.rank}</td>
+                    <td style="padding: 15px 10px;">${item.user}</td>
+                    <td style="padding: 15px 10px; font-size: 0.8rem; color: #00B8FF;">${item.port}</td>
+                    <td style="padding: 15px 10px; text-align: right; color: #00FFAA; font-weight: bold;">${item.sharpe}</td>
+                </tr>
+            `;
+        });
+        });
+        lbBody.innerHTML = html;
+    }
+
+    // --- Export Logic ---
+    async function exportReport() {
+        const btn = document.getElementById('btn-export-report');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = currentLang === 'en' ? '⏳ Processing...' : '⏳ Đang xử lý...';
+        btn.disabled = true;
+
+        const content = document.getElementById('view-quant');
+        if (!content) return;
+        
+        try {
+            const canvas = await html2canvas(content, {
+                backgroundColor: '#05050A',
+                scale: 2, 
+                logging: false,
+                useCORS: true
+            });
+            
+            const link = document.createElement('a');
+            link.download = `DNT_Quant_Report_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (e) {
+            console.error("Export failed:", e);
+            alert("Export failed: " + e.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+    window.exportReport = exportReport;
 
     // --- Tab Switch Logic ---
     let currentMode = 'optimizer';
@@ -1026,6 +1149,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.chart) {
             Plotly.react('chart-container', data.chart.data, data.chart.layout, { responsive: true, displayModeBar: false });
             document.getElementById('main-chart-card').style.display = 'block';
+            const exportBtn = document.getElementById('btn-export-report');
+            if(exportBtn) exportBtn.style.display = 'inline-block';
         } else {
             // Hide main chart on Evaluator Mode
             const mainCard = document.getElementById('main-chart-card');
@@ -1456,12 +1581,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const tfSelect = document.getElementById("opt-timeframe-select");
         const tfValue = tfSelect ? parseInt(tfSelect.value) : 252;
+        const personaSelect = document.getElementById("ai-persona-select");
+        const personaValue = personaSelect ? personaSelect.value : 'quant';
 
         Promise.all([
             apiFetch('/api/run-simulation', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang, timeframe_days: tfValue})
+                body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang, timeframe_days: tfValue, persona: personaValue})
             }).then(res => {
                 if (!res.ok) throw new Error("Simulation API Error");
                 return res.json();
@@ -1512,11 +1639,14 @@ document.addEventListener("DOMContentLoaded", () => {
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
         showQuantLoader('chart-container');
 
+        const personaSelect = document.getElementById("ai-persona-select");
+        const personaValue = personaSelect ? personaSelect.value : 'quant';
+
         Promise.all([
             apiFetch('/api/evaluate-portfolio', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({holdings: holdings, days: tf, lang: currentLang})
+                body: JSON.stringify({holdings: holdings, days: tf, lang: currentLang, persona: personaValue})
             }).then(res => {
                 if (!res.ok) throw new Error("Evaluate API Error");
                 return res.json();

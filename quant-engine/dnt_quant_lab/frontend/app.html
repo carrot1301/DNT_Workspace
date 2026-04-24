@@ -227,6 +227,44 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes progress-slide { 0% { left: 0; width: 30%; } 100% { left: 70%; width: 30%; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Ticker Tape Animation */
+        .ticker-tape-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 35px;
+            background: rgba(5, 5, 10, 0.85);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0, 255, 170, 0.2);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            z-index: 999;
+        }
+        .ticker-tape {
+            display: flex;
+            white-space: nowrap;
+            animation: ticker 40s linear infinite;
+        }
+        .ticker-tape:hover {
+            animation-play-state: paused;
+        }
+        .ticker-item {
+            display: inline-block;
+            margin-right: 50px;
+            font-size: 0.85rem;
+            color: #E2E8F0;
+        }
+        .ticker-up { color: #00FFAA; }
+        .ticker-down { color: #FF3B30; }
+        .ticker-ai { color: #00B8FF; font-weight: bold; text-shadow: 0 0 5px rgba(0,184,255,0.5); }
+        
+        @keyframes ticker {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
     </style>
 </head>
 
@@ -242,6 +280,7 @@
             <li><a href="#" class="nav-item active" data-i18n="nav_opt">Phân bổ danh mục</a></li>
             <li><a href="#" class="nav-item" data-i18n="nav_eval">Sức khỏe danh mục</a></li>
             <li><a href="#" class="nav-item" data-i18n="nav_fin">Báo cáo tài chính 📄</a></li>
+            <li><a href="#" class="nav-item" onclick="openLeaderboard()" data-i18n="nav_leaderboard">🏆 Bảng Xếp Hạng</a></li>
         </ul>
         <div class="tv-right">
             <select id="lang-selector"
@@ -383,13 +422,23 @@
 
                 <!-- Global Toggle for AI -->
                 <div id="ai-toggle-container"
-                    style="margin-bottom: 15px; padding: 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                    style="margin-bottom: 5px; padding: 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
                     <label
                         style="color: white; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem;">
                         <input type="checkbox" id="generate-ai-report-checkbox" checked
                             style="margin-right: 8px; width: 16px; height: 16px;">
                         <span data-i18n="use_ai_report">Bật Trợ Lý AI Phân Tích (Tốn Token)</span>
                     </label>
+                </div>
+                
+                <!-- AI Persona Selector -->
+                <div id="ai-persona-container" style="margin-bottom: 15px; padding: 0 5px;">
+                    <label style="font-size: 0.75rem; color: #94A3B8; display: block; margin-bottom: 5px;" data-i18n="persona_label">Hệ tư tưởng AI (Persona)</label>
+                    <select id="ai-persona-select" class="glass-input" style="padding: 6px; font-size: 0.8rem; background: rgba(0,0,0,0.5);">
+                        <option value="value" data-i18n="persona_value">Đầu tư Giá trị (Cơ bản)</option>
+                        <option value="speculator" data-i18n="persona_speculator">Đầu Cơ (Dòng tiền)</option>
+                        <option value="quant" data-i18n="persona_quant" selected>Thuần Định Lượng (Xác suất)</option>
+                    </select>
                 </div>
 
                 <!-- Global Manual BCTC Alert for Optimizer/Evaluator -->
@@ -441,9 +490,13 @@
                 <div class="bento-grid">
                     <!-- Data Card -->
                     <div class="card glass-panel span-2" id="main-chart-card">
-                        <h3 data-i18n="chart_title">Efficient Frontier (Demo)</h3>
-                        <p class="caption" data-i18n="chart_desc">High-performance charts rendered natively via Python
-                            API.</p>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h3 data-i18n="chart_title" style="margin-bottom: 0;">Efficient Frontier (Demo)</h3>
+                                <p class="caption" data-i18n="chart_desc" style="margin-top: 5px;">High-performance charts rendered natively via Python API.</p>
+                            </div>
+                            <button id="btn-export-report" class="btn-tv-blue" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(0, 255, 170, 0.1); border: 1px solid #00FFAA; color: #00FFAA; display: none; box-shadow: 0 0 10px rgba(0,255,170,0.2);" onclick="exportReport()" data-i18n="btn_export">📸 Xuất Báo Cáo</button>
+                        </div>
                         <div id="chart-container" style="width: 100%; height: 350px;">
                             <!-- Initial Welcome State -->
                             <div id="welcome-message" class="welcome-container">
@@ -830,6 +883,38 @@
                 <span id="auth-switch-text" data-i18n="auth_switch_to_signup">Chưa có tài khoản?</span>
                 <a href="#" id="auth-switch-link" style="color: #00B8FF; text-decoration: none; margin-left: 5px; font-weight: bold;" onclick="switchAuthMode()" data-i18n="auth_switch_link_signup">Đăng ký ngay</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" style="display: none; position: fixed; z-index: 999999 !important; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="glass-panel" style="background: #111827; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; border: 1px solid rgba(0, 255, 170, 0.3); box-shadow: 0 0 20px rgba(0, 255, 170, 0.1); position: relative;">
+            <button onclick="closeLeaderboard()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <h3 style="color: #00FFAA; margin-top: 0; text-align: center; font-size: 1.5rem;" data-i18n="lb_title">🏆 Bảng Xếp Hạng Quant</h3>
+            <p style="color: #94a3b8; text-align: center; font-size: 0.85rem; margin-bottom: 20px;" data-i18n="lb_sub">Top các danh mục mô phỏng có Sharpe Ratio cao nhất tuần</p>
+            
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse; color: white; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+                            <th style="padding: 10px;" data-i18n="lb_rank">Hạng</th>
+                            <th style="padding: 10px;" data-i18n="lb_user">User</th>
+                            <th style="padding: 10px;" data-i18n="lb_portfolio">Danh mục (Tỷ trọng)</th>
+                            <th style="padding: 10px; text-align: right;" data-i18n="lb_sharpe">Sharpe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TICKER TAPE -->
+    <div class="ticker-tape-container">
+        <div class="ticker-tape" id="ticker-tape-content">
+            <!-- Injected by script.js -->
         </div>
     </div>
 
