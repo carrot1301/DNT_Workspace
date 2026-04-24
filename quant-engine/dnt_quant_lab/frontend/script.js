@@ -430,8 +430,16 @@ const I18N = {
         'lb_portfolio': 'Portfolio (Weights)',
         'lb_sharpe': 'Sharpe',
         'btn_export': '📸 Export Report',
+        'adv_constraints_title': '⚙️ Custom Risk Constraints',
+        'const_min_weight': 'Minimum Weight (%)',
+        'const_max_weight': 'Maximum Weight (%)',
+        'const_desc': 'Set limits for asset allocation to ensure safer risk distribution.',
+        'radar_title': '📡 AI Sentiment Radar',
+        'radar_desc': 'Real-time market sentiment analysis via NLP.',
         'stress_drop': 'Crash -5% VN-Index: ',
         'loading_api': 'Computing...',
+        'label_backtest': 'Time Machine (Backtest Date)',
+        'backtest_desc': 'Leave empty for current data. If a past date is selected, AI will optimize based on data up to that date, and forward-test performance to today.',
         'ai_title': 'Gemini AI — Investment Insights',
         'ai_subtitle': 'Deep analysis based on 10,000 Monte Carlo scenarios',
         'ai_analyzing': 'Analyzing...',
@@ -581,8 +589,16 @@ const I18N = {
         'lb_portfolio': 'Danh mục (Tỷ trọng)',
         'lb_sharpe': 'Sharpe',
         'btn_export': '📸 Xuất Báo Cáo',
+        'adv_constraints_title': '⚙️ Tùy Biến Rủi Ro (Nâng cao)',
+        'const_min_weight': 'Tỷ trọng Tối thiểu (%)',
+        'const_max_weight': 'Tỷ trọng Tối đa (%)',
+        'const_desc': 'Thiết lập giới hạn mua cho từng cổ phiếu để phân bổ rủi ro an toàn hơn.',
+        'radar_title': '📡 AI Sentiment Radar',
+        'radar_desc': 'Phân tích tâm lý thị trường thời gian thực qua NLP.',
         'stress_drop': 'VN-Index -5%: tổn thất ước tính ',
         'loading_api': 'Đang tính toán...',
+        'label_backtest': 'Cỗ Máy Thời Gian (Backtest Date)',
+        'backtest_desc': 'Để trống để chạy với dữ liệu tới hiện tại. Nếu chọn ngày quá khứ, AI sẽ tối ưu dựa trên dữ liệu tới ngày đó, và kiểm thử hiệu suất từ đó đến nay.',
         'ai_title': 'Gemini AI — Lời khuyên Đầu tư',
         'ai_subtitle': 'Phân tích chuyên sâu dựa trên 10.000 kịch bản Monte Carlo',
         'ai_analyzing': 'Đang phân tích...',
@@ -983,6 +999,131 @@ document.addEventListener("DOMContentLoaded", () => {
         lbBody.innerHTML = html;
     }
 
+    // --- Copilot Chat Logic ---
+    window.sendCopilotMessage = async function() {
+        const inputEl = document.getElementById("copilot-input");
+        const msg = inputEl.value.trim();
+        if(!msg) return;
+        
+        const chatWindow = document.getElementById("copilot-messages");
+        
+        // Add User Message
+        const userMsgHtml = `<div style="align-self: flex-end; background: rgba(0,255,170,0.1); border: 1px solid rgba(0,255,170,0.3); padding: 10px 14px; border-radius: 12px; border-top-right-radius: 2px; color: #00FFAA; max-width: 85%; word-wrap: break-word;">${msg}</div>`;
+        chatWindow.insertAdjacentHTML("beforeend", userMsgHtml);
+        inputEl.value = "";
+        
+        // Add Loading Indicator
+        const loadingId = "msg-" + Date.now();
+        const botMsgHtml = `<div id="${loadingId}" style="align-self: flex-start; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px; border-top-left-radius: 2px; color: #e2e8f0; max-width: 85%; line-height: 1.4;">⏳ Đang phân tích...</div>`;
+        chatWindow.insertAdjacentHTML("beforeend", botMsgHtml);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        
+        const context = window.lastSimulationData ? {
+            monte_carlo: window.lastSimulationData.monte_carlo,
+            stress_test: window.lastSimulationData.stress_test,
+            advanced_metrics: window.lastSimulationData.advanced_metrics
+        } : { note: "User haven't run any simulation yet." };
+        
+        try {
+            const token = localStorage.getItem('dnt_auth_token');
+            const res = await fetch('/api/copilot-chat', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                body: JSON.stringify({
+                    message: msg,
+                    context: context,
+                    lang: window.getCurrentLang()
+                })
+            });
+            
+            if (!res.ok) {
+                if(res.status === 401) {
+                    document.getElementById(loadingId).innerHTML = "Vui lòng đăng nhập để sử dụng Copilot.";
+                    return;
+                }
+                document.getElementById(loadingId).innerHTML = "API Error: " + res.status;
+                return;
+            }
+            
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let firstChunk = true;
+            let fullText = "";
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunkText = decoder.decode(value, { stream: true });
+                if (firstChunk) {
+                    document.getElementById(loadingId).innerHTML = "";
+                    firstChunk = false;
+                }
+                fullText += chunkText;
+                // Basic markdown parsing for bold
+                let displayHtml = fullText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                document.getElementById(loadingId).innerHTML = displayHtml;
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        } catch(e) {
+            document.getElementById(loadingId).innerHTML = "Lỗi kết nối: " + e.message;
+        }
+    };
+
+    // --- AI Sentiment Radar Logic ---
+    async function fetchAndRenderSentimentRadar(tickersArray) {
+        try {
+            document.getElementById("sentiment-radar-card").style.display = "block";
+            document.getElementById("radar-chart-container").innerHTML = `<div style="color:#94a3b8; text-align:center; margin-top:50px;">${I18N[currentLang]['loading_api']}</div>`;
+            
+            const res = await apiFetch(`/api/sentiment-radar?tickers=${tickersArray.join(',')}&lang=${currentLang}`);
+            const data = await res.json();
+            
+            if(!data || Object.keys(data).length === 0) {
+                document.getElementById("radar-chart-container").innerHTML = "<div style='color:red;'>Failed to load sentiment.</div>";
+                return;
+            }
+            
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            
+            const trace = {
+                type: 'scatterpolar',
+                r: values,
+                theta: labels,
+                fill: 'toself',
+                fillcolor: 'rgba(0, 255, 170, 0.2)',
+                line: { color: '#00FFAA' },
+                marker: { color: '#00FFAA', size: 8 }
+            };
+            
+            const layout = {
+                polar: {
+                    radialaxis: {
+                        visible: true,
+                        range: [0, 1], // Since backend returns 0.0 to 1.0
+                        tickfont: { color: '#94a3b8' }
+                    },
+                    angularaxis: {
+                        tickfont: { color: 'white', size: 12 }
+                    },
+                    bgcolor: 'rgba(0,0,0,0)'
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 30, b: 30, l: 30, r: 30 },
+                showlegend: false
+            };
+            
+            Plotly.newPlot('radar-chart-container', [trace], layout, {displayModeBar: false});
+        } catch(e) {
+            console.error("Radar Error", e);
+            document.getElementById("radar-chart-container").innerHTML = "<div style='color:red;'>Error fetching sentiment radar.</div>";
+        }
+    }
+
     // --- Export Logic ---
     async function exportReport() {
         const btn = document.getElementById('btn-export-report');
@@ -1151,7 +1292,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return Math.floor(value).toLocaleString('vi-VN') + '₫';
     }
 
+    window.lastSimulationData = null;
+
     function handleApiResponse(data) {
+        window.lastSimulationData = data;
         if (data.error) {
             alert(data.error);
             return;
@@ -1175,7 +1319,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         if (data.backtest_chart) {
-            document.getElementById('backtest-card').style.display = 'block';
+            const btCard = document.getElementById('backtest-chart-card');
+            if(btCard) btCard.style.display = 'block';
             Plotly.react('backtest-chart-container', data.backtest_chart.data, data.backtest_chart.layout, { responsive: true, displayModeBar: false });
         }
         
@@ -1600,19 +1745,38 @@ document.addEventListener("DOMContentLoaded", () => {
         const tfValue = tfSelect ? parseInt(tfSelect.value) : 252;
         const personaSelect = document.getElementById("ai-persona-select");
         const personaValue = personaSelect ? personaSelect.value : 'quant';
+        
+        const minWeightInput = document.getElementById("opt-min-weight");
+        const maxWeightInput = document.getElementById("opt-max-weight");
+        const minWeight = minWeightInput ? parseFloat(minWeightInput.value) / 100 : 0.05;
+        const maxWeight = maxWeightInput ? parseFloat(maxWeightInput.value) / 100 : 0.40;
+        
+        const backtestDateInput = document.getElementById("opt-backtest-date");
+        const backtestDate = backtestDateInput ? backtestDateInput.value : "";
 
         Promise.all([
             apiFetch('/api/run-simulation', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({capital: capInput, target_return: retInput, tickers: tickersArray, lang: currentLang, timeframe_days: tfValue, persona: personaValue})
+                body: JSON.stringify({
+                    capital: capInput, 
+                    target_return: retInput, 
+                    tickers: tickersArray, 
+                    lang: currentLang, 
+                    timeframe_days: tfValue, 
+                    persona: personaValue,
+                    min_weight: minWeight,
+                    max_weight: maxWeight,
+                    backtest_date: backtestDate
+                })
             }).then(res => {
                 if (!res.ok) throw new Error("Simulation API Error");
                 return res.json();
             }),
-            apiFetch(`/api/news?tickers=${tickersArray.join(',')}`).then(r => r.json()).catch(() => ({}))
+            apiFetch(`/api/news?tickers=${tickersArray.join(',')}`).then(r => r.json()).catch(() => ({})),
+            fetchAndRenderSentimentRadar(tickersArray)
         ])
-        .then(([simData, newsData]) => {
+        .then(([simData, newsData, _]) => {
             simData.news_data = newsData;
             handleApiResponse(simData);
         })

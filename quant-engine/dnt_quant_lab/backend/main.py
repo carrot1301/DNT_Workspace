@@ -67,6 +67,10 @@ class SimulationRequest(BaseModel):
     tickers: list[str]
     lang: str = "vi"
     timeframe_days: int = 252
+    persona: str = "quant"
+    min_weight: float = 0.05
+    max_weight: float = 0.40
+    backtest_date: str = ""
 
 @app.post("/api/run-simulation")
 def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
@@ -79,9 +83,28 @@ def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
     # 1. Tải và Xử lý dữ liệu
     port_ret, mkt_ret = prepare_portfolio_data(req.tickers, days_back=1000)
     
+    in_sample_port_ret = port_ret
+    if req.backtest_date:
+        try:
+            bd = pd.to_datetime(req.backtest_date)
+            # Dùng dữ liệu quá khứ để train
+            in_sample_port_ret = port_ret[port_ret.index <= bd]
+        except:
+            pass
+
     # 2. Chạy thuật toán Monte Carlo
     num_ports = 10000
-    mc_results = run_monte_carlo(port_ret, num_ports, req.capital, req.timeframe_days)
+    mc_results = run_monte_carlo(in_sample_port_ret, num_ports, req.capital, req.timeframe_days, min_weight=req.min_weight, max_weight=req.max_weight)
+    
+    if req.backtest_date and len(in_sample_port_ret) > 0:
+        try:
+            from core.portfolio_opt import calculate_backtest_performance
+            bd = pd.to_datetime(req.backtest_date)
+            out_sample_port_ret = port_ret[port_ret.index > bd]
+            out_sample_mkt_ret = mkt_ret[mkt_ret.index > bd]
+            mc_results['backtest_performance'] = calculate_backtest_performance(out_sample_port_ret, out_sample_mkt_ret, mc_results['max_sharpe']['weights'])
+        except Exception as e:
+            print("Backtest error", e)
     
     # 3. Chạy Stress Test dựa trên rổ cổ phiếu Max Sharpe
     stress_test_results = calculate_stress_test(
@@ -147,15 +170,26 @@ def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
         margin=dict(l=0, r=0, t=10, b=0), font=dict(color='#94A3B8')
     )
     
-    # Backtest logic (Backtrader Validation)
-    bt_data = run_backtrader_strategy(req.tickers, ms_weights, req.capital)
+    # Backtest logic (Backtrader Validation or Time Machine)
     bt_fig = go.Figure()
-    if bt_data['dates']:
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO Strategy (BT)', line=dict(color='#00FFAA', width=2)))
-        bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
-        bt_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#94A3B8'))
-    
-    bt_chart_json = json.loads(bt_fig.to_json()) if bt_data['dates'] else None
+    if 'backtest_performance' in mc_results and mc_results['backtest_performance']:
+        perf = mc_results['backtest_performance']
+        if perf.get('dates'):
+            bt_fig.add_trace(go.Scatter(x=perf['dates'], y=perf['portfolio'], mode='lines', name='MVO Strategy (Time Machine)', line=dict(color='#00FFAA', width=2)))
+            bt_fig.add_trace(go.Scatter(x=perf['dates'], y=perf['market'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
+            bt_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#94A3B8'))
+            bt_chart_json = json.loads(bt_fig.to_json())
+        else:
+            bt_chart_json = None
+    else:
+        bt_data = run_backtrader_strategy(req.tickers, ms_weights, req.capital)
+        if bt_data['dates']:
+            bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['portfolio_cum_returns'], mode='lines', name='MVO Strategy (BT)', line=dict(color='#00FFAA', width=2)))
+            bt_fig.add_trace(go.Scatter(x=bt_data['dates'], y=bt_data['market_cum_returns'], mode='lines', name='VNINDEX', line=dict(color='#94A3B8', width=1, dash='dot')))
+            bt_fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='#94A3B8'))
+            bt_chart_json = json.loads(bt_fig.to_json())
+        else:
+            bt_chart_json = None
     
     # Real-time Signals
     signals_data = compute_signals(req.tickers, ms_weights, req.capital, lang=req.lang)
@@ -251,6 +285,28 @@ class AIAdviceRequest(BaseModel):
     manual_bctc_tickers: list[str] = []
     news_data: dict = {}
     lang: str = "vi"
+
+class CopilotRequest(BaseModel):
+    message: str
+    context: dict
+    lang: str = "vi"
+
+@app.get("/api/sentiment-radar")
+def get_sentiment_radar(tickers: str, lang: str = "vi"):
+    from core.data_engine import fetch_recent_news
+    from core.ai_advisor import analyze_sentiment
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return {}
+    news = fetch_recent_news(ticker_list, limit=5)
+    sentiment = analyze_sentiment(news, lang)
+    return sanitize_floats(sentiment)
+
+@app.post("/api/copilot-chat")
+def get_copilot_chat(req: CopilotRequest, user = Depends(require_auth)):
+    from core.ai_advisor import copilot_chat
+    check_and_deduct_tokens(user.id, cost=1)
+    return StreamingResponse(copilot_chat(req.message, req.context, req.lang), media_type="text/event-stream")
 
 @app.post("/api/ai-advice")
 def get_ai_advice(req: AIAdviceRequest, user = Depends(require_auth)):

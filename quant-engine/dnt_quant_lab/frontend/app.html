@@ -368,6 +368,12 @@
                             <option value="756" data-i18n="tf_3y">3 năm (756 Ngày)</option>
                         </select>
                     </div>
+                    <!-- Backtest Time Machine -->
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label data-i18n="label_backtest">Cỗ Máy Thời Gian (Backtest Date)</label>
+                        <input type="date" id="opt-backtest-date" class="glass-input">
+                        <p style="font-size: 0.7rem; color: #64748B; margin-top: 5px;" data-i18n="backtest_desc">Để trống để chạy với dữ liệu tới hiện tại. Nếu chọn ngày quá khứ, AI sẽ tối ưu dựa trên dữ liệu tới ngày đó, và kiểm thử hiệu suất từ đó đến nay.</p>
+                    </div>
                     <div style="display: flex; gap: 10px; margin-top: 1rem;">
                         <button class="action-btn" id="run-btn" data-i18n="btn_run" style="flex: 1; margin-top: 0;">Run
                             Simulation</button>
@@ -441,6 +447,28 @@
                     </select>
                 </div>
 
+                <!-- Custom Constraints (Advanced) -->
+                <div id="advanced-constraints-container" style="margin-bottom: 15px; padding: 10px; background: rgba(0,255,170,0.05); border-radius: 8px; border: 1px solid rgba(0,255,170,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="document.getElementById('adv-constraints-body').style.display = document.getElementById('adv-constraints-body').style.display === 'none' ? 'block' : 'none'; this.children[1].textContent = document.getElementById('adv-constraints-body').style.display === 'none' ? '▼' : '▲';">
+                        <span style="font-size: 0.8rem; font-weight: bold; color: #00FFAA;" data-i18n="adv_constraints_title">⚙️ Tùy Biến Rủi Ro (Nâng cao)</span>
+                        <span style="color: #94A3B8; font-size: 0.8rem;">▼</span>
+                    </div>
+                    
+                    <div id="adv-constraints-body" style="display: none; margin-top: 10px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.75rem; color: #94A3B8;" data-i18n="const_min_weight">Tỷ trọng Tối thiểu (%)</label>
+                                <input type="number" id="opt-min-weight" class="glass-input" value="5" min="0" max="100" style="width: 100%; padding: 5px; font-size: 0.85rem; text-align: center; margin-top: 5px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: #94A3B8;" data-i18n="const_max_weight">Tỷ trọng Tối đa (%)</label>
+                                <input type="number" id="opt-max-weight" class="glass-input" value="40" min="1" max="100" style="width: 100%; padding: 5px; font-size: 0.85rem; text-align: center; margin-top: 5px;">
+                            </div>
+                        </div>
+                        <p style="font-size: 0.7rem; color: #64748B; margin: 8px 0 0 0; text-align: justify;" data-i18n="const_desc">Thiết lập giới hạn mua cho từng cổ phiếu để phân bổ rủi ro an toàn hơn.</p>
+                    </div>
+                </div>
+
                 <!-- Global Manual BCTC Alert for Optimizer/Evaluator -->
                 <div id="manual-bctc-alert"
                     style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; background: rgba(0, 255, 170, 0.05); border: 1px solid rgba(0, 255, 170, 0.4); box-shadow: 0 0 10px rgba(0, 255, 170, 0.1);">
@@ -507,6 +535,13 @@
                             </div>
                             <!-- Plotly chart will be injected here -->
                         </div>
+                    </div>
+
+                    <!-- Backtest Time Machine Card -->
+                    <div class="card glass-panel span-2" id="backtest-chart-card" style="display: none; margin-top: 15px; animation: ai-card-appear 0.5s ease both;">
+                        <h3 data-i18n="backtest_title" style="margin-bottom: 0; color: #00B8FF;">Cỗ Máy Thời Gian: Hiệu Suất Lịch Sử</h3>
+                        <p class="caption" data-i18n="backtest_sub" style="margin-top: 5px;">So sánh danh mục tối ưu hóa so với VN-INDEX từ quá khứ đến nay.</p>
+                        <div id="backtest-chart-container" style="width: 100%; height: 350px;"></div>
                     </div>
 
                     <!-- Metric Cards -->
@@ -688,6 +723,13 @@
                                 <div class="ai-text" id="ai-text" style="font-size: 0.95rem; line-height: 1.6;"></div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Sentiment Radar Card -->
+                    <div class="card glass-panel" id="sentiment-radar-card" style="display: none; animation: ai-card-appear 0.5s ease both;">
+                        <h3 data-i18n="radar_title" style="margin-top: 0; color: #00FFAA;">📡 AI Sentiment Radar</h3>
+                        <p class="caption" data-i18n="radar_desc" style="margin-bottom: 10px;">Phân tích tâm lý thị trường thời gian thực qua NLP.</p>
+                        <div id="radar-chart-container" style="width: 100%; height: 300px;"></div>
                     </div>
 
                 </div><!-- /.bento-grid -->
@@ -909,6 +951,30 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <!-- DNT Quant Copilot Widget -->
+    <div id="copilot-widget" style="position: fixed; bottom: 50px; right: 20px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end;">
+        <div id="copilot-chat-window" class="glass-panel" style="display: none; width: 350px; height: 450px; background: rgba(17,24,39,0.95); border: 1px solid rgba(0, 255, 170, 0.4); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); flex-direction: column; overflow: hidden; backdrop-filter: blur(10px);">
+            <div style="background: rgba(0, 255, 170, 0.1); padding: 15px; border-bottom: 1px solid rgba(0, 255, 170, 0.3); display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #00FFAA; font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px;">🤖 <span data-i18n="copilot_title">DNT Quant Copilot</span></span>
+                <button onclick="document.getElementById('copilot-chat-window').style.display='none'" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="copilot-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;">
+                <div style="align-self: flex-start; background: rgba(255,255,255,0.05); padding: 10px 14px; border-radius: 12px; border-top-left-radius: 2px; color: #e2e8f0; max-width: 85%; line-height: 1.4;" data-i18n="copilot_welcome">
+                    Xin chào! Tôi là DNT Copilot. Hãy chạy mô phỏng danh mục để tôi có thể phân tích số liệu cho bạn.
+                </div>
+            </div>
+            <div style="padding: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 8px; background: rgba(0,0,0,0.3);">
+                <input type="text" id="copilot-input" class="glass-input" data-i18n-ph="copilot_ph" placeholder="Hỏi tôi bất cứ điều gì..." style="flex: 1; font-size: 0.85rem; padding: 10px; border-radius: 6px;" onkeypress="if(event.key === 'Enter') sendCopilotMessage()">
+                <button id="copilot-send-btn" class="btn-tv-blue" style="padding: 0 15px; border-radius: 6px; display: flex; align-items: center; justify-content: center;" onclick="sendCopilotMessage()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </div>
+        <button id="copilot-toggle-btn" class="btn-tv-blue" style="width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 0 20px rgba(0,255,170,0.5); border: 2px solid #00FFAA; padding: 0; background: #0f172a; transition: transform 0.2s;" onclick="document.getElementById('copilot-chat-window').style.display = document.getElementById('copilot-chat-window').style.display === 'none' ? 'flex' : 'none';" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            🤖
+        </button>
     </div>
 
     <!-- TICKER TAPE -->

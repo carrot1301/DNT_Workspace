@@ -76,7 +76,7 @@ def build_views_matrices(tickers: list, views_dict: dict):
             P[i, asset_idx] = 1.0 # View tuyệt đối
             Q[i] = excess_return
     return P, Q
-def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252, apply_ftse_event: bool = True) -> dict:
+def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252, apply_ftse_event: bool = True, min_weight: float = 0.05, max_weight: float = 0.40) -> dict:
     """
     Sinh Monte Carlo: Tối ưu hoá Danh mục đầu tư.
     Tích hợp mô hình Black-Litterman và Rà soát sự kiện Nâng hạng FTSE.
@@ -149,8 +149,8 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     # Ràng buộc: Tổng tỉ trọng = 1
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     
-    # Ràng buộc: Tối thiểu 5%, Tối đa 40% cho mỗi mã cổ phiếu
-    bounds = tuple((0.05, 0.40) for _ in range(num_assets))
+    # Ràng buộc: Theo thông số từ UI
+    bounds = tuple((min_weight, max_weight) for _ in range(num_assets))
     
     # Khởi tạo điểm bắt đầu (equal weights)
     init_guess = np.array(num_assets * [1. / num_assets])
@@ -407,5 +407,30 @@ def calculate_advanced_metrics(daily_port_returns: pd.Series, market_returns: pd
         "calmar": calmar,
         "var_95_daily": var_95_daily,
         "beta": beta
+    }
+
+def calculate_backtest_performance(out_sample_returns: pd.DataFrame, mkt_out_sample: pd.Series, weights: list) -> dict:
+    """
+    Calculate forward-test performance using static weights.
+    Returns cumulative returns for the portfolio and the market (VN-INDEX).
+    """
+    if len(out_sample_returns) == 0:
+        return {}
+        
+    w = np.array(weights)
+    # Calculate daily portfolio returns
+    port_daily_ret = out_sample_returns.dot(w)
+    
+    # Cumulative Returns
+    port_cum_ret = (1 + port_daily_ret).cumprod()
+    mkt_cum_ret = (1 + mkt_out_sample).cumprod()
+    
+    # Convert dates to string format
+    dates = out_sample_returns.index.strftime('%Y-%m-%d').tolist()
+    
+    return {
+        "dates": dates,
+        "portfolio": port_cum_ret.tolist(),
+        "market": mkt_cum_ret.tolist()
     }
 

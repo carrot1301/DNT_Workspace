@@ -420,3 +420,73 @@ def stream_ai_advice(data: dict, lang: str = "vi"):
                     yield word + " "
                     time.sleep(0.05)
                 return
+
+def copilot_chat(message: str, context: dict, lang: str = "vi"):
+    """
+    Generator: Gửi câu hỏi của người dùng kèm context danh mục cho Gemini API và stream kết quả.
+    """
+    model = _get_model()
+
+    if model is None:
+        err_msg = "**Gemini API Key chưa được cấu hình.**\n\n" if lang == "vi" else "**Gemini API Key haven't been configured.**\n\n"
+        yield err_msg
+        return
+
+    sys_prompt = f"""
+Bạn là DNT Quant Copilot - một trợ lý AI chuyên nghiệp về phân tích định lượng (Quantitative Finance) của dự án DNT Quant Lab.
+QUY TẮC PHÁP LÝ TỐI THƯỢNG: TUYỆT ĐỐI KHÔNG SỬ DỤNG CÁC TỪ NGỮ SAU DƯỚI MỌI HÌNH THỨC: "khuyến nghị", "khuyên bạn", "mua", "bán", "nên đầu tư", "nên giữ", "vào lệnh", "chốt lời", "cắt lỗ".
+Mọi câu trả lời PHẢI dùng ngôn ngữ trung lập, phân tích dữ liệu, đánh giá rủi ro, và xác suất. Ví dụ: "Dữ liệu cho thấy", "Thuật toán phân bổ", "Tỷ trọng ưu tiên", "Có dấu hiệu rủi ro".
+
+Dưới đây là Dữ liệu Danh mục hiện tại (JSON):
+{json.dumps(context, ensure_ascii=False)}
+
+Hãy trả lời câu hỏi sau của người dùng một cách ngắn gọn, súc tích (dưới 150 chữ), đi thẳng vào vấn đề bằng {'Tiếng Việt' if lang == 'vi' else 'English'}:
+Câu hỏi: {message}
+    """
+
+    import time
+    try:
+        response = model.generate_content(sys_prompt, stream=True)
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            msg = "Hệ thống AI đang quá tải. Vui lòng thử lại sau 1 phút." if lang == "vi" else "AI Server is overloaded. Please try again in 1 minute."
+            yield f"\n\n**🤖 {msg}**"
+        else:
+            yield f"\n\n**Lỗi:** {error_msg}"
+
+def analyze_sentiment(news_data: dict, lang: str = "vi") -> dict:
+    """
+    Nhận tin tức dưới dạng dict, trả về điểm sentiment cho mỗi mã.
+    """
+    model = _get_model()
+    if model is None:
+        return {t: 0 for t in news_data.keys()}
+        
+    sys_prompt = f"""
+Bạn là một công cụ AI phân tích NLP chuyên về tài chính. Đánh giá Sentiment (Tâm lý thị trường) dựa trên các bản tin sau.
+Trọng số điểm: 0.0 (Rất Tiêu Cực), 0.5 (Trung Tính), 1.0 (Rất Tích Cực).
+Dữ liệu tin tức:
+{json.dumps(news_data, ensure_ascii=False)}
+
+Chỉ trả về MỘT chuỗi JSON ĐÚNG CHUẨN duy nhất, không có markdown text bao quanh, với định dạng key là Mã CP, value là Float:
+{{"FPT": 0.8, "MWG": 0.2, "VIC": 0.5}}
+Tuyệt đối không dùng các từ khuyến nghị.
+    """
+    
+    try:
+        response = model.generate_content(sys_prompt)
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        return json.loads(text.strip())
+    except Exception as e:
+        print(f"Sentiment Analysis Error: {e}")
+        return {t: 0.5 for t in news_data.keys()}
