@@ -134,6 +134,36 @@ def fetch_current_prices(tickers: list) -> dict:
             prices[t] = float(df['close'].iloc[-1]) * 1000
     return prices
 
+def fetch_ticker_tape_data() -> dict:
+    """Fetch prices and 1-day % change for a predefined list of tickers + VN30 for the Ticker Tape"""
+    tickers = ['VN30', 'FPT', 'MWG', 'VCB', 'HPG', 'TCB', 'SSI']
+    tape_data = {}
+    for t in tickers:
+        if t == 'VN30':
+            df = fetch_index_data('VN30', days_back=10)
+        else:
+            df = fetch_stock_data(t, days_back=10)
+            
+        if not df.empty and len(df) >= 2:
+            current_price = float(df['close'].iloc[-1])
+            prev_price = float(df['close'].iloc[-2])
+            change_pct = ((current_price - prev_price) / prev_price) * 100
+            
+            if t != 'VN30':
+                current_price *= 1000
+                
+            tape_data[t] = {
+                "price": current_price,
+                "change_pct": change_pct
+            }
+        elif not df.empty and len(df) == 1:
+            current_price = float(df['close'].iloc[-1])
+            if t != 'VN30': current_price *= 1000
+            tape_data[t] = {"price": current_price, "change_pct": 0}
+        else:
+            tape_data[t] = {"price": 0, "change_pct": 0}
+            
+    return tape_data
 
 def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
     """

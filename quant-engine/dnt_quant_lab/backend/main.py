@@ -365,6 +365,15 @@ def evaluate_custom(req: EvaluationRequest, user = Depends(require_auth)):
         "trading_signals": compute_signals(tickers, weights, total_capital, lang=req.lang)
     })
 
+@app.get("/api/ticker-tape")
+def get_ticker_tape():
+    from core.data_engine import fetch_ticker_tape_data
+    try:
+        data = fetch_ticker_tape_data()
+        return sanitize_floats(data)
+    except Exception as e:
+        return {}
+
 @app.get("/api/current-prices")
 def get_current_prices(tickers: str):
     """

@@ -882,26 +882,44 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentLang = 'vi';
     window.getCurrentLang = () => currentLang;
 
-    function updateTickerTape() {
+    async function updateTickerTape() {
         const tape = document.getElementById("ticker-tape-content");
         if(!tape) return;
         
-        const aiSignalText = currentLang === 'en' ? 'AI Signal: Uptrend confirmed for VCB' : 'Tín hiệu AI: Xác nhận xu hướng tăng cho VCB';
-        const aiEvalText = currentLang === 'en' ? 'AI Evaluation: HPG shows strong fundamentals' : 'Đánh giá AI: HPG có nền tảng cơ bản vững chắc';
-        const warningText = currentLang === 'en' ? 'AI Alert: High volatility detected in Real Estate sector' : 'Cảnh báo AI: Phát hiện biến động cao ở nhóm Bất động sản';
-
-        tape.innerHTML = `
-            <span class="ticker-item">VN-INDEX <span class="ticker-up">1,280.50 (+1.2%)</span></span>
-            <span class="ticker-item">FPT <span class="ticker-up">135.0 (+2.5%)</span></span>
-            <span class="ticker-item">MWG <span class="ticker-down">52.4 (-1.1%)</span></span>
-            <span class="ticker-item"><span class="ticker-ai">🤖 ${aiSignalText}</span></span>
-            <span class="ticker-item">VCB <span class="ticker-up">92.0 (+0.8%)</span></span>
-            <span class="ticker-item">HPG <span class="ticker-down">30.1 (-0.5%)</span></span>
-            <span class="ticker-item"><span class="ticker-ai">💡 ${aiEvalText}</span></span>
-            <span class="ticker-item">TCB <span class="ticker-up">48.2 (+1.5%)</span></span>
-            <span class="ticker-item">SSI <span class="ticker-up">38.5 (+2.1%)</span></span>
-            <span class="ticker-item"><span class="ticker-ai">⚠️ ${warningText}</span></span>
-        `;
+        try {
+            const aiSignalText = currentLang === 'en' ? 'AI Signal: Uptrend confirmed for VCB' : 'Tín hiệu AI: Xác nhận xu hướng tăng cho VCB';
+            const aiEvalText = currentLang === 'en' ? 'AI Evaluation: HPG shows strong fundamentals' : 'Đánh giá AI: HPG có nền tảng cơ bản vững chắc';
+            const warningText = currentLang === 'en' ? 'AI Alert: High volatility detected in Real Estate sector' : 'Cảnh báo AI: Phát hiện biến động cao ở nhóm Bất động sản';
+            
+            const res = await apiFetch('/api/ticker-tape');
+            const data = await res.json();
+            
+            let html = '';
+            for (const [ticker, info] of Object.entries(data)) {
+                const colorClass = info.change_pct >= 0 ? 'ticker-up' : 'ticker-down';
+                const sign = info.change_pct >= 0 ? '+' : '';
+                
+                let formatPrice = '';
+                if(ticker === 'VNINDEX' || ticker === 'VN30') {
+                    formatPrice = info.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                } else {
+                    formatPrice = info.price.toLocaleString();
+                }
+                
+                const formatPct = `${sign}${info.change_pct.toFixed(1)}%`;
+                
+                html += `<span class="ticker-item">${ticker} <span class="${colorClass}">${formatPrice} (${formatPct})</span></span>`;
+                
+                if(ticker === 'MWG') html += `<span class="ticker-item"><span class="ticker-ai">🤖 ${aiSignalText}</span></span>`;
+                if(ticker === 'HPG') html += `<span class="ticker-item"><span class="ticker-ai">💡 ${aiEvalText}</span></span>`;
+                if(ticker === 'SSI') html += `<span class="ticker-item"><span class="ticker-ai">⚠️ ${warningText}</span></span>`;
+            }
+            if(html) {
+                tape.innerHTML = html;
+            }
+        } catch(e) {
+            console.error("Ticker tape fetch error", e);
+        }
     }
 
     function updateLanguage() {
