@@ -412,6 +412,7 @@ const I18N = {
         'err_conn': 'Server Connection Failed',
         'err_wait': 'Waiting for Python Backend (FastAPI).<br>Run: uvicorn main:app --reload',
         'err_input': 'Alert: Please double check your numerical inputs!',
+        'err_tokens': 'You do not have enough Tokens. Please top up!',
         'disclaimer_title': '⚠️ Disclaimer:',
         'ai_disclaimer': 'AI analysis is strictly based on historical data and the latest financial reports. It cannot forecast sudden or unprecedented future events. Past performance is no guarantee of future results.',
         'ci_text': '95% Prob. Range:',
@@ -548,6 +549,7 @@ const I18N = {
         'err_conn': 'Mất kết nối với máy chủ',
         'err_wait': 'Không thể kết nối Backend Python (FastAPI).<br>Chạy lệnh: uvicorn main:app --reload',
         'err_input': 'Vui lòng kiểm tra lại dữ liệu nhập — cần ít nhất 2 mã cổ phiếu hợp lệ!',
+        'err_tokens': 'Bạn không đủ Token. Vui lòng nạp thêm!',
         'disclaimer_title': '⚠️ Lưu ý quan trọng:',
         'ai_disclaimer': 'Kết quả phân tích chỉ dựa trên dữ liệu lịch sử và không phải là lời khuyên đầu tư. Hiệu suất trong quá khứ không đảm bảo cho kết quả tương lai. Nhà đầu tư tự chịu trách nhiệm về quyết định của mình.',
         'ci_text': 'Khoảng tin cậy 95%:',
@@ -1433,6 +1435,18 @@ document.addEventListener("DOMContentLoaded", () => {
         let totalCost = 2;
         const aiCheckbox = document.getElementById("generate-ai-report-checkbox");
         if (aiCheckbox && aiCheckbox.checked) totalCost += 2;
+        
+        if (!currentUser) {
+            alert(currentLang === 'en' ? 'Please Login first!' : 'Vui lòng Đăng nhập trước!');
+            openAuthModal();
+            return;
+        }
+        let userTotalTokens = (userProfile ? (userProfile.free_credits + userProfile.paid_tokens) : 0);
+        if (userTotalTokens < totalCost) {
+            alert(I18N[currentLang]['err_tokens']);
+            return;
+        }
+
         showTokenDeduction(runBtn, totalCost);
 
         runBtn.textContent = I18N[currentLang]['loading_api']; runBtn.disabled = true;
@@ -1479,6 +1493,18 @@ document.addEventListener("DOMContentLoaded", () => {
         let totalCost = 2;
         const aiCheckbox = document.getElementById("generate-ai-report-checkbox");
         if (aiCheckbox && aiCheckbox.checked) totalCost += 2;
+        
+        if (!currentUser) {
+            alert(currentLang === 'en' ? 'Please Login first!' : 'Vui lòng Đăng nhập trước!');
+            openAuthModal();
+            return;
+        }
+        let userTotalTokens = (userProfile ? (userProfile.free_credits + userProfile.paid_tokens) : 0);
+        if (userTotalTokens < totalCost) {
+            alert(I18N[currentLang]['err_tokens']);
+            return;
+        }
+
         showTokenDeduction(evalBtn, totalCost);
 
         evalBtn.textContent = I18N[currentLang]['loading_api']; evalBtn.disabled = true;
