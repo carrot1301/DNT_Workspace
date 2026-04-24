@@ -446,9 +446,15 @@ Câu hỏi: {message}
 
     import time
     try:
-        response = model.generate_content(sys_prompt, stream=True)
+        safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
+        response = model.generate_content(sys_prompt, stream=True, safety_settings=safety_settings)
         for chunk in response:
-            if chunk.text:
+            if hasattr(chunk, 'text') and chunk.text:
                 yield chunk.text
     except Exception as e:
         error_msg = str(e)
@@ -478,8 +484,14 @@ Tuyệt đối không dùng các từ khuyến nghị.
     """
     
     try:
-        response = model.generate_content(sys_prompt)
-        text = response.text.strip()
+        safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
+        response = model.generate_content(sys_prompt, safety_settings=safety_settings)
+        text = response.text.strip() if hasattr(response, 'text') and response.text else "{}"
         if text.startswith("```json"):
             text = text[7:]
         if text.startswith("```"):
@@ -545,13 +557,20 @@ RULES:
 """
 
     try:
+        safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
         response = model.generate_content(
             [system_prompt, f"User: {message}"],
             stream=True,
-            generation_config=genai.types.GenerationConfig(max_output_tokens=300, temperature=0.7)
+            generation_config=genai.types.GenerationConfig(max_output_tokens=300, temperature=0.7),
+            safety_settings=safety_settings
         )
         for chunk in response:
-            if chunk.text:
+            if hasattr(chunk, 'text') and chunk.text:
                 yield chunk.text
     except Exception as e:
         error_msg = str(e)
