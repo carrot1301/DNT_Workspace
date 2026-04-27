@@ -2,14 +2,14 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 from sklearn.covariance import LedoitWolf
-from core.factor_model import compute_factor_scores, factor_scores_to_alpha, build_factor_views, compute_trend_overlay
+from core.factor_model import compute_factor_scores, factor_scores_to_alpha, build_factor_views, compute_dynamic_bounds
 
 class BlackLittermanOptimizer:
     """
     [Tác Vụ Mô Hình Hóa] Black-Litterman Model
     Mô hình tích hợp kỳ vọng chủ quan (Views) vào Implied Equilibrium Returns.
     """
-    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.15):
+    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.05):
         self.risk_aversion = risk_aversion
         self.tau = tau
         
@@ -77,10 +77,106 @@ def build_views_matrices(tickers: list, views_dict: dict):
             P[i, asset_idx] = 1.0 # View tuyệt đối
             Q[i] = excess_return
     return P, Q
-def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252, apply_ftse_event: bool = True, min_weight: float = 0.05, max_weight: float = 0.40) -> dict:
+
+# -----------------------------------------------------------------
+# FACTOR-TILTED RISK PARITY
+# Bridgewater-style: Risk Parity base + nhẹ tilt theo Factor views
+# -----------------------------------------------------------------
+def _risk_parity_weights(cov_matrix: pd.DataFrame) -> np.ndarray:
+    """
+    Risk Parity: Equal Risk Contribution.
+    
+    Tìm w sao cho RC_i = RC_j ∀ i,j
+    RC_i = w_i × (Σw)_i / σ_p
+    
+    Mục tiêu: min Σ(RC_i - target_rc)²
+    """
+    n = len(cov_matrix)
+    Sigma = cov_matrix.values
+    
+    def risk_budget_objective(w):
+        port_var = w @ Sigma @ w
+        if port_var <= 0:
+            return 1e10
+        port_vol = np.sqrt(port_var)
+        
+        # Risk contribution cho mỗi asset
+        marginal_risk = Sigma @ w
+        risk_contribution = w * marginal_risk / port_vol
+        
+        # Target: mỗi asset đóng góp 1/n rủi ro
+        target_rc = port_vol / n
+        
+        return np.sum((risk_contribution - target_rc) ** 2)
+    
+    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
+    bounds = [(0.01, 0.60)] * n
+    init = np.ones(n) / n
+    
+    result = minimize(risk_budget_objective, init, method='SLSQP', 
+                     bounds=bounds, constraints=constraints,
+                     options={'maxiter': 1000, 'ftol': 1e-12})
+    
+    if result.success:
+        return result.x
+    else:
+        # Fallback: Equal Weight
+        return np.ones(n) / n
+
+def _factor_tilted_risk_parity(cov_matrix: pd.DataFrame, tickers: list, 
+                                factor_scores: dict, dynamic_bounds: dict,
+                                min_weight: float = 0.05,
+                                tilt_strength: float = 0.15) -> np.ndarray:
+    """
+    Factor-Tilted Risk Parity.
+    
+    Bước 1: Risk Parity base weights (Equal Risk Contribution)
+    Bước 2: Tilt nhẹ theo Factor Composite Scores
+    Bước 3: Clip theo dynamic bounds + re-normalize
+    
+    Công thức: w_final = w_rp × (1 + γ × z_score)
+    
+    γ (tilt_strength): 0.10-0.20, thấp hơn sẽ gần Risk Parity thuần,
+    cao hơn sẽ thiên về Factor Model.
+    """
+    n = len(tickers)
+    
+    # Bước 1: Risk Parity base
+    w_rp = _risk_parity_weights(cov_matrix)
+    
+    # Bước 2: Factor tilt
+    if factor_scores:
+        scores = np.array([factor_scores.get(t, 0.0) for t in tickers])
+        # Z-score normalize
+        if np.std(scores) > 1e-10:
+            z_scores = (scores - np.mean(scores)) / np.std(scores)
+        else:
+            z_scores = np.zeros(n)
+        
+        w_tilted = w_rp * (1 + tilt_strength * z_scores)
+    else:
+        w_tilted = w_rp.copy()
+    
+    # Bước 3: Clip theo dynamic bounds
+    for i, t in enumerate(tickers):
+        lb, ub = dynamic_bounds.get(t, (min_weight, 0.40))
+        w_tilted[i] = np.clip(w_tilted[i], lb, ub)
+    
+    # Re-normalize
+    total = w_tilted.sum()
+    if total > 0:
+        w_tilted = w_tilted / total
+    
+    return w_tilted
+
+def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initial_capital: float = 1000000, trading_days: int = 252, apply_ftse_event: bool = True, min_weight: float = 0.05, max_weight: float = 0.40, strategy_type: str = 'max_sharpe') -> dict:
     """
     Sinh Monte Carlo: Tối ưu hoá Danh mục đầu tư.
-    Tích hợp mô hình Black-Litterman và Rà soát sự kiện Nâng hạng FTSE.
+    Tích hợp mô hình Black-Litterman, Dynamic Bounds, và Risk Parity.
+    
+    strategy_type:
+        'max_sharpe' - MVO Max Sharpe (BL + Dynamic Bounds)
+        'risk_parity' - Factor-Tilted Risk Parity
     """
     num_assets = len(returns_df.columns)
     points = np.zeros((num_portfolios, 3)) # Return, Volatility, Sharpe
@@ -160,21 +256,34 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     # Ràng buộc: Tổng tỉ trọng = 1
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     
-    # Ràng buộc: Theo thông số từ UI
-    bounds = tuple((min_weight, max_weight) for _ in range(num_assets))
+    # -----------------------------------------------------------------
+    # DYNAMIC BOUNDS (thay thế Trend Overlay)
+    # [Expert Fix] Đưa trend constraint VÀO optimizer thay vì áp sau.
+    # -----------------------------------------------------------------
+    tickers_list_bounds = list(returns_df.columns)
+    dynamic_bounds_dict = compute_dynamic_bounds(tickers_list_bounds, min_weight, max_weight)
+    bounds = tuple(dynamic_bounds_dict[t] for t in tickers_list_bounds)
     
     # Khởi tạo điểm bắt đầu (equal weights)
     init_guess = np.array(num_assets * [1. / num_assets])
     
-    optimized_result = minimize(negative_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-    ms_weights = optimized_result.x
-    
-    # -----------------------------------------------------------------
-    # TREND FOLLOWING OVERLAY
-    # -----------------------------------------------------------------
-    raw_weights_dict = dict(zip(returns_df.columns, ms_weights))
-    adjusted_weights_dict = compute_trend_overlay(list(returns_df.columns), raw_weights_dict)
-    ms_weights = np.array([adjusted_weights_dict[t] for t in returns_df.columns])
+    if strategy_type == 'risk_parity':
+        # -----------------------------------------------------------------
+        # FACTOR-TILTED RISK PARITY
+        # Base: Equal Risk Contribution
+        # Tilt: Factor scores điều chỉnh nhẹ
+        # -----------------------------------------------------------------
+        composite_scores = compute_factor_scores(tickers_list_bounds) if apply_ftse_event else {}
+        ms_weights = _factor_tilted_risk_parity(
+            cov_matrix, tickers_list_bounds, composite_scores, 
+            dynamic_bounds_dict, min_weight
+        )
+    else:
+        # -----------------------------------------------------------------
+        # MVO MAX SHARPE (default)
+        # -----------------------------------------------------------------
+        optimized_result = minimize(negative_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+        ms_weights = optimized_result.x
     
     ms_return = np.sum(expected_returns * ms_weights)
     ms_volatil = np.sqrt(np.dot(ms_weights.T, np.dot(cov_matrix, ms_weights)))

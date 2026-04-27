@@ -1885,6 +1885,9 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const backtestDateInput = document.getElementById("opt-backtest-date");
         const backtestDate = backtestDateInput ? backtestDateInput.value : "";
+        
+        const strategyRadio = document.querySelector('input[name="strategy_type"]:checked');
+        const strategyType = strategyRadio ? strategyRadio.value : 'max_sharpe';
 
         Promise.all([
             apiFetch('/api/run-simulation', {
@@ -1899,7 +1902,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     persona: personaValue,
                     min_weight: minWeight,
                     max_weight: maxWeight,
-                    backtest_date: backtestDate
+                    backtest_date: backtestDate,
+                    strategy_type: strategyType
                 })
             }).then(res => {
                 if (!res.ok) throw new Error("Simulation API Error");

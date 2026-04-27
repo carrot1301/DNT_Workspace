@@ -72,6 +72,7 @@ class SimulationRequest(BaseModel):
     min_weight: float = 0.05
     max_weight: float = 0.40
     backtest_date: str = ""
+    strategy_type: str = "max_sharpe"  # 'max_sharpe' | 'risk_parity'
 
 @app.post("/api/run-simulation")
 def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
@@ -95,7 +96,7 @@ def get_simulation_data(req: SimulationRequest, user = Depends(require_auth)):
 
     # 2. Chạy thuật toán Monte Carlo
     num_ports = 10000
-    mc_results = run_monte_carlo(in_sample_port_ret, num_ports, req.capital, req.timeframe_days, min_weight=req.min_weight, max_weight=req.max_weight)
+    mc_results = run_monte_carlo(in_sample_port_ret, num_ports, req.capital, req.timeframe_days, min_weight=req.min_weight, max_weight=req.max_weight, strategy_type=req.strategy_type)
     
     if req.backtest_date and len(in_sample_port_ret) > 0:
         try:

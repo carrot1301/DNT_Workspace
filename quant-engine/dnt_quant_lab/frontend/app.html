@@ -457,6 +457,21 @@
                             <p style="font-size: 0.65rem; color: #475569; margin: 4px 0 0 0;" data-i18n="backtest_desc">Để trống = hiện tại. Chọn ngày quá khứ để kiểm thử.</p>
                         </div>
 
+                        <!-- Strategy Selector -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 0.75rem; color: #00FFAA; display: block; margin-bottom: 8px;" data-i18n="strategy_label">🧠 Chiến lược Tối ưu</label>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.75rem; color: #CBD5E1; padding: 6px 8px; border-radius: 6px; background: rgba(0,255,170,0.06); border: 1px solid rgba(0,255,170,0.15);">
+                                    <input type="radio" name="strategy_type" value="max_sharpe" checked style="accent-color: #00FFAA;">
+                                    <span><strong style="color: #00FFAA;">Max Sharpe (MVO)</strong> — Tối đa lợi nhuận/rủi ro</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.75rem; color: #CBD5E1; padding: 6px 8px; border-radius: 6px; background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15);">
+                                    <input type="radio" name="strategy_type" value="risk_parity" style="accent-color: #8B5CF6;">
+                                    <span><strong style="color: #A78BFA;">Risk Parity + Tilt</strong> — Cân bằng rủi ro (Bridgewater)</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- Custom Constraints -->
                         <div>
                             <label style="font-size: 0.75rem; color: #00FFAA; display: block; margin-bottom: 5px;" data-i18n="adv_constraints_title">⚙️ Tùy Biến Rủi Ro</label>

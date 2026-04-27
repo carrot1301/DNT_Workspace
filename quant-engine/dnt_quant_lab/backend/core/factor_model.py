@@ -28,8 +28,10 @@ FACTOR_WEIGHTS = {
 
 # Scale factor: composite score sẽ được nhân với hệ số này
 # để chuyển thành expected return adjustment (alpha)
-# VD: score = 1.0 (top) → alpha = +10%, score = -1.0 (bottom) → alpha = -10%
-ALPHA_SCALE = 0.10
+# VD: score = 1.0 (top) → alpha = +3%, score = -1.0 (bottom) → alpha = -3%
+# Expert consensus: 0.02-0.05 cho thị trường VN (emerging market).
+# Giá trị quá lớn → BL override equilibrium, quá nhỏ → views bị bỏ qua.
+ALPHA_SCALE = 0.03
 
 
 def compute_momentum_score(prices: pd.Series) -> float:
@@ -216,31 +218,31 @@ def build_factor_views(tickers: list, alpha_dict: dict):
     return P, Q
 
 
-def compute_trend_overlay(tickers: list, weights: dict) -> dict:
+def compute_dynamic_bounds(tickers: list, user_min: float = 0.05, user_max: float = 0.40) -> dict:
     """
-    Trend Following Overlay: Điều chỉnh trọng số sau MVO.
+    Dynamic Bounds: Tính ràng buộc trọng số TRƯỚC KHI đưa vào optimizer.
+    
+    [Expert Fix] Thay vì overlay SAU optimization (phá solution tối ưu),
+    đưa trend constraint VÀO optimizer thông qua dynamic bounds.
     
     Logic:
-    - Uptrend (Price > SMA50 > SMA200): giữ nguyên weight
-    - Mild downtrend (Price < SMA50): giảm 20% weight
-    - Strong downtrend (Price < SMA200): giảm 40% weight
+    - Uptrend (Price > SMA50 > SMA200): max = user_max (giữ nguyên)
+    - Mild downtrend (SMA200 ≤ Price < SMA50): max = min(user_max, 0.25)
+    - Strong downtrend (Price < SMA200): max = min(user_max, 0.10)
     
-    Sau đó re-normalize weights về tổng = 1.0
+    Kết quả: Optimizer giải bài toán với constraint chính xác → solution vẫn tối ưu.
     
-    Dựa trên nghiên cứu Trend Following:
-    "Time Series Momentum" (Moskowitz, Ooi & Pedersen, AQR, 2012)
+    Dựa trên: "Time Series Momentum" (Moskowitz, Ooi & Pedersen, AQR, 2012)
+    
+    Returns:
+        Dict {ticker: (min_bound, max_bound)}
     """
-    adjusted = {}
+    bounds = {}
     
     for ticker in tickers:
-        w = weights.get(ticker, 0)
-        if w <= 0:
-            adjusted[ticker] = 0
-            continue
-            
         df = fetch_stock_data(ticker, days_back=250)
         if df.empty or len(df) < 200:
-            adjusted[ticker] = w
+            bounds[ticker] = (user_min, user_max)
             continue
         
         prices = df['close']
@@ -249,18 +251,17 @@ def compute_trend_overlay(tickers: list, weights: dict) -> dict:
         sma200 = prices.tail(200).mean()
         
         if current < sma200:
-            # Strong downtrend: giảm 40%
-            adjusted[ticker] = w * 0.60
+            # Strong downtrend: cap tại 10%
+            effective_max = min(user_max, 0.10)
         elif current < sma50:
-            # Mild downtrend: giảm 20%
-            adjusted[ticker] = w * 0.80
+            # Mild downtrend: cap tại 25%
+            effective_max = min(user_max, 0.25)
         else:
-            # Uptrend: giữ nguyên
-            adjusted[ticker] = w
+            # Uptrend: giữ nguyên user setting
+            effective_max = user_max
+        
+        # Đảm bảo min <= max
+        effective_min = min(user_min, effective_max)
+        bounds[ticker] = (effective_min, effective_max)
     
-    # Re-normalize weights
-    total = sum(adjusted.values())
-    if total > 0:
-        adjusted = {t: v / total for t, v in adjusted.items()}
-    
-    return adjusted
+    return bounds
