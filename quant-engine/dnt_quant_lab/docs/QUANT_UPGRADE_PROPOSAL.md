@@ -1,7 +1,7 @@
 # 📊 Đề Xuất Nâng Cấp Mô Hình Định Lượng — DNT Quant Lab
-### Phiên bản: v2.0 — Tháng 04/2026
+### Phiên bản: v2.0 → ✅ Đã triển khai v3.0 (27/04/2026)
 ### Tác giả: DNT Engineering Team
-### Mục đích: Tham vấn chuyên gia trước khi triển khai
+### Trạng thái: ✅ IMPLEMENTED — Xem `QUANT_METHODOLOGY.md` cho tài liệu v3 hiện hành
 
 ---
 
