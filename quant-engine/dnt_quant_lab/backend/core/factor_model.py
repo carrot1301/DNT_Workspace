@@ -28,8 +28,8 @@ FACTOR_WEIGHTS = {
 
 # Scale factor: composite score sẽ được nhân với hệ số này
 # để chuyển thành expected return adjustment (alpha)
-# VD: score = 1.0 (top) → alpha = +6%, score = -1.0 (bottom) → alpha = -6%
-ALPHA_SCALE = 0.06
+# VD: score = 1.0 (top) → alpha = +10%, score = -1.0 (bottom) → alpha = -10%
+ALPHA_SCALE = 0.10
 
 
 def compute_momentum_score(prices: pd.Series) -> float:
@@ -222,8 +222,8 @@ def compute_trend_overlay(tickers: list, weights: dict) -> dict:
     
     Logic:
     - Uptrend (Price > SMA50 > SMA200): giữ nguyên weight
-    - Mild downtrend (Price < SMA50): giảm 40% weight
-    - Strong downtrend (Price < SMA200): giảm 70% weight
+    - Mild downtrend (Price < SMA50): giảm 20% weight
+    - Strong downtrend (Price < SMA200): giảm 40% weight
     
     Sau đó re-normalize weights về tổng = 1.0
     
@@ -249,11 +249,11 @@ def compute_trend_overlay(tickers: list, weights: dict) -> dict:
         sma200 = prices.tail(200).mean()
         
         if current < sma200:
-            # Strong downtrend: giảm 70%
-            adjusted[ticker] = w * 0.30
-        elif current < sma50:
-            # Mild downtrend: giảm 40%
+            # Strong downtrend: giảm 40%
             adjusted[ticker] = w * 0.60
+        elif current < sma50:
+            # Mild downtrend: giảm 20%
+            adjusted[ticker] = w * 0.80
         else:
             # Uptrend: giữ nguyên
             adjusted[ticker] = w

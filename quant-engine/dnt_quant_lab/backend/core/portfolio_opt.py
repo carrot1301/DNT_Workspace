@@ -9,7 +9,7 @@ class BlackLittermanOptimizer:
     [Tác Vụ Mô Hình Hóa] Black-Litterman Model
     Mô hình tích hợp kỳ vọng chủ quan (Views) vào Implied Equilibrium Returns.
     """
-    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.05):
+    def __init__(self, risk_aversion: float = 2.5, tau: float = 0.15):
         self.risk_aversion = risk_aversion
         self.tau = tau
         
@@ -92,7 +92,6 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     # [Tác Vụ 2.2] Covariance Shrinkage với Ledoit-Wolf
     cov_matrix_daily = LedoitWolf().fit(returns_df).covariance_
     cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * trading_days
-    daily_variances = np.diag(cov_matrix_daily)  # Giữ daily variance cho variance drag
     
     # -----------------------------------------------------------------
     # Nâng cấp thuật toán Hướng sự kiện: BLACK-LITTERMAN (Mô hình BL)
@@ -124,14 +123,15 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
                 bl_q_vector_out = Q.tolist()
                 post_ret = bl_optimizer.optimize(cov_matrix, implied_ret, P, Q)
                 
-                # [FIX] Variance Drag: dùng daily variance * trading_days / 2
-                # thay vì annualized variance / 2 (gây penalty quá lớn 4-8%)
-                expected_returns = post_ret.values - (daily_variances * trading_days / 2)
+                # [FIX v2] Không áp dụng Variance Drag ở mức individual asset.
+                # Sharpe Optimization đã tự cân bằng risk-return.
+                # Variance Drag ở individual level double-penalize → kéo expected returns quá thấp.
+                expected_returns = post_ret.values
                 is_bl_active = True
                 
     # Fallback to Markowitz Lịch sử nếu không kích hoạt hoặc rỗng View
     if not is_bl_active:
-        expected_returns = mean_returns - (daily_variances * trading_days / 2)
+        expected_returns = mean_returns
     
     # Scale risk-free rate based on the timeframe (assume 3% annually)
     risk_free_rate = 0.03 * (trading_days / 252)
