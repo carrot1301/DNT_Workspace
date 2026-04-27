@@ -5,9 +5,13 @@ create table public.profiles (
   email text,
   free_credits int default 3 not null,
   paid_tokens int default 0 not null,
+  gift_codes_used text[] default '{}' not null,
   last_used_date date default current_date not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Nếu bảng profiles đã tồn tại, chạy lệnh ALTER thay vì CREATE:
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gift_codes_used text[] DEFAULT '{}' NOT NULL;
 
 -- Bật Row Level Security (RLS) để bảo mật
 alter table public.profiles enable row level security;

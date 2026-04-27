@@ -176,9 +176,15 @@ async function handleAuth() {
     
     try {
         if (authMode === 'signup') {
+            const giftCodeInput = document.getElementById('auth-gift-code');
+            const giftCode = giftCodeInput ? giftCodeInput.value.trim().toUpperCase() : '';
             const { data, error: err } = await supabaseClient.auth.signUp({ email, password });
             error = err;
             if (!error && data.user) {
+                // Store gift code for auto-redeem after first login
+                if (giftCode) {
+                    localStorage.setItem('dnt_pending_gift_code', giftCode);
+                }
                 msgEl.innerText = dict['auth_msg_success'];
                 msgEl.style.color = '#00FFAA';
                 setTimeout(() => { switchAuthMode(); }, 1500);
@@ -252,12 +258,14 @@ function updateAuthUI() {
     const profileContainer = document.getElementById('user-profile-container');
     const emailDisplay = document.getElementById('user-email-display');
     const tokensDisplay = document.getElementById('user-tokens-display');
+    const giftCodeSection = document.getElementById('gift-code-section');
     
     const overlay = document.getElementById('login-overlay');
     if (currentUser) {
         if(overlay) overlay.style.display = 'none';
         if(authBtn) authBtn.style.display = 'none';
         if(logoutBtn) logoutBtn.style.display = 'inline-block';
+        if(giftCodeSection) giftCodeSection.style.display = 'block';
         
         if(profileContainer) profileContainer.style.display = 'flex';
         if(emailDisplay && currentUser.email) emailDisplay.textContent = currentUser.email.split('@')[0];
@@ -266,12 +274,20 @@ function updateAuthUI() {
             tokensDisplay.style.display = 'inline-block';
             tokensDisplay.innerHTML = `💎 <span class="hide-mobile">Free: </span>${userProfile.free_credits} | 🪙 <span class="hide-mobile">Paid: </span>${userProfile.paid_tokens}`;
         }
+        
+        // Auto-redeem pending gift code from registration
+        const pendingCode = localStorage.getItem('dnt_pending_gift_code');
+        if (pendingCode) {
+            localStorage.removeItem('dnt_pending_gift_code');
+            setTimeout(() => autoRedeemGiftCode(pendingCode), 1000);
+        }
     } else {
         if(overlay) overlay.style.display = 'flex';
         if(authBtn) authBtn.style.display = 'inline-block';
         if(logoutBtn) logoutBtn.style.display = 'none';
         if(profileContainer) profileContainer.style.display = 'none';
         if(tokensDisplay) tokensDisplay.style.display = 'none';
+        if(giftCodeSection) giftCodeSection.style.display = 'none';
     }
 }
 
@@ -324,6 +340,98 @@ async function handleChangePassword() {
         msgEl.innerText = window.getCurrentLang() === 'en' ? "Password updated successfully!" : "Đổi mật khẩu thành công!";
         msgEl.style.color = '#00FFAA';
         setTimeout(() => { closeChangePasswordModal(); }, 1500);
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// GIFT CODE REDEMPTION
+// ═══════════════════════════════════════════════════
+async function redeemGiftCode() {
+    const input = document.getElementById('gift-code-input');
+    const msgEl = document.getElementById('gift-code-msg');
+    const code = input.value.trim().toUpperCase();
+    const dict = I18N[window.getCurrentLang ? window.getCurrentLang() : 'vi'];
+    
+    if (!code) {
+        msgEl.innerText = dict['gift_code_empty'] || 'Vui lòng nhập mã Gift Code!';
+        msgEl.style.color = '#FF3B30';
+        msgEl.style.background = 'rgba(255,59,48,0.1)';
+        msgEl.style.display = 'block';
+        return;
+    }
+    
+    if (!currentUser) {
+        msgEl.innerText = dict['gift_code_login_required'] || 'Vui lòng đăng nhập trước!';
+        msgEl.style.color = '#F59E0B';
+        msgEl.style.background = 'rgba(245,158,11,0.1)';
+        msgEl.style.display = 'block';
+        return;
+    }
+    
+    msgEl.innerText = dict['auth_msg_processing'] || 'Đang xử lý...';
+    msgEl.style.color = '#A78BFA';
+    msgEl.style.background = 'rgba(139,92,246,0.1)';
+    msgEl.style.display = 'block';
+    
+    try {
+        const res = await apiFetch('/api/redeem-gift-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            msgEl.innerHTML = `🎉 ${dict['gift_code_success'] || 'Thành công!'} <strong>+${data.tokens_added} Token</strong>`;
+            msgEl.style.color = '#00FFAA';
+            msgEl.style.background = 'rgba(0,255,170,0.1)';
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('btn-redeem-gift').disabled = true;
+            // Refresh profile to update token display
+            await fetchUserProfile(currentUser.id);
+            updateAuthUI();
+        } else {
+            const errData = await res.json();
+            let errMsg = errData.detail || 'Lỗi không xác định';
+            if (res.status === 409) {
+                errMsg = dict['gift_code_already_used'] || errMsg;
+            } else if (res.status === 400) {
+                errMsg = dict['gift_code_invalid'] || errMsg;
+            }
+            msgEl.innerText = '❌ ' + errMsg;
+            msgEl.style.color = '#FF3B30';
+            msgEl.style.background = 'rgba(255,59,48,0.1)';
+        }
+    } catch (e) {
+        msgEl.innerText = '❌ ' + (dict['gift_code_error'] || 'Lỗi kết nối!');
+        msgEl.style.color = '#FF3B30';
+        msgEl.style.background = 'rgba(255,59,48,0.1)';
+    }
+}
+
+async function autoRedeemGiftCode(code) {
+    try {
+        const res = await apiFetch('/api/redeem-gift-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            await fetchUserProfile(currentUser.id);
+            updateAuthUI();
+            // Show success notification
+            const giftMsg = document.getElementById('gift-code-msg');
+            if (giftMsg) {
+                giftMsg.innerHTML = `🎉 Gift Code kích hoạt thành công! <strong>+${data.tokens_added} Token</strong>`;
+                giftMsg.style.color = '#00FFAA';
+                giftMsg.style.background = 'rgba(0,255,170,0.1)';
+                giftMsg.style.display = 'block';
+            }
+        }
+    } catch(e) {
+        console.log('Auto-redeem gift code failed:', e);
     }
 }
 
@@ -505,7 +613,19 @@ const I18N = {
         'rag_badge': '✨ [BETA] AI ASSISTED DOCS (RAG)',
         'rag_found': 'Found deep-dive financial analysis database for:',
         'sig_col_price': 'Current Price',
-        'btn_ta_detail': 'TA Details'
+        'btn_ta_detail': 'TA Details',
+        'gift_code_title': 'Enter Gift Code',
+        'gift_code_ph': 'Enter code here...',
+        'btn_redeem': 'Redeem',
+        'gift_code_empty': 'Please enter a Gift Code!',
+        'gift_code_login_required': 'Please login first!',
+        'gift_code_success': 'Success!',
+        'gift_code_already_used': 'You have already used this code!',
+        'gift_code_invalid': 'Invalid Gift Code!',
+        'gift_code_error': 'Connection error!',
+        'gift_code_signup_label': 'Gift Code (Optional)',
+        'gift_code_signup_ph': 'e.g. DAUTUTHONGMINH',
+        'gift_code_signup_hint': 'Enter code to receive free Tokens upon registration!'
     },
     'vi': {
         'nav_login': 'Đăng nhập',
@@ -665,7 +785,19 @@ const I18N = {
         'rag_badge': '✨ [BETA] TÀI LIỆU AI CỐ TRỢ (RAG)',
         'rag_found': 'Phát hiện kho dữ liệu có sẵn BCTC phân tích chuyên sâu cho:',
         'sig_col_price': 'Giá Hiện Hành',
-        'btn_ta_detail': 'Chi tiết TA'
+        'btn_ta_detail': 'Chi tiết TA',
+        'gift_code_title': 'Nhập Gift Code',
+        'gift_code_ph': 'Nhập mã tại đây...',
+        'btn_redeem': 'Kích hoạt',
+        'gift_code_empty': 'Vui lòng nhập mã Gift Code!',
+        'gift_code_login_required': 'Vui lòng đăng nhập trước!',
+        'gift_code_success': 'Thành công!',
+        'gift_code_already_used': 'Bạn đã sử dụng mã này rồi!',
+        'gift_code_invalid': 'Mã Gift Code không hợp lệ!',
+        'gift_code_error': 'Lỗi kết nối!',
+        'gift_code_signup_label': 'Gift Code (Tùy chọn)',
+        'gift_code_signup_ph': 'VD: DAUTUTHONGMINH',
+        'gift_code_signup_hint': 'Nhập mã để nhận Token miễn phí khi đăng ký!'
     }
 };
 

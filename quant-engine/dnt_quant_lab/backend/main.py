@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from typing import Optional
 from core.auth_middleware import require_auth
 from core.token_manager import check_and_deduct_tokens
 from fastapi.middleware.cors import CORSMiddleware
@@ -599,6 +600,57 @@ def get_financial_reports(ticker: str, session_id: str = None):
         
     financials = financière_data.copy()
     return sanitize_floats(financials)
+
+# ── Gift Code Redemption ─────────────────────────────────────────
+class GiftCodeRequest(BaseModel):
+    code: str
+
+VALID_GIFT_CODES = {
+    "DAUTUTHONGMINH": 100  # 100 tokens
+}
+
+@app.post("/api/redeem-gift-code")
+def redeem_gift_code(req: GiftCodeRequest, user = Depends(require_auth)):
+    """
+    Nhập mã Gift Code để nhận Token miễn phí.
+    Mỗi user chỉ được dùng mỗi mã 1 lần.
+    """
+    code = req.code.strip().upper()
+    
+    if code not in VALID_GIFT_CODES:
+        raise HTTPException(status_code=400, detail="Mã Gift Code không hợp lệ!")
+    
+    tokens_reward = VALID_GIFT_CODES[code]
+    user_id = user.id if hasattr(user, 'id') else user.get('id')
+    supabase = get_supabase()
+    
+    try:
+        # Check if user already used this gift code
+        profile_res = supabase.table('profiles').select('paid_tokens, gift_codes_used').eq('id', user_id).single().execute()
+        profile = profile_res.data
+        
+        if not profile:
+            raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ người dùng!")
+        
+        used_codes = profile.get('gift_codes_used') or []
+        if code in used_codes:
+            raise HTTPException(status_code=409, detail="Bạn đã sử dụng mã này rồi!")
+        
+        # Add tokens and mark code as used
+        current_paid = profile.get('paid_tokens', 0)
+        used_codes.append(code)
+        
+        supabase.table('profiles').update({
+            'paid_tokens': current_paid + tokens_reward,
+            'gift_codes_used': used_codes
+        }).eq('id', user_id).execute()
+        
+        return {"success": True, "tokens_added": tokens_reward, "new_total": current_paid + tokens_reward}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Gift Code Error: {e}")
+        raise HTTPException(status_code=500, detail="Lỗi hệ thống khi xử lý Gift Code!")
 
 
 @app.get("/api/technical-analysis/{ticker}")
