@@ -101,9 +101,10 @@ def prepare_portfolio_data(tickers: list, days_back: int = 1000):
     import numpy as np
     portfolio_returns = np.log(portfolio_prices / portfolio_prices.shift(1))
     
-    # [BẢN SỬA LỖI] Lọc nhiễu: Loại bỏ các biến động > 15% (Biên độ tối đa UPCOM là 15%)
-    # Dữ liệu Entrade hay bị spike do chia tách hoặc lỗi API
-    portfolio_returns = portfolio_returns[(portfolio_returns < 0.15) & (portfolio_returns > -0.15)]
+    # [FIX] Clip per-column thay vì mask cả dòng — giữ lại data hợp lệ của các cổ phiếu khác
+    # khi 1 mã có spike do chia tách hoặc lỗi API
+    for col in portfolio_returns.columns:
+        portfolio_returns[col] = portfolio_returns[col].clip(-0.15, 0.15)
     portfolio_returns = portfolio_returns.dropna()
     
     # Align dates between portfolio and market

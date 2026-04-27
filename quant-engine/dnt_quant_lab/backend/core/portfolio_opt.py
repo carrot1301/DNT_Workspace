@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 from sklearn.covariance import LedoitWolf
+from core.factor_model import compute_factor_scores, factor_scores_to_alpha, build_factor_views, compute_trend_overlay
 
 class BlackLittermanOptimizer:
     """
@@ -50,12 +51,12 @@ def generate_ftse_views(tickers: list, timeframe_days: int) -> dict:
     # Xử lý list thụ hưởng user nhập:
     FTSE_BENEFICIARIES = ['VIC', 'VHM', 'HPG', 'FPT', 'SSI', 'MSN', 'VCB', 'VNM', 'VJC', 'VIX', 'STB', 'VRE', 'SHB', 'GEX', 'VCI', 'KDH', 'KBC', 'BID', 'NVL', 'DGC', 'EIB', 'PDR', 'DXG', 'DIG', 'DPM']
     
-    # Sốc Alpha Kỳ vọng tuỳ theo Timeframe cắt ngang mốc hay không (tạm fix theo duration)
-    alpha_bump = 0.05
+    # Sốc Alpha Kỳ vọng — giảm xuống để BL không bias quá mạnh
+    alpha_bump = 0.02
     if timeframe_days >= 126:
-        alpha_bump = 0.08
+        alpha_bump = 0.03
     if timeframe_days >= 252:
-        alpha_bump = 0.12
+        alpha_bump = 0.05
 
     views = {}
     for t in tickers:
@@ -91,7 +92,7 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     # [Tác Vụ 2.2] Covariance Shrinkage với Ledoit-Wolf
     cov_matrix_daily = LedoitWolf().fit(returns_df).covariance_
     cov_matrix = pd.DataFrame(cov_matrix_daily, index=returns_df.columns, columns=returns_df.columns) * trading_days
-    variances = np.diag(cov_matrix)
+    daily_variances = np.diag(cov_matrix_daily)  # Giữ daily variance cho variance drag
     
     # -----------------------------------------------------------------
     # Nâng cấp thuật toán Hướng sự kiện: BLACK-LITTERMAN (Mô hình BL)
@@ -106,21 +107,31 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
         bl_optimizer = BlackLittermanOptimizer()
         implied_ret = bl_optimizer.implied_returns(cov_matrix, eq_weights)
         
+        # 1. Multi-Factor Views
+        composite_scores = compute_factor_scores(tickers_list)
+        alpha_dict = factor_scores_to_alpha(composite_scores)
+        
+        # 2. FTSE Event Views (Optional overlay)
         ftse_views = generate_ftse_views(tickers_list, trading_days)
         if ftse_views:
-            P, Q = build_views_matrices(tickers_list, ftse_views)
+            for t, alpha in ftse_views.items():
+                alpha_dict[t] = alpha_dict.get(t, 0) + alpha
+                
+        if alpha_dict:
+            P, Q = build_factor_views(tickers_list, alpha_dict)
             if P is not None and Q is not None:
                 bl_p_matrix_out = P.tolist()
                 bl_q_vector_out = Q.tolist()
                 post_ret = bl_optimizer.optimize(cov_matrix, implied_ret, P, Q)
                 
-                # Apply Variance Drag trên Posterior Returns (Chuyển Mean thành Expected Return thuần)
-                expected_returns = post_ret.values - (variances / 2)
+                # [FIX] Variance Drag: dùng daily variance * trading_days / 2
+                # thay vì annualized variance / 2 (gây penalty quá lớn 4-8%)
+                expected_returns = post_ret.values - (daily_variances * trading_days / 2)
                 is_bl_active = True
                 
     # Fallback to Markowitz Lịch sử nếu không kích hoạt hoặc rỗng View
     if not is_bl_active:
-        expected_returns = mean_returns - (variances / 2)
+        expected_returns = mean_returns - (daily_variances * trading_days / 2)
     
     # Scale risk-free rate based on the timeframe (assume 3% annually)
     risk_free_rate = 0.03 * (trading_days / 252)
@@ -157,6 +168,14 @@ def run_monte_carlo(returns_df: pd.DataFrame, num_portfolios: int = 10000, initi
     
     optimized_result = minimize(negative_sharpe, init_guess, method='SLSQP', bounds=bounds, constraints=constraints)
     ms_weights = optimized_result.x
+    
+    # -----------------------------------------------------------------
+    # TREND FOLLOWING OVERLAY
+    # -----------------------------------------------------------------
+    raw_weights_dict = dict(zip(returns_df.columns, ms_weights))
+    adjusted_weights_dict = compute_trend_overlay(list(returns_df.columns), raw_weights_dict)
+    ms_weights = np.array([adjusted_weights_dict[t] for t in returns_df.columns])
+    
     ms_return = np.sum(expected_returns * ms_weights)
     ms_volatil = np.sqrt(np.dot(ms_weights.T, np.dot(cov_matrix, ms_weights)))
     ms_sharpe = (ms_return - risk_free_rate) / ms_volatil
