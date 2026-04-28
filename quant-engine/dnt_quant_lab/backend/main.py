@@ -495,18 +495,55 @@ def get_market_news_api(limit: int = 15):
 @app.get("/api/ticker-news")
 def get_ticker_news_api(tickers: str, limit: int = 5):
     """
-    Tin tức liên quan đến mã cổ phiếu cụ thể (dùng cho RAG AI).
+    Tin tức liên quan đến mã cổ phiếu cụ thể.
+    Ưu tiên Google News (tìm chủ động), fallback RSS.
     Format tickers: FPT,VCB,HPG
     """
-    from core.rss_engine import search_news_by_tickers
     try:
         ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
         if not ticker_list:
             return {}
-        result = search_news_by_tickers(ticker_list, limit=min(limit, 10))
+        
+        result = {}
+        # Ưu tiên Google News
+        try:
+            from core.google_news_engine import search_ticker_news
+            for t in ticker_list:
+                gnews = search_ticker_news(t, limit=min(limit, 10))
+                if gnews:
+                    result[t] = gnews
+        except Exception as e:
+            print(f"Google News Error in ticker-news: {e}")
+        
+        # Fallback RSS cho ticker chưa có
+        remaining = [t for t in ticker_list if t not in result]
+        if remaining:
+            from core.rss_engine import search_news_by_tickers
+            rss_result = search_news_by_tickers(remaining, limit=min(limit, 10))
+            result.update(rss_result)
+        
         return result
     except Exception as e:
         print(f"Ticker News API Error: {e}")
+        return {}
+
+@app.get("/api/google-news")
+def get_google_news_api(tickers: str, limit: int = 5):
+    """
+    Tìm tin tức trực tiếp từ Google News theo mã cổ phiếu.
+    Format tickers: VND,VCK,SSB
+    """
+    from core.google_news_engine import search_ticker_news
+    try:
+        ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+        if not ticker_list:
+            return {}
+        result = {}
+        for t in ticker_list:
+            result[t] = search_ticker_news(t, limit=min(limit, 10))
+        return result
+    except Exception as e:
+        print(f"Google News API Error: {e}")
         return {}
 
 

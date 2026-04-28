@@ -236,11 +236,31 @@ def search_news_by_tickers(tickers: list, limit: int = 5) -> dict:
 
 def get_news_for_ai_prompt(tickers: list, limit_per_ticker: int = 3) -> str:
     """
-    Tạo text block tin tức RSS để inject vào AI prompt.
+    Tạo text block tin tức để inject vào AI prompt.
+    Ưu tiên Google News (tìm chủ động), fallback RSS.
     Format phù hợp cho Gemini đọc.
     """
-    ticker_news = search_news_by_tickers(tickers, limit=limit_per_ticker)
-    
+    if not tickers:
+        return ""
+
+    ticker_news = {}
+
+    # Ưu tiên Google News cho từng ticker
+    try:
+        from core.google_news_engine import search_ticker_news
+        for t in tickers:
+            gnews = search_ticker_news(t, limit=limit_per_ticker)
+            if gnews:
+                ticker_news[t] = gnews
+    except Exception as e:
+        print(f"Google News for AI Prompt Error: {e}")
+
+    # Fallback RSS cho ticker chưa có
+    remaining = [t for t in tickers if t not in ticker_news]
+    if remaining:
+        rss_news = search_news_by_tickers(remaining, limit=limit_per_ticker)
+        ticker_news.update(rss_news)
+
     if not any(ticker_news.values()):
         return ""
 
@@ -256,7 +276,7 @@ def get_news_for_ai_prompt(tickers: list, limit_per_ticker: int = 3) -> str:
                     continue
                 seen_titles.add(title)
                 source = art.get("source", "")
-                pub = art.get("pubDate", "")[:10]  # Chỉ lấy ngày
+                pub = art.get("pubDate", art.get("publishDate", ""))[:10]  # Chỉ lấy ngày
                 summary = art.get("summary", "")[:150]
                 lines.append(f"    - [{pub}] ({source}) {title}")
                 if summary:

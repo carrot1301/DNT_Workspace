@@ -230,13 +230,16 @@ def fetch_ticker_tape_data() -> dict:
 
 def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
     """
-    Sử dụng thư viện vnstock3 để kéo tin tức công ty mới nhất.
-    Nếu vnstock3 fail hoặc không có tin → fallback sang RSS (VnExpress, Tuổi Trẻ).
-    Trả về dict: { "FPT": [ {"title": "...", "summary": "...", "publishDate": "..."} ] }
+    Lấy tin tức mới nhất cho từng mã cổ phiếu.
+    Chuỗi fallback 3 tầng:
+      1. vnstock3 (tin chính xác nhất từ TCBS)
+      2. Google News RSS (tìm chủ động theo keyword)
+      3. RSS VnExpress/Tuổi Trẻ (fallback cuối — tin chung thị trường)
+    Trả về dict: { "FPT": [ {"title": "...", "summary": "...", "publishDate": "...", "source": "..."} ] }
     """
     news_data = {}
-    vnstock_failed = False
     
+    # ── Tầng 1: vnstock3 (TCBS) ──
     try:
         from vnstock3 import Vnstock
         for t in tickers:
@@ -250,7 +253,9 @@ def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
                         t_news.append({
                             "publishDate": str(row.get('publishDate', '')),
                             "title": str(row.get('title', '')),
-                            "summary": str(row.get('summary', ''))
+                            "summary": str(row.get('summary', '')),
+                            "source": "vnstock",
+                            "sourceIcon": "📰"
                         })
                     news_data[t] = t_news
                 else:
@@ -259,25 +264,42 @@ def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
                 print(f"Error fetching news for {t}: {e}")
                 news_data[t] = []
     except ImportError:
-        print("vnstock3 library is not available. Falling back to RSS.")
-        vnstock_failed = True
+        print("vnstock3 library is not available. Trying Google News...")
     
-    # Fallback: dùng RSS cho các ticker không có tin vnstock3
-    tickers_need_rss = [t for t in tickers if not news_data.get(t)]
-    if tickers_need_rss or vnstock_failed:
+    # ── Tầng 2: Google News RSS (tìm chủ động theo keyword) ──
+    tickers_need_gnews = [t for t in tickers if not news_data.get(t)]
+    if tickers_need_gnews:
+        try:
+            from core.google_news_engine import search_ticker_news
+            for t in tickers_need_gnews:
+                gnews_results = search_ticker_news(t, limit=limit)
+                if gnews_results:
+                    news_data[t] = [{
+                        "publishDate": art.get("publishDate", art.get("pubDate", "")),
+                        "title": art.get("title", ""),
+                        "summary": art.get("summary", ""),
+                        "source": art.get("source", "Google News"),
+                        "sourceIcon": "🔍",
+                        "link": art.get("link", "")
+                    } for art in gnews_results[:limit]]
+        except Exception as e:
+            print(f"Google News Fallback Error: {e}")
+    
+    # ── Tầng 3: RSS VnExpress / Tuổi Trẻ (fallback cuối) ──
+    tickers_still_empty = [t for t in tickers if not news_data.get(t)]
+    if tickers_still_empty:
         try:
             from core.rss_engine import search_news_by_tickers
-            rss_results = search_news_by_tickers(
-                tickers_need_rss if tickers_need_rss else tickers,
-                limit=limit
-            )
+            rss_results = search_news_by_tickers(tickers_still_empty, limit=limit)
             for t, articles in rss_results.items():
                 if not news_data.get(t) and articles:
-                    # Convert RSS format to vnstock format
                     news_data[t] = [{
                         "publishDate": art.get("pubDate", ""),
                         "title": art.get("title", ""),
-                        "summary": art.get("summary", "")
+                        "summary": art.get("summary", ""),
+                        "source": art.get("source", "RSS"),
+                        "sourceIcon": art.get("sourceIcon", "📄"),
+                        "link": art.get("link", "")
                     } for art in articles[:limit]]
         except Exception as e:
             print(f"RSS Fallback Error: {e}")

@@ -1600,25 +1600,49 @@ document.addEventListener("DOMContentLoaded", () => {
         const newsCard = document.getElementById("live-news-card");
         const newsList = document.getElementById("live-news-list");
         const newsTickersLabel = document.getElementById("news-tickers-list");
+        const newsSourceBadge = document.getElementById("news-source-badge");
         
         if (data.news_data && Object.keys(data.news_data).length > 0) {
             newsList.innerHTML = "";
             let fetchedTickers = [];
+            let sourceCounts = {};  // Track sources for badge
             for (const [t, newsArr] of Object.entries(data.news_data)) {
                 if (newsArr.length > 0) {
                     fetchedTickers.push(t);
                     newsArr.forEach(nItem => {
+                        const itemSource = nItem.source || "RSS";
+                        sourceCounts[itemSource] = (sourceCounts[itemSource] || 0) + 1;
+                        
+                        // Determine source color
+                        let sourceColor = "#9ca3af";
+                        let sourceIcon = nItem.sourceIcon || "📰";
+                        if (itemSource === "vnstock") { sourceColor = "#F59E0B"; sourceIcon = "📰"; }
+                        else if (itemSource.includes("Google") || sourceIcon === "🔍") { sourceColor = "#00B8FF"; sourceIcon = "🔍"; }
+                        else if (itemSource === "VnExpress") { sourceColor = "#ef4444"; sourceIcon = "📰"; }
+                        else if (itemSource.includes("Tuổi Trẻ") || itemSource.includes("Tuoi Tre")) { sourceColor = "#3b82f6"; sourceIcon = "📄"; }
+                        
                         const itemDiv = document.createElement("div");
                         itemDiv.style.background = "rgba(255,255,255,0.05)";
                         itemDiv.style.padding = "10px";
                         itemDiv.style.borderRadius = "6px";
-                        itemDiv.style.borderLeft = "3px solid #00B8FF";
+                        itemDiv.style.borderLeft = `3px solid ${sourceColor}`;
+                        itemDiv.style.transition = "background 0.2s ease";
+                        itemDiv.onmouseover = () => { itemDiv.style.background = "rgba(255,255,255,0.1)"; };
+                        itemDiv.onmouseout = () => { itemDiv.style.background = "rgba(255,255,255,0.05)"; };
+                        
+                        const linkUrl = nItem.link || "#";
+                        const hasLink = nItem.link && nItem.link !== "#";
+                        
                         itemDiv.innerHTML = `
-                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 3px;">
-                                <strong style="color: #00B8FF;">${t}</strong> • ${nItem.publishDate}
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+                                <strong style="color: #00B8FF;">${t}</strong>
+                                <span style="color: ${sourceColor}; font-size: 0.7rem; border: 1px solid ${sourceColor}; padding: 0 4px; border-radius: 3px;">${sourceIcon} ${itemSource}</span>
+                                <span>• ${nItem.publishDate || ''}</span>
                             </div>
                             <div style="font-size: 0.9rem; color: white; font-weight: 500;">
-                                ${nItem.title}
+                                ${hasLink 
+                                    ? `<a href="${linkUrl}" target="_blank" rel="noopener" style="color: white; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.2); transition: border-color 0.2s;" onmouseover="this.style.borderColor='#00B8FF'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'">${nItem.title}</a>` 
+                                    : nItem.title}
                             </div>
                         `;
                         newsList.appendChild(itemDiv);
@@ -1627,6 +1651,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (fetchedTickers.length > 0) {
                 newsTickersLabel.textContent = fetchedTickers.join(", ");
+                
+                // Dynamic badge: show dominant source
+                if (newsSourceBadge) {
+                    const topSource = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1])[0];
+                    if (topSource) {
+                        const badgeName = topSource[0];
+                        let badgeColor = "#00B8FF";
+                        if (badgeName === "vnstock") badgeColor = "#F59E0B";
+                        else if (badgeName.includes("VnExpress") || badgeName.includes("Tuổi Trẻ")) badgeColor = "#ef4444";
+                        newsSourceBadge.textContent = badgeName;
+                        newsSourceBadge.style.borderColor = badgeColor;
+                        newsSourceBadge.style.color = badgeColor;
+                    }
+                }
+                
                 newsCard.style.display = "block";
             } else {
                 newsCard.style.display = "none";
