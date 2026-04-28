@@ -44,7 +44,7 @@ app = FastAPI(title="DNT Quant Lab API")
 payments_db = {}
 
 # Đệm cho radar F0
-radar_cache = {"date": None, "data": []}
+radar_cache = {"date": None, "data": [], "last_error_ts": 0}
 
 # Setup CORS for frontend to communicate without policy errors
 app.add_middleware(
@@ -262,19 +262,33 @@ def get_ai_radar():
     """
     Trả về top 5 mã cổ phiếu có điểm FA (Cơ bản) và TA (Kỹ thuật) tốt nhất hiện tại.
     Có Cache trên RAM theo ngày để tối ưu performance.
+    Nếu lỗi, cache kết quả lỗi 1 giờ để tránh spam API.
     """
+    import time
     today_str = datetime.now().strftime("%Y-%m-%d")
     
+    # Trả cache nếu còn hợp lệ trong ngày
     if radar_cache["date"] == today_str and radar_cache["data"]:
         return radar_cache["data"]
+    
+    # Nếu đã lỗi gần đây (trong 1 giờ), trả cache cũ (có thể rỗng hoặc data cũ)
+    if radar_cache["last_error_ts"] and (time.time() - radar_cache["last_error_ts"]) < 3600:
+        if radar_cache["data"]:
+            return radar_cache["data"]
         
     try:
         top_picks = sanitize_floats(run_daily_radar())
-        radar_cache["date"] = today_str
-        radar_cache["data"] = top_picks
+        if top_picks:
+            radar_cache["date"] = today_str
+            radar_cache["data"] = top_picks
+            radar_cache["last_error_ts"] = 0
         return top_picks
     except Exception as e:
         print(f"Lỗi AI Radar: {e}")
+        radar_cache["last_error_ts"] = time.time()
+        # Trả cache cũ nếu có, thay vì trả rỗng
+        if radar_cache["data"]:
+            return radar_cache["data"]
         return []
 
 
@@ -300,9 +314,31 @@ def get_sentiment_radar(tickers: str, lang: str = "vi"):
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list:
         return {}
-    news = fetch_recent_news(ticker_list, limit=5)
-    sentiment = analyze_sentiment(news, lang)
-    return sanitize_floats(sentiment)
+    
+    try:
+        news = fetch_recent_news(ticker_list, limit=5)
+    except Exception as e:
+        print(f"Sentiment News Fetch Error: {e}")
+        news = {}
+    
+    # Nếu không có tin tức nào, trả về điểm trung tính thay vì dict rỗng
+    has_any_news = any(bool(v) for v in news.values()) if news else False
+    if not has_any_news:
+        return {t: 0.5 for t in ticker_list}
+    
+    try:
+        sentiment = analyze_sentiment(news, lang)
+        # Validate output: đảm bảo mỗi ticker đều có điểm
+        if not sentiment or not isinstance(sentiment, dict):
+            return {t: 0.5 for t in ticker_list}
+        # Bổ sung ticker thiếu với điểm trung tính
+        for t in ticker_list:
+            if t not in sentiment:
+                sentiment[t] = 0.5
+        return sanitize_floats(sentiment)
+    except Exception as e:
+        print(f"Sentiment Analysis Error: {e}")
+        return {t: 0.5 for t in ticker_list}
 
 class CopilotPublicRequest(BaseModel):
     message: str
@@ -440,6 +476,39 @@ def get_ticker_tape():
         return sanitize_floats(data)
     except Exception as e:
         return {}
+
+# ── RSS Market News ───────────────────────────────────────────
+@app.get("/api/market-news")
+def get_market_news_api(limit: int = 15):
+    """
+    Tin tức thị trường tổng hợp từ RSS (VnExpress, Tuổi Trẻ).
+    Public endpoint cho Landing Page.
+    """
+    from core.rss_engine import get_market_news
+    try:
+        news = get_market_news(limit=min(limit, 30))
+        return {"articles": news, "count": len(news)}
+    except Exception as e:
+        print(f"Market News API Error: {e}")
+        return {"articles": [], "count": 0}
+
+@app.get("/api/ticker-news")
+def get_ticker_news_api(tickers: str, limit: int = 5):
+    """
+    Tin tức liên quan đến mã cổ phiếu cụ thể (dùng cho RAG AI).
+    Format tickers: FPT,VCB,HPG
+    """
+    from core.rss_engine import search_news_by_tickers
+    try:
+        ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+        if not ticker_list:
+            return {}
+        result = search_news_by_tickers(ticker_list, limit=min(limit, 10))
+        return result
+    except Exception as e:
+        print(f"Ticker News API Error: {e}")
+        return {}
+
 
 @app.get("/api/current-prices")
 def get_current_prices(tickers: str):

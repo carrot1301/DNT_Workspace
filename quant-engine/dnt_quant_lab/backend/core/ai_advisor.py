@@ -151,6 +151,25 @@ def build_prompt(data: dict, lang: str = "vi") -> str:
         else:
             news_section += "\n*Task: Analyze market sentiment from these news events to evaluate the short-term outlook, combined with the quantitative metrics.*"
 
+    # Bổ sung tin tức từ RSS (VnExpress, Tuổi Trẻ) — luôn chạy nếu có tickers
+    rss_section = ""
+    try:
+        # Lấy danh sách tickers từ weights hoặc news_data
+        rss_tickers = list(news_data.keys()) if news_data else []
+        if not rss_tickers and weights:
+            rss_tickers = list(weights.keys())
+        
+        if rss_tickers:
+            from core.rss_engine import get_news_for_ai_prompt
+            rss_text = get_news_for_ai_prompt(rss_tickers, limit_per_ticker=3)
+            if rss_text:
+                if lang == "vi":
+                    rss_section = f"\n**TIN TỨC BÁO CHÍ MỚI NHẤT (RSS - VnExpress, Tuổi Trẻ):**\n{rss_text}\n\n*Nhiệm vụ: Đọc kỹ tin tức báo chí này và đối chiếu với dữ liệu định lượng phía trên. Nếu tin tiêu cực liên quan đến mã trong danh mục, hãy cảnh báo rủi ro. Nếu tích cực, xác nhận quan điểm.*"
+                else:
+                    rss_section = f"\n**LATEST PRESS NEWS (RSS - VnExpress, Tuoi Tre):**\n{rss_text}\n\n*Task: Read these press articles carefully. Cross-reference with quantitative data above. Flag risks if negative news relates to portfolio tickers. Confirm positive sentiment if applicable.*"
+    except Exception as e:
+        print(f"RSS RAG Error: {e}")
+
     # Lấy Technical Analysis từ signals_data
     ta_data = data.get("trading_signals", {})
     ta_section = ""
@@ -283,6 +302,7 @@ Below are the full results of a Monte Carlo quantitative analysis (10,000 random
 {ta_section}
 {manual_bctc_section}
 {news_section}
+{rss_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Based on the simulation results and fundamental data, provide data-driven insights to the user following this structure:
@@ -338,6 +358,7 @@ Dưới đây là toàn bộ kết quả phân tích định lượng Monte Carl
 {ta_section}
 {manual_bctc_section}
 {news_section}
+{rss_section}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Dựa vào kết quả chạy mô phỏng và sức khỏe tài chính trên, hãy đưa ra đánh giá dữ liệu chuyên sâu cho người dùng theo cấu trúc sau:

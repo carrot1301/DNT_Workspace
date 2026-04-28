@@ -135,15 +135,75 @@ def fetch_current_prices(tickers: list) -> dict:
             prices[t] = float(df['close'].iloc[-1]) * 1000
     return prices
 
+# Cache nhẹ cho Ticker Tape (5 phút)
+_tape_cache = {"ts": 0, "data": {}}
+
+def _fetch_stock_uncached(ticker: str, days_back: int = 10) -> pd.DataFrame:
+    """Lấy dữ liệu giá KHÔNG qua requests_cache để luôn fresh."""
+    import requests as raw_requests
+    now = datetime.datetime.now()
+    now_rounded = now.replace(minute=0, second=0, microsecond=0)
+    to_ts = int(now_rounded.timestamp())
+    from_ts = int((now_rounded - datetime.timedelta(days=days_back)).timestamp())
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    try:
+        url = f"https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?symbol={ticker}&resolution=1D&from={from_ts}&to={to_ts}"
+        with raw_requests.Session() as s:
+            res = s.get(url, headers=headers, timeout=10)
+        res.raise_for_status()
+        data = res.json()
+        if 't' not in data or not data['t']:
+            return pd.DataFrame()
+        dates = pd.to_datetime(data['t'], unit='s', utc=True)
+        dates = dates.tz_convert('Asia/Ho_Chi_Minh').tz_localize(None).normalize()
+        df = pd.DataFrame({'date': dates, 'close': data['c']})
+        df = df.groupby('date').last().reset_index()
+        df.set_index('date', inplace=True)
+        return df
+    except Exception as e:
+        print(f"Tape Fetch Error for {ticker}: {e}")
+        return pd.DataFrame()
+
+def _fetch_index_uncached(symbol: str = 'VN30', days_back: int = 10) -> pd.DataFrame:
+    """Lấy dữ liệu index KHÔNG qua requests_cache."""
+    import requests as raw_requests
+    now = datetime.datetime.now()
+    now_rounded = now.replace(minute=0, second=0, microsecond=0)
+    to_ts = int(now_rounded.timestamp())
+    from_ts = int((now_rounded - datetime.timedelta(days=days_back)).timestamp())
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    try:
+        url = f"https://services.entrade.com.vn/chart-api/v2/ohlcs/index?symbol={symbol}&resolution=1D&from={from_ts}&to={to_ts}"
+        with raw_requests.Session() as s:
+            res = s.get(url, headers=headers, timeout=10)
+        res.raise_for_status()
+        data = res.json()
+        if 't' not in data or not data['t']:
+            return pd.DataFrame()
+        dates = pd.to_datetime(data['t'], unit='s', utc=True)
+        dates = dates.tz_convert('Asia/Ho_Chi_Minh').tz_localize(None).normalize()
+        df = pd.DataFrame({'date': dates, 'close': data['c']})
+        df = df.groupby('date').last().reset_index()
+        df.set_index('date', inplace=True)
+        return df
+    except Exception as e:
+        print(f"Tape Index Fetch Error for {symbol}: {e}")
+        return pd.DataFrame()
+
 def fetch_ticker_tape_data() -> dict:
-    """Fetch prices and 1-day % change for a predefined list of tickers + VN30 for the Ticker Tape"""
+    """Fetch prices and 1-day % change for Ticker Tape. Cache 5 phút trong RAM."""
+    import time
+    now = time.time()
+    if _tape_cache["data"] and (now - _tape_cache["ts"]) < 300:  # 5 phút
+        return _tape_cache["data"]
+    
     tickers = ['VN30', 'FPT', 'MWG', 'VCB', 'HPG', 'TCB', 'SSI']
     tape_data = {}
     for t in tickers:
         if t == 'VN30':
-            df = fetch_index_data('VN30', days_back=10)
+            df = _fetch_index_uncached('VN30', days_back=10)
         else:
-            df = fetch_stock_data(t, days_back=10)
+            df = _fetch_stock_uncached(t, days_back=10)
             
         if not df.empty and len(df) >= 2:
             current_price = float(df['close'].iloc[-1])
@@ -155,7 +215,7 @@ def fetch_ticker_tape_data() -> dict:
                 
             tape_data[t] = {
                 "price": current_price,
-                "change_pct": change_pct
+                "change_pct": round(change_pct, 2)
             }
         elif not df.empty and len(df) == 1:
             current_price = float(df['close'].iloc[-1])
@@ -163,15 +223,20 @@ def fetch_ticker_tape_data() -> dict:
             tape_data[t] = {"price": current_price, "change_pct": 0}
         else:
             tape_data[t] = {"price": 0, "change_pct": 0}
-            
+    
+    _tape_cache["data"] = tape_data
+    _tape_cache["ts"] = now
     return tape_data
 
 def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
     """
     Sử dụng thư viện vnstock3 để kéo tin tức công ty mới nhất.
+    Nếu vnstock3 fail hoặc không có tin → fallback sang RSS (VnExpress, Tuổi Trẻ).
     Trả về dict: { "FPT": [ {"title": "...", "summary": "...", "publishDate": "..."} ] }
     """
     news_data = {}
+    vnstock_failed = False
+    
     try:
         from vnstock3 import Vnstock
         for t in tickers:
@@ -194,6 +259,28 @@ def fetch_recent_news(tickers: list, limit: int = 3) -> dict:
                 print(f"Error fetching news for {t}: {e}")
                 news_data[t] = []
     except ImportError:
-        print("vnstock3 library is not available.")
+        print("vnstock3 library is not available. Falling back to RSS.")
+        vnstock_failed = True
+    
+    # Fallback: dùng RSS cho các ticker không có tin vnstock3
+    tickers_need_rss = [t for t in tickers if not news_data.get(t)]
+    if tickers_need_rss or vnstock_failed:
+        try:
+            from core.rss_engine import search_news_by_tickers
+            rss_results = search_news_by_tickers(
+                tickers_need_rss if tickers_need_rss else tickers,
+                limit=limit
+            )
+            for t, articles in rss_results.items():
+                if not news_data.get(t) and articles:
+                    # Convert RSS format to vnstock format
+                    news_data[t] = [{
+                        "publishDate": art.get("pubDate", ""),
+                        "title": art.get("title", ""),
+                        "summary": art.get("summary", "")
+                    } for art in articles[:limit]]
+        except Exception as e:
+            print(f"RSS Fallback Error: {e}")
     
     return news_data
+

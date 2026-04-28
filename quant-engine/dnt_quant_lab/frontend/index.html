@@ -592,6 +592,123 @@
             .timeline-item { width: 100%; left: 0 !important; padding-left: 50px; text-align: left !important; }
             .timeline-item:nth-child(odd) .timeline-dot, .timeline-item:nth-child(even) .timeline-dot { left: 10px; right: auto; }
         }
+
+        /* ═══════════════════════════════════════════════════
+           NEWS SECTION
+        ═══════════════════════════════════════════════════ */
+        .news-section {
+            padding: 6rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 5;
+        }
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+        .news-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+        }
+        .news-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(0, 255, 170, 0.35);
+            box-shadow: 0 12px 35px -8px rgba(0, 255, 170, 0.15);
+        }
+        .news-thumb {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(0,255,170,0.05), rgba(0,184,255,0.05));
+        }
+        .news-body {
+            padding: 1.2rem 1.4rem 1.4rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .news-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.7rem;
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+        .news-source-badge {
+            background: rgba(0, 255, 170, 0.1);
+            color: #00FFAA;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.72rem;
+            letter-spacing: 0.3px;
+        }
+        .news-title {
+            color: #f1f5f9;
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.45;
+            margin-bottom: 0.6rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color 0.2s;
+        }
+        .news-card:hover .news-title {
+            color: #00FFAA;
+        }
+        .news-summary {
+            color: #94A3B8;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            flex: 1;
+        }
+        .news-loading {
+            text-align: center;
+            color: #64748b;
+            padding: 3rem;
+            font-size: 0.95rem;
+        }
+        .news-loading .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(0, 255, 170, 0.3);
+            border-top-color: #00FFAA;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            .news-thumb {
+                height: 160px;
+            }
+        }
     </style>
 </head>
 
@@ -619,6 +736,7 @@
         </div>
         <ul class="tv-nav">
             <li><a href="#features" data-i18n="lp_nav_features">Tính Năng</a></li>
+            <li><a href="#market-news" data-i18n="lp_nav_news">Tin Tức</a></li>
             <li><a href="#how-it-works" data-i18n="lp_nav_guide">Hướng Dẫn</a></li>
             <li><a href="#origin-story" data-i18n="lp_nav_origin">Sứ Mệnh</a></li>
             <li><a href="#roadmap" data-i18n="lp_nav_roadmap">Roadmap</a></li>
@@ -724,6 +842,19 @@
                     <li data-i18n="lp_p3_3">Đánh giá rủi ro định tính và định lượng</li>
                     <li data-i18n="lp_p3_4">Đưa ra góc nhìn đầu tư trực tiếp bằng Tiếng Việt</li>
                 </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- TIN TỨC THỊ TRƯỜNG -->
+    <section class="news-section" id="market-news" style="background: rgba(10, 15, 25, 0.85);">
+        <h2 class="section-title" data-i18n="lp_news_title">Tin Tức Thị Trường</h2>
+        <p class="section-subtitle" data-i18n="lp_news_desc">Cập nhật tin tức tài chính mới nhất từ các nguồn uy tín, giúp bạn đưa ra quyết định đầu tư sáng suốt.</p>
+        
+        <div class="news-grid" id="news-grid">
+            <div class="news-loading" id="news-loading">
+                <span class="spinner"></span>
+                <span data-i18n="lp_news_loading">Đang tải tin tức...</span>
             </div>
         </div>
     </section>
@@ -897,7 +1028,12 @@
                 'lp_copilot_welcome': 'Xin chào! Tôi là DNT Quant Copilot. Hỏi tôi bất cứ điều gì về nền tảng phân tích định lượng này nhé!',
                 'lp_copilot_ph': 'Hỏi tôi bất cứ điều gì...',
                 'lp_copilot_loading': '⏳ Đang phân tích...',
-                'lp_copilot_error': 'Lỗi kết nối.'
+                'lp_copilot_error': 'Lỗi kết nối.',
+                'lp_news_title': 'Tin Tức Thị Trường',
+                'lp_news_desc': 'Cập nhật tin tức tài chính mới nhất từ các nguồn uy tín, giúp bạn đưa ra quyết định đầu tư sáng suốt.',
+                'lp_news_loading': 'Đang tải tin tức...',
+                'lp_news_empty': 'Chưa có tin tức mới.',
+                'lp_nav_news': 'Tin Tức'
             },
             'en': {
                 'lp_nav_features': 'Features',
@@ -954,7 +1090,12 @@
                 'lp_copilot_welcome': 'Hi! I\'m DNT Quant Copilot. Ask me anything about this quantitative analysis platform!',
                 'lp_copilot_ph': 'Ask me anything...',
                 'lp_copilot_loading': '⏳ Analyzing...',
-                'lp_copilot_error': 'Connection error.'
+                'lp_copilot_error': 'Connection error.',
+                'lp_news_title': 'Market News',
+                'lp_news_desc': 'Stay updated with the latest financial news from trusted sources to make informed investment decisions.',
+                'lp_news_loading': 'Loading news...',
+                'lp_news_empty': 'No news available.',
+                'lp_nav_news': 'News'
             }
         };
 
@@ -1043,6 +1184,80 @@
                 document.getElementById(loadingId).innerHTML = dict['lp_copilot_error'] + " " + e.message;
             }
         }
+
+        // ═══ News Section Fetch & Render ═══
+        async function fetchAndRenderNews() {
+            const grid = document.getElementById('news-grid');
+            const loading = document.getElementById('news-loading');
+            
+            try {
+                const res = await fetch('/api/market-news?limit=6');
+                const data = await res.json();
+                
+                if (!data.articles || data.articles.length === 0) {
+                    const dict = LP_I18N[lpLang];
+                    grid.innerHTML = `<div class="news-loading">${dict['lp_news_empty'] || 'No news'}</div>`;
+                    return;
+                }
+                
+                let html = '';
+                for (const article of data.articles) {
+                    const timeStr = formatNewsTime(article.pubDate);
+                    const thumbHtml = article.thumbnail 
+                        ? `<img class="news-thumb" src="${article.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+                        : `<div class="news-thumb" style="display:flex;align-items:center;justify-content:center;font-size:2.5rem;opacity:0.3;">📰</div>`;
+                    
+                    html += `
+                        <a class="news-card" href="${article.link}" target="_blank" rel="noopener">
+                            ${thumbHtml}
+                            <div class="news-body">
+                                <div class="news-meta">
+                                    <span class="news-source-badge">${article.sourceIcon || '📰'} ${article.source}</span>
+                                    <span>${timeStr}</span>
+                                </div>
+                                <div class="news-title">${article.title}</div>
+                                <div class="news-summary">${article.summary || ''}</div>
+                            </div>
+                        </a>
+                    `;
+                }
+                
+                grid.innerHTML = html;
+            } catch(e) {
+                console.error('News fetch error:', e);
+                grid.innerHTML = '<div class="news-loading">Could not load news.</div>';
+            }
+        }
+        
+        function formatNewsTime(isoStr) {
+            if (!isoStr) return '';
+            try {
+                const d = new Date(isoStr);
+                const now = new Date();
+                const diffMs = now - d;
+                const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+                
+                if (diffH < 1) {
+                    const diffM = Math.floor(diffMs / (1000 * 60));
+                    return lpLang === 'vi' ? `${diffM} phút trước` : `${diffM}m ago`;
+                }
+                if (diffH < 24) {
+                    return lpLang === 'vi' ? `${diffH} giờ trước` : `${diffH}h ago`;
+                }
+                const diffD = Math.floor(diffH / 24);
+                if (diffD < 7) {
+                    return lpLang === 'vi' ? `${diffD} ngày trước` : `${diffD}d ago`;
+                }
+                return d.toLocaleDateString(lpLang === 'vi' ? 'vi-VN' : 'en-US', { day: 'numeric', month: 'short' });
+            } catch {
+                return '';
+            }
+        }
+        
+        // Fetch on page load
+        fetchAndRenderNews();
+        // Auto-refresh every 15 minutes
+        setInterval(fetchAndRenderNews, 15 * 60 * 1000);
     </script>
 </body>
 

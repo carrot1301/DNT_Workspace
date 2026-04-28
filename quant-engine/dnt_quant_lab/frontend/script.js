@@ -1037,15 +1037,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if(!tape) return;
         
         try {
-            const aiSignalText = currentLang === 'en' ? 'AI Signal: Uptrend confirmed for VCB' : 'Tín hiệu AI: Xác nhận xu hướng tăng cho VCB';
-            const aiEvalText = currentLang === 'en' ? 'AI Evaluation: HPG shows strong fundamentals' : 'Đánh giá AI: HPG có nền tảng cơ bản vững chắc';
-            const warningText = currentLang === 'en' ? 'AI Alert: High volatility detected in Real Estate sector' : 'Cảnh báo AI: Phát hiện biến động cao ở nhóm Bất động sản';
-            
             const res = await apiFetch('/api/ticker-tape');
             const data = await res.json();
             
             let html = '';
-            for (const [ticker, info] of Object.entries(data)) {
+            const entries = Object.entries(data);
+            
+            for (const [ticker, info] of entries) {
                 const colorClass = info.change_pct >= 0 ? 'ticker-up' : 'ticker-down';
                 const sign = info.change_pct >= 0 ? '+' : '';
                 
@@ -1059,11 +1057,44 @@ document.addEventListener("DOMContentLoaded", () => {
                 const formatPct = `${sign}${info.change_pct.toFixed(1)}%`;
                 
                 html += `<span class="ticker-item">${ticker} <span class="${colorClass}">${formatPrice} (${formatPct})</span></span>`;
-                
-                if(ticker === 'MWG') html += `<span class="ticker-item"><span class="ticker-ai">🤖 ${aiSignalText}</span></span>`;
-                if(ticker === 'HPG') html += `<span class="ticker-item"><span class="ticker-ai">💡 ${aiEvalText}</span></span>`;
-                if(ticker === 'SSI') html += `<span class="ticker-item"><span class="ticker-ai">⚠️ ${warningText}</span></span>`;
             }
+            
+            // Dynamic AI signals based on actual data
+            const aiSignals = [];
+            for (const [ticker, info] of entries) {
+                if (ticker === 'VN30') continue;
+                if (info.change_pct >= 2.0) {
+                    const txt = currentLang === 'en' 
+                        ? `AI Signal: Strong momentum detected for ${ticker} (+${info.change_pct.toFixed(1)}%)`
+                        : `Tín hiệu AI: Phát hiện động lượng mạnh cho ${ticker} (+${info.change_pct.toFixed(1)}%)`;
+                    aiSignals.push(`<span class="ticker-item"><span class="ticker-ai">🚀 ${txt}</span></span>`);
+                } else if (info.change_pct <= -2.0) {
+                    const txt = currentLang === 'en'
+                        ? `AI Alert: ${ticker} under selling pressure (${info.change_pct.toFixed(1)}%)`
+                        : `Cảnh báo AI: ${ticker} đang chịu áp lực bán (${info.change_pct.toFixed(1)}%)`;
+                    aiSignals.push(`<span class="ticker-item"><span class="ticker-ai">⚠️ ${txt}</span></span>`);
+                } else if (info.change_pct >= 0.5) {
+                    const txt = currentLang === 'en'
+                        ? `AI: ${ticker} trending positive today`
+                        : `AI: ${ticker} xu hướng tích cực hôm nay`;
+                    aiSignals.push(`<span class="ticker-item"><span class="ticker-ai">💡 ${txt}</span></span>`);
+                }
+            }
+            
+            // Thêm nhận định VN30
+            const vn30 = data['VN30'];
+            if (vn30) {
+                const vn30Txt = vn30.change_pct >= 0
+                    ? (currentLang === 'en' ? `Market outlook: VN30 up ${vn30.change_pct.toFixed(1)}% — Positive session` : `Nhận định: VN30 tăng ${vn30.change_pct.toFixed(1)}% — Phiên tích cực`)
+                    : (currentLang === 'en' ? `Market outlook: VN30 down ${vn30.change_pct.toFixed(1)}% — Cautious session` : `Nhận định: VN30 giảm ${Math.abs(vn30.change_pct).toFixed(1)}% — Phiên thận trọng`);
+                aiSignals.unshift(`<span class="ticker-item"><span class="ticker-ai">📊 ${vn30Txt}</span></span>`);
+            }
+            
+            // Xen kẽ AI signals vào ticker tape
+            if (aiSignals.length > 0) {
+                html += aiSignals.join('');
+            }
+            
             if(html) {
                 tape.innerHTML = html;
             }
@@ -1213,22 +1244,25 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await apiFetch(`/api/sentiment-radar?tickers=${tickersArray.join(',')}&lang=${currentLang}`);
             const data = await res.json();
             
-            if(!data || Object.keys(data).length === 0) {
-                document.getElementById("radar-chart-container").innerHTML = "<div style='color:red;'>Failed to load sentiment.</div>";
+            if(!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+                document.getElementById("radar-chart-container").innerHTML = `<div style="color:#94a3b8; text-align:center; margin-top:50px;">${currentLang === 'en' ? 'No sentiment data available. Run simulation first.' : 'Chưa có dữ liệu sentiment. Hãy chạy phân tích trước.'}</div>`;
                 return;
             }
             
             const labels = Object.keys(data);
             const values = Object.values(data);
             
+            // Check if all values are default (0.5) — means no real news data
+            const allDefault = values.every(v => v === 0.5);
+            
             const trace = {
                 type: 'scatterpolar',
                 r: values,
                 theta: labels,
                 fill: 'toself',
-                fillcolor: 'rgba(0, 255, 170, 0.2)',
-                line: { color: '#00FFAA' },
-                marker: { color: '#00FFAA', size: 8 }
+                fillcolor: allDefault ? 'rgba(148, 163, 184, 0.15)' : 'rgba(0, 255, 170, 0.2)',
+                line: { color: allDefault ? '#94a3b8' : '#00FFAA' },
+                marker: { color: allDefault ? '#94a3b8' : '#00FFAA', size: 8 }
             };
             
             const layout = {
@@ -1246,13 +1280,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
                 margin: { t: 30, b: 30, l: 30, r: 30 },
-                showlegend: false
+                showlegend: false,
+                annotations: allDefault ? [{
+                    text: currentLang === 'en' ? 'Neutral — No news data' : 'Trung tính — Chưa có tin tức',
+                    showarrow: false,
+                    font: { color: '#64748B', size: 11 },
+                    xref: 'paper', yref: 'paper',
+                    x: 0.5, y: -0.05
+                }] : []
             };
             
             Plotly.newPlot('radar-chart-container', [trace], layout, {displayModeBar: false});
         } catch(e) {
             console.error("Radar Error", e);
-            document.getElementById("radar-chart-container").innerHTML = "<div style='color:red;'>Error fetching sentiment radar.</div>";
+            document.getElementById("radar-chart-container").innerHTML = `<div style="color:#94a3b8; text-align:center; margin-top:50px;">${currentLang === 'en' ? 'Unable to load sentiment radar.' : 'Không thể tải Sentiment Radar.'}</div>`;
         }
     }
 
